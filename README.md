@@ -1,7 +1,25 @@
 # LoadUp Modules
 
-可按需消费的业务能力，每个业务目录是聚合 POM。通过 `loadup-dependencies` BOM 管理版本，消费工程引入具体 `*-core`、`*-app`
+可按需消费的业务能力，每个业务目录是聚合 POM。通过 `loadup-modules-bom` 管理业务 JAR 版本，消费工程引入具体 `*-core`、`*-app`
 或 `*-web` jar。
+
+## BOM 接入
+
+消费方在 `dependencyManagement` 中导入以下独立制品：
+
+```xml
+<dependency>
+    <groupId>io.github.loadup-cloud</groupId>
+    <artifactId>loadup-modules-bom</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+```
+
+随后引入 `loadup-modules-upms-web`、`loadup-modules-file-client` 等具体 JAR 时省略 version。
+同时直接使用 framework 的无版本依赖时，另外导入 `loadup-dependencies`。模块版本与 framework 版本分别选择。
+[Modules BOM](loadup-modules-bom/README.md) 覆盖当前 21 个发布 JAR，不管理聚合目录或内部测试模块。
 
 ## 业务目录
 

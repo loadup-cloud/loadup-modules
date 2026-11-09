@@ -32,6 +32,7 @@
         </developer>
     </developers>
     <modules>
+        <module>loadup-modules-bom</module>
         <module>loadup-modules-upms</module>
         <module>loadup-modules-audit</module>
         <module>loadup-modules-dictionary</module>
@@ -74,212 +75,25 @@
         <dependencies>
             <dependency>
                 <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-dependencies</artifactId>
+                <artifactId>loadup-framework-bom</artifactId>
                 <version>${loadup.framework.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
             <dependency>
                 <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-testify-spring-boot-starter</artifactId>
+                <artifactId>loadup-modules-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-testify-bom</artifactId>
                 <version>${loadup.testify.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
-            <!-- ========== loadup-modules start ==========-->
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-audit-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-audit-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-audit-web</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-dictionary-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-dictionary-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-dictionary-web</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-file-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-file-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-file-web</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-web</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-transfer-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-transfer-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-transfer-web</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-upms</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-upms-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-upms-app</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-upms-authserver</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-upms-web</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-upms-domain</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-upms-infrastructure</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-upms-test</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <!-- ========== loadup-modules-config start ==========-->
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-config</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-config-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-config-domain</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-config-infrastructure</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-config-app</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-config-test</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <!-- ========== loadup-modules-config end ==========-->
-
-            <!-- ========== loadup-modules-log start ==========-->
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-log</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-log-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-log-domain</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-log-infrastructure</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-log-app</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-log-test</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <!-- ========== loadup-modules-log end ==========-->
         </dependencies>
     </dependencyManagement>
 </project>
