@@ -68,16 +68,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths combine.children="append"/>
-                    <annotationProcessors>
-                        <annotationProcessor>org.mapstruct.ap.MappingProcessor</annotationProcessor>
-                        <annotationProcessor>org.springframework.boot.configurationprocessor.ConfigurationMetadataAnnotationProcessor</annotationProcessor>
-
-                        <annotationProcessor>com.mybatisflex.processor.MybatisFlexProcessor</annotationProcessor>
-
-                    </annotationProcessors>
-                </configuration>
             </plugin>
         </plugins>
     </build>

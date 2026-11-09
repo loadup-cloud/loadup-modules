@@ -72,3 +72,8 @@ loadup:
 `loadup.<domain>.*` 指标命名。旧业务配置前缀已移除，集成方需更新配置；具体属性以各模块文档为准。
 
 设计边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
+
+## Database 编译期处理器
+
+编译期配置由 database processor 内置维护，模块无需同步配置；处理器版本由 framework BOM 管理。详见
+[framework database processor 文档](../loadup-framework/loadup-components/data/loadup-components-database-processor/README.md)。
