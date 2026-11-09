@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.upms.app.converter;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.upms.client.dto.UserSensitiveDTO;
 import io.github.loadup.modules.upms.domain.model.User;
 import org.mapstruct.Mapper;

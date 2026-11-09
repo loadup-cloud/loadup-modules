@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.upms.infrastructure.converter;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.upms.domain.model.Permission;
 import io.github.loadup.modules.upms.infrastructure.dataobject.PermissionDO;
 import org.mapstruct.Mapper;

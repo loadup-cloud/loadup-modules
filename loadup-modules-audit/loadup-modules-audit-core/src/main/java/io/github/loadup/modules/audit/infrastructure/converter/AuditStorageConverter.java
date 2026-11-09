@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.audit.infrastructure.converter;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.audit.domain.model.AuditEvent;
 import io.github.loadup.modules.audit.infrastructure.dataobject.AuditEventDO;
 import org.mapstruct.Mapper;

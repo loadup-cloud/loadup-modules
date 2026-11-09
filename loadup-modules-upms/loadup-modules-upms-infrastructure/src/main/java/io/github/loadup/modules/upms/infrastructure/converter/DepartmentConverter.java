@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.upms.infrastructure.converter;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.upms.domain.model.Department;
 import io.github.loadup.modules.upms.infrastructure.dataobject.DepartmentDO;
 import org.mapstruct.Mapper;

@@ -16,7 +16,7 @@
 package io.github.loadup.modules.upms.infrastructure.dataobject;
 
 import com.mybatisflex.annotation.Table;
-import io.github.loadup.commons.dataobject.BaseDO;
+import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 

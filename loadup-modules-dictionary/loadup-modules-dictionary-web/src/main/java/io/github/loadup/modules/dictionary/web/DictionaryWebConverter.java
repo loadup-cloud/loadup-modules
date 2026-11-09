@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.dictionary.web;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.dictionary.client.dto.DictionaryItemDTO;
 import io.github.loadup.modules.dictionary.client.dto.DictionaryOptionDTO;
 import java.util.List;

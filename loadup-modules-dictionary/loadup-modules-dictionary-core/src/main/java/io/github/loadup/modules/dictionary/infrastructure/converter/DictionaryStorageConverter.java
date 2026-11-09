@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.dictionary.infrastructure.converter;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.dictionary.domain.model.DictionaryItem;
 import io.github.loadup.modules.dictionary.domain.model.DictionaryType;
 import io.github.loadup.modules.dictionary.infrastructure.dataobject.DictionaryItemDO;

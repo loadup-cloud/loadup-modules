@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.file.web;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.file.client.dto.FileResourceDTO;
 import io.github.loadup.modules.file.client.dto.FileResourceViewDTO;
 import org.mapstruct.Mapper;

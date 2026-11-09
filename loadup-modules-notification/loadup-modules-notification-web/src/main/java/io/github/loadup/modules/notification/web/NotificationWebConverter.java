@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.notification.web;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.notification.client.dto.InboxMessageDTO;
 import io.github.loadup.modules.notification.client.dto.NotificationViewDTO;
 import org.mapstruct.Mapper;

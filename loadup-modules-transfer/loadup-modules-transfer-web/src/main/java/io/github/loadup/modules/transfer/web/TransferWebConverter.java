@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.transfer.web;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.transfer.client.dto.TransferTaskDTO;
 import io.github.loadup.modules.transfer.client.dto.TransferViewDTO;
 import org.mapstruct.Mapper;

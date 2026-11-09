@@ -40,7 +40,7 @@ Transfer client 自有公共枚举，domain 保留领域枚举，应用层通过
 authserver 适配。
 
 应用服务依赖 Gateway 接口，公开返回 client DTO；HTTP 层使用可见字段投影，文件 storageId 与通知接收者等内部信息不暴露。MapStruct
-统一使用 LoadUpMapStructConfig 和 Spring 注入。
+统一使用 runtime.mapping.LoadUpMapStructConfig 和 Spring 注入，并直接声明 loadup-components-runtime 依赖。
 
 ## 装配与配置
 

@@ -16,8 +16,8 @@
 package io.github.loadup.modules.transfer.app.converter;
 
 import io.github.loadup.commons.domain.PageResult;
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
 import io.github.loadup.commons.result.PageDTO;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.transfer.client.dto.TransferTaskDTO;
 import io.github.loadup.modules.transfer.domain.model.TransferTask;
 import org.mapstruct.Mapper;

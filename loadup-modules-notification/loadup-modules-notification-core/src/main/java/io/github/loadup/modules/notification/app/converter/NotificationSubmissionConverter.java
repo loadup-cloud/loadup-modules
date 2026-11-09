@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.notification.app.converter;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.notification.client.command.NotificationSubmitCommand;
 import io.github.loadup.modules.notification.client.dto.NotificationAcceptedDTO;
 import io.github.loadup.modules.notification.domain.model.NotificationContent;

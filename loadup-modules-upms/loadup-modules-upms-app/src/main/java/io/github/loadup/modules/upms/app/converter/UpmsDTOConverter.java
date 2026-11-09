@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.upms.app.converter;
 
-import io.github.loadup.commons.mapping.LoadUpMapStructConfig;
+import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.upms.app.strategy.LoginCredentials;
 import io.github.loadup.modules.upms.client.command.UserLoginCommand;
 import io.github.loadup.modules.upms.client.dto.AccessDecisionDTO;
