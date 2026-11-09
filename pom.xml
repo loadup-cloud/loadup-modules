@@ -8,12 +8,29 @@
         <relativePath/>
     </parent>
     <groupId>io.github.loadup-cloud</groupId>
-
     <artifactId>loadup-modules</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
     <packaging>pom</packaging>
     <name>LoadUp Modules</name>
     <description>Reusable business capabilities organized with COLA application layers.</description>
-
+    <url>https://github.com/loadup-cloud</url>
+    <inceptionYear>2025</inceptionYear>
+    <organization>
+        <name>loadup_cloud</name>
+    </organization>
+    <licenses>
+        <license>
+            <name>Apache-2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>Laysan</id>
+            <email>lslvxy@gmail.com</email>
+        </developer>
+    </developers>
     <modules>
         <module>loadup-modules-upms</module>
         <module>loadup-modules-audit</module>
@@ -22,4 +39,247 @@
         <module>loadup-modules-notification</module>
         <module>loadup-modules-transfer</module>
     </modules>
+    <properties>
+        <java.version>25</java.version>
+        <project.encoding>UTF-8</project.encoding>
+        <project.build.encoding>${project.encoding}</project.build.encoding>
+        <project.build.sourceEncoding>${project.encoding}</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>${project.encoding}</project.reporting.outputEncoding>
+        <maven.compiler.encoding>${project.encoding}</maven.compiler.encoding>
+        <maven.resources.encoding>${project.encoding}</maven.resources.encoding>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <loadup.framework.version>0.0.1-SNAPSHOT</loadup.framework.version>
+        <loadup.testify.version>0.0.1-SNAPSHOT</loadup.testify.version>
+
+        <!-- Manual quality and maintenance tools, aligned with LoadUp Framework. -->
+        <license.useJavaNoReformatCommentStartTag>false</license.useJavaNoReformatCommentStartTag>
+        <license.trimHeaderLine>true</license.trimHeaderLine>
+
+        <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
+        <versions-plugin.version>2.23.0</versions-plugin.version>
+
+        <spotless-plugin.version>3.11.0</spotless-plugin.version>
+
+        <enforcer-plugin.version>3.6.3</enforcer-plugin.version>
+
+        <palantir-java-format.version>2.98.0</palantir-java-format.version>
+
+        <skip.spotless>false</skip.spotless>
+
+        <skip.enforcer>false</skip.enforcer>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-dependencies</artifactId>
+                <version>${loadup.framework.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-testify-spring-boot-starter</artifactId>
+                <version>${loadup.testify.version}</version>
+            </dependency>
+            <!-- ========== loadup-modules start ==========-->
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-audit-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-audit-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-audit-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-dictionary-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-dictionary-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-dictionary-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-file-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-file-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-file-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-notification-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-notification-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-notification-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-transfer-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-transfer-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-transfer-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-upms</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-upms-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-upms-app</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-upms-authserver</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-upms-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-upms-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-upms-infrastructure</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-upms-test</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ========== loadup-modules-config start ==========-->
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-config</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-config-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-config-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-config-infrastructure</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-config-app</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-config-test</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- ========== loadup-modules-config end ==========-->
+
+            <!-- ========== loadup-modules-log start ==========-->
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-log</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-log-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-log-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-log-infrastructure</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-log-app</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-log-test</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- ========== loadup-modules-log end ==========-->
+        </dependencies>
+    </dependencyManagement>
 </project>
