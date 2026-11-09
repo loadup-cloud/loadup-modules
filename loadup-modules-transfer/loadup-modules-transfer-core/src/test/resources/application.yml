@@ -1,0 +1,6 @@
+spring:
+  profiles:
+    active: test
+powerjob:
+  worker:
+    enabled: false
