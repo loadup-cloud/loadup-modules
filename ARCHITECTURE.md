@@ -66,7 +66,7 @@ Transfer core 显式复用 File core 的权限、业务引用和 DFS 生命周�
 ## 发布版本管理
 
 `loadup-modules-bom` 是对外版本清单，仅列实际发布的业务 JAR；本仓库根父 POM 导入该 BOM 供子模块继承。
-框架依赖使用 `loadup.framework.version` 导入 loadup-dependencies；测试工具使用 `loadup.testify.version` 导入
+框架依赖使用 `loadup.framework.version` 导入 loadup-framework-bom；测试工具使用 `loadup.testify.version` 导入
 loadup-testify-bom。公开 modules BOM 不传递这两个 BOM，消费方按实际直接依赖自行选择。
 BOM 为独立无父 POM 模型，避免“父 POM 导入 BOM、BOM 又继承父 POM”的循环。
 
