@@ -18,7 +18,7 @@
 ```
 
 随后引入 `loadup-modules-upms-web`、`loadup-modules-file-client` 等具体 JAR 时省略 version。
-同时直接使用 framework 的无版本依赖时，另外导入 `loadup-framework-bom`。模块版本与 framework 版本分别选择。
+Modules BOM 已导入配套的 `loadup-framework-bom`，可同时管理直接使用的框架依赖版本；配套 Framework 版本在 Modules BOM 内维护。
 [Modules BOM](loadup-modules-bom/README.md) 覆盖当前 21 个发布 JAR，不管理聚合目录或内部测试模块。
 
 ## 业务目录

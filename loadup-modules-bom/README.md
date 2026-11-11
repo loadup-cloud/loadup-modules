@@ -13,7 +13,8 @@
 ```
 
 将上面的 dependency 放入消费工程的 dependencyManagement，而不是普通 dependencies。
-本 BOM 不导入 framework 或其他产品 BOM；消费方直接使用其他产品的无版本坐标时，另外导入其 BOM。
+本 BOM 导入配套 Framework BOM，版本由本 BOM 内的 `loadup.framework.version` 指定；消费方无需重复导入框架 BOM。
+Testify 仅供本仓库内部测试，由 parent 单独导入其 BOM，实际测试工具使用 `test` scope。
 
 在本仓库根目录，仅安装 BOM：
 

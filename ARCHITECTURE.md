@@ -65,12 +65,11 @@ Transfer core 显式复用 File core 的权限、业务引用和 DFS 生命周�
 
 ## 发布版本管理
 
-`loadup-modules-bom` 是对外版本清单，仅列实际发布的业务 JAR；本仓库根父 POM 导入该 BOM 供子模块继承。
-框架依赖使用 `loadup.framework.version` 导入 loadup-framework-bom；测试工具使用 `loadup.testify.version` 导入
-loadup-testify-bom。公开 modules BOM 不传递这两个 BOM，消费方按实际直接依赖自行选择。
+`loadup-modules-bom` 管理实际发布的业务 JAR，并通过 BOM 内的 `loadup.framework.version` 导入配套 Framework BOM。
+本仓库 parent 导入同版本 Modules BOM，以及由 `loadup.testify.version` 指定的内部测试工具 BOM；公开 Modules BOM 不导入 Testify。
 BOM 为独立无父 POM 模型，避免“父 POM 导入 BOM、BOM 又继承父 POM”的循环。
 
 ## Database 编译期处理器
 
-编译期配置由 database processor 内置维护，模块无需同步配置；处理器版本由 framework BOM 管理。详见
+编译期配置由 database processor 内置维护，模块无需同步配置；处理器路径不单独声明版本，统一通过 Modules BOM → Framework BOM 解析。详见
 [framework database processor 文档](../loadup-framework/loadup-components/data/loadup-components-database-processor/README.md)。
