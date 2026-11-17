@@ -6,7 +6,7 @@
 `loadup-modules-dictionary-web` 是可选 MVC 适配。模块不依赖 UPMS、审计中心或 ConfigCenter。
 
 ```text
-类型/条目管理 → DictionaryService → DictionaryGateway → MySQL
+类型/条目管理 → DictionaryService → DictionaryGateway → JDBC / 关系数据库
 有效条目读取 → DictionaryService → 启用类型检查 → 启用条目有序查询
 ```
 
@@ -20,8 +20,8 @@
 
 ## 租户与扩展
 
-租户身份仍由可信执行上下文传递，不接受客户端在请求体中指定租户；但 Repository 不使用 `tenant_id` 行谓词。当前 `TenantFilter` 绑定默认租户，
-schema 路由未实现，因此该模块目前只在默认 schema 中运行，不提供租户间数据库隔离。详见[数据库 README](../../loadup-components/data/loadup-components-database/README.md)。首版 MySQL DDL 与 Flyway 迁移随模块提供。
+客户端不能在请求体中指定隔离范围；一套部署固定使用自己的 schema，Repository 不使用 `tenant_id` 行谓词。入口只校验部署 code，
+schema 路由未实现，因此该模块目前只在默认 schema 中运行，不提供租户间数据库隔离。详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)。模块提供 Flyway 迁移，不声明必需的数据库厂商；数据库连接与驱动由消费应用配置，Pay 消费基线为 PostgreSQL。
 
 接入方式见 [README.md](README.md)。
 
@@ -30,7 +30,7 @@ schema 路由未实现，因此该模块目前只在默认 schema 中运行，�
 ```text
 web → app → domain
        ↓       ↑
-     client  infrastructure → MySQL / Flyway
+     client  infrastructure → JDBC / Flyway
 ```
 
 - client 定义不可变请求和 DTO，domain 保留领域模型与 `DictionaryGateway` 端口；应用边界由 `DictionaryDTOConverter` 以
@@ -44,7 +44,7 @@ web → app → domain
 - 所有子模块 parent 指向根 `loadup-parent`，所有内部依赖坐标由 BOM 管理。
 
 配置契约迁移到 `loadup.modules.dictionary.*`，不保留旧前缀别名。自动装配、覆盖默认 Gateway 和关闭功能的回归源码见
-`DictionaryAutoConfigurationTest`，本次未执行；真实数据库与 HTTP 验收仍需由消费工程完成。
+`DictionaryAutoConfigurationTest`；真实数据库与 HTTP 验收由消费工程完成。
 
 ## 公共边界与映射约束
 

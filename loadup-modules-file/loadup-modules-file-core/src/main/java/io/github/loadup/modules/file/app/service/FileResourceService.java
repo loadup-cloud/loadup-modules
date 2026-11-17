@@ -20,7 +20,6 @@ import io.github.loadup.commons.dto.PageQuery;
 import io.github.loadup.commons.enums.CommonResultCodeEnum;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.commons.result.PageDTO;
-import io.github.loadup.commons.util.TenantUtil;
 import io.github.loadup.components.dfs.DfsService;
 import io.github.loadup.components.dfs.model.FileDownloadResponse;
 import io.github.loadup.components.dfs.model.FileMetadata;
@@ -61,10 +60,6 @@ public class FileResourceService implements FileResourceFacade {
         }
     }
 
-    private static String storageTenant() {
-        String tenant = TenantUtil.getTenantId();
-        return tenant == null || tenant.isBlank() ? CommonConstants.DEFAULT_TENANT_ID : tenant.trim();
-    }
 
     private static String key(String value) {
         String result = required(value, 128);
@@ -94,10 +89,8 @@ public class FileResourceService implements FileResourceFacade {
         }
         String type =
                 contentType == null || contentType.isBlank() ? "application/octet-stream" : required(contentType, 255);
-        FileMetadata stored = TenantUtil.callWithTenant(
-                storageTenant(),
-                () -> dfs.upload(new FileUploadRequest(
-                        safeName, content, size, type, "resources/" + UUID.randomUUID(), Map.of())));
+        FileMetadata stored = dfs.upload(new FileUploadRequest(
+                safeName, content, size, type, "resources/" + UUID.randomUUID(), Map.of()));
         LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), clock.getZone());
         FileResource file = new FileResource(
                 UUID.randomUUID().toString(),
@@ -114,7 +107,7 @@ public class FileResourceService implements FileResourceFacade {
             repository.insert(file);
         } catch (RuntimeException failure) {
             try {
-                TenantUtil.runWithTenant(storageTenant(), () -> dfs.delete(stored.fileId()));
+                dfs.delete(stored.fileId());
             } catch (RuntimeException cleanupFailure) {
                 failure.addSuppressed(cleanupFailure);
             }
@@ -138,7 +131,7 @@ public class FileResourceService implements FileResourceFacade {
 
     public FileDownloadResponse download(String id, String actorId, boolean admin) {
         FileResource file = requireFile(id, actorId, admin);
-        return TenantUtil.callWithTenant(storageTenant(), () -> dfs.download(file.storageId()));
+        return dfs.download(file.storageId());
     }
 
     public PageDTO<FileResourceDTO> list(String actorId, boolean admin, String ownerId, int page, int size) {
@@ -194,10 +187,8 @@ public class FileResourceService implements FileResourceFacade {
         RuntimeException failure = null;
         for (FileResource file : repository.pending(limit)) {
             try {
-                TenantUtil.runWithTenant(storageTenant(), () -> {
-                    dfs.delete(file.storageId());
-                    repository.markDeleted(file.id());
-                });
+                dfs.delete(file.storageId());
+                repository.markDeleted(file.id());
                 cleaned++;
             } catch (RuntimeException ex) {
                 if (failure == null) {
@@ -217,7 +208,7 @@ public class FileResourceService implements FileResourceFacade {
                 .find(required(id, 64))
                 .filter(item -> "PENDING_DELETE".equals(item.state()))
                 .orElseThrow(() -> new CommonException(FileResultCodeEnum.FILE_IS_NOT_PENDING_DELETION));
-        TenantUtil.runWithTenant(storageTenant(), () -> dfs.delete(file.storageId()));
+        dfs.delete(file.storageId());
         repository.markDeleted(file.id());
     }
 

@@ -16,7 +16,7 @@ UPMS 与授权服务器之间的可选认证适配模块。
 认证日志记录服务端观察到的客户端 IP；部署反向代理时应在可信网络边界处理转发地址，认证入口不会直接信任客户端提供的
 `X-Forwarded-For`。已签发 JWT 在有效期内不会因改密或锁定自动撤销。
 
-引入本模块和 `loadup-components-authserver-binder-sas` 后，前端调用 `POST /api/auth/login`，以 JSON 提交
+引入本模块和 `loadup-components-oauth-server-core` 后，前端调用 `POST /api/auth/login`，以 JSON 提交
 `{"username":"admin","password":"..."}`。成功响应的 `data` 包含 `accessToken`、`tokenType`、`expiresIn`；后续受保护请求携带
 `Authorization: Bearer <accessToken>`。失败响应同样使用 `result`、`data` 报文。设置
 `loadup.security.auth-server.protocol-endpoints-enabled: false` 可关闭不需要的 OAuth2 协议端点。
@@ -27,9 +27,10 @@ UPMS 与授权服务器之间的可选认证适配模块。
 
 ## 自动装配
 
-- [
-  `UpmsAuthServerAutoConfiguration`](src/main/java/io/github/loadup/modules/upms/authserver/UpmsAuthServerAutoConfiguration.java)
+- [ `UpmsAuthServerAutoConfiguration`](src/main/java/io/github/loadup/modules/upms/authserver/UpmsAuthServerAutoConfiguration.java)
 
 ## 设计
 
 内部边界、依赖与源码入口见 [ARCHITECTURE.md](ARCHITECTURE.md)。
+
+阶段 1C：本适配模块显式依赖 UPMS app 与 infrastructure，默认持久化不再依赖 app 隐式传递引入。持久化自动配置先于 app；Web 自动配置保留在 app/Audit 之后，AuthServer 自动配置显式在 app 与 SAS 之后。注册路径与安全协议分工不变，登录、JWT 身份、权限和路径实现未修改。自定义 Gateway 逐接口覆盖默认适配。构建与测试未运行。

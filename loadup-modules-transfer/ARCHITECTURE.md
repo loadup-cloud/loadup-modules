@@ -10,7 +10,7 @@ transfer.scan），只调用 service 的有界队列扫描。文件操作复用 
 提交在同一业务数据库事务内建立源文件引用并插入 QUEUED 记录；显式重试在事务内 CAS 重排队并保护输入引用。不调用远程调度
 API，消除“业务库已提交、远程任务未注册”的双写窗口。文件资源表与任务表必须使用同一事务 DataSource。
 
-Scheduler 本地或 PowerJob binder 触发 transfer.scan，读取跨租户有界候选 ID，再根据数据库中可信租户绑定 TenantUtil，使用
+Scheduler 本地或 PowerJob binder 触发 transfer.scan，读取本部署有界候选 ID，使用
 QUEUED → RUNNING 条件更新抢占。RUNNING 不属于可领取条件，重复投递不会并发再次执行同一任务。扫描单个失败不阻断后续项，失败项保留
 FAILED 等待人工重试，业务失败由持久化状态供运维观测，扫描正常结束不保证每个业务项成功。
 
@@ -29,7 +29,7 @@ FAILED 重排队和 SUCCEEDED 不可领取；执行结果应以目标环境的�
 真实空库验收发现 file/transfer 的 BaseDO 补字段脚本原先使用 12 位版本号，数值早于 14 位建表版本。已改为 V20261010000101 和
 V20261010000103，确保先建表后补字段。不对已部署库自动修复或重写 flyway_schema_history；已执行旧版迁移的消费工程升级前需单独核对历史。
 
-旧实现曾进行定向验收；本次 PostgreSQL 迁移后的构建与测试尚未运行。并发条件更新仅一个成功，RUNNING/SUCCEEDED 不再领取，FAILED
+当前 PostgreSQL 配置需独立运行验收。并发条件更新仅一个成功，RUNNING/SUCCEEDED 不再领取，FAILED
 仅显式重排队；QUEUED 的重复重试不重新建立源文件引用。
 
 队列候选查询对 Mapper 返回 null 或空列表统一返回空集合，不在空队列上触发空指针；非空候选保留查询顺序与批量上限。

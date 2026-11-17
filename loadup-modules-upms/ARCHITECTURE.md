@@ -23,9 +23,9 @@ UPMS 的 `AuthenticationService.login` 选择登录策略、校验账号凭证�
 `loadup-modules-upms-authserver` 是可选适配器：`UpmsAuthenticationProvider` 使用 UPMS 登录接口，随后读取角色和权限；
 `UpmsTokenController` 为前端提供 `/api/auth/login` JSON 接口并签发用户 JWT。
 
-`loadup-components-authserver-binder-sas` 管理签名密钥和 JwtEncoder；启用 OAuth2 协议端点时也管理客户端、授权码和刷新令牌。JWT
+`loadup-components-oauth-server-core` 管理签名密钥和 JwtEncoder；启用 OAuth2 协议端点时也管理客户端、授权码和刷新令牌。JWT
 的 `sub` 是 UPMS 用户 ID；`roles`、`permissions`、`username`、`aud` 与 `token_use` 在签发时写入。资源端由独立
-`loadup-components-resource-server` 校验。关闭协议端点时，资源端直接用本地公钥验签。
+`loadup-components-oauth-server-core` 校验。关闭协议端点时，资源端直接用本地公钥验签。
 
 ## 依赖方向
 
@@ -33,8 +33,10 @@ UPMS 领域对象、对外 DTO 和持久化对象的审计时间统一为 `creat
 `BaseDO` 一致。
 
 - UPMS 核心模块依赖 commons/components，不依赖 SAS 实现；可选 `upms-web` 提供 Controller。
-- `loadup-modules-upms-authserver` 依赖 UPMS app 与 AuthServer API，允许应用按需引入。
-- 资源服务器认证和业务授权直接作用于 Controller；外部 API 调用由未来独立的 HTTP 客户端组件承担。
+- `loadup-modules-upms-authserver` 当前依赖 UPMS app 与 `loadup-components-oauth-server-core`，包含实际安全协议装配，允许应用按需引入；不是只依赖 AuthServer API。
+- 资源服务器认证和业务授权作用于相应入口/用例；当前 HTTP 调用能力由 Framework 的 HTTP 组件提供，不再描述为尚未存在的未来组件。
+- 阶段 1C 已移除 UPMS app 对 infrastructure 的生产依赖；UpmsAutoConfiguration 仅扫描 app，保留原密码编码及领域权限服务。UpmsPersistenceAutoConfiguration 独立登记六类默认 Gateway，逐接口 ConditionalOnMissingBean，并用 beforeName 明确先于 app。Web/AuthServer 和 Pay admin 显式选择 infrastructure；源码及回归源码已同步，未构建或测试。完整依赖及例外见[阶段 0 基线](../../loadup-pay/design/PHASE0_BASELINE.md)。
+- GitHubOAuthProvider 当前仍在 app 内直接创建 RestTemplate 调用第三方 token/userinfo，是登记的传输适配例外；不能用现有 HTTP 组件或目标分层说明它已经完成迁移。
 - `loadup-components-authorization` 提供 `@PreAuthorize` 方法安全和 `UserContext`，不注册 HTTP 放行链。
 
 ## RBAC 与 ABAC
@@ -68,7 +70,7 @@ UPMS 重新校验及授权撤销存储。
 
 `upms-web` 的独立 Controller 从认证主体取得 actor，不接受客户端指定调用者；静态方法授权与 app 中最新角色/资源范围校验同时存在。purpose
 为枚举，audit SPI 不接受任何敏感原文。审计模块是 web 的 optional 依赖，app/domain 无 audit 横向依赖；默认桥接仅在
-AuditService 存在时装配，并以 REQUIRES_NEW 事务确保成功提交后才能返回。缺少 recorder 时普通查询继续可用，明文请求失败。
+AuditFacade 存在时装配，并以 REQUIRES_NEW 事务确保成功提交后才能返回。当前 web 的 Maven optional 依赖为 audit-core，自动配置还引用其 AuditAutoConfiguration；app/domain 不直接依赖审计模块。缺少 recorder 时普通查询继续可用，明文请求失败。
 
 普通输出不因角色权限变成明文；明文 DTO 的 toString 只输出 ID，且响应不可缓存。调用方仍须避免记录 HTTP body、DTO JSON
 或敏感字段异常。首版未提供通用明文导出，导出处理器须显式执行展示脱敏。

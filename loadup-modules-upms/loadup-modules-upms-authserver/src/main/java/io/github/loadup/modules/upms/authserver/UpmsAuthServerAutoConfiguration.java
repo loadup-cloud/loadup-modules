@@ -16,6 +16,7 @@
 package io.github.loadup.modules.upms.authserver;
 
 import io.github.loadup.components.authserver.properties.LoadUpAuthServerProperties;
+import io.github.loadup.modules.upms.app.autoconfigure.UpmsAutoConfiguration;
 import io.github.loadup.modules.upms.client.facade.AuthenticationFacade;
 import io.github.loadup.modules.upms.domain.gateway.RoleGateway;
 import io.github.loadup.modules.upms.domain.service.UserPermissionService;
@@ -31,9 +32,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-// The SAS binder is an optional runtime dependency; keep the ordering by name so UPMS only depends on the authserver
-// API.
-@AutoConfiguration(afterName = "io.github.loadup.components.authserver.sas.SasAuthServerAutoConfiguration")
+@AutoConfiguration(
+        after = UpmsAutoConfiguration.class,
+        afterName = "io.github.loadup.components.authserver.sas.SasAuthServerAutoConfiguration")
 public class UpmsAuthServerAutoConfiguration {
 
     @Bean

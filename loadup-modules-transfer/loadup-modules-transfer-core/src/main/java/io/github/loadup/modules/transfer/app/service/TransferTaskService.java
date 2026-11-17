@@ -219,10 +219,10 @@ public class TransferTaskService implements TransferTaskFacade {
     private void execute(String id) throws Exception {
         TransferTask task =
                 repository.find(id).orElseThrow(() -> new CommonException(TransferResultCodeEnum.TASK_NOT_FOUND));
-        executeForTenant(task);
+        executeTask(task);
     }
 
-    private void executeForTenant(TransferTask task) throws Exception {
+    private void executeTask(TransferTask task) throws Exception {
         String id = task.id();
         if (!repository.start(id)) {
             return;

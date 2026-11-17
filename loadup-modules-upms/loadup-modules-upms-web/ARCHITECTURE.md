@@ -55,3 +55,5 @@ HTTP /api/** → Controller → App Service → Client DTO 响应
 `UserSensitiveController` 使用方法权限和认证主体调用 app；`SensitiveReadAuditConfiguration` 在可选 AuditService 存在时装配默认
 recorder。自动配置顺序在 UPMS app 和审计模块之后。默认 recorder 的独立事务先提交审计元数据，异常不吞掉；无 audit 依赖时不装配默认
 recorder，app 对明文访问默认拒绝。
+
+阶段 1C：本适配模块显式依赖 UPMS app 与 infrastructure，默认持久化不再依赖 app 隐式传递引入。持久化自动配置先于 app；Web 自动配置保留在 app/Audit 之后，AuthServer 自动配置显式在 app 与 SAS 之后。注册路径与安全协议分工不变，登录、JWT 身份、权限和路径实现未修改。自定义 Gateway 逐接口覆盖默认适配。构建与测试未运行。

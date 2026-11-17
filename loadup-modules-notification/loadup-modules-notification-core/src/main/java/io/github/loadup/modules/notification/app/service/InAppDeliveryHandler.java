@@ -16,8 +16,8 @@
 package io.github.loadup.modules.notification.app.service;
 
 import io.github.loadup.commons.error.CommonException;
-import io.github.loadup.components.outbox.OutboxEvent;
-import io.github.loadup.components.outbox.OutboxHandler;
+import io.github.loadup.components.task.TaskExecution;
+import io.github.loadup.components.task.TaskHandler;
 import io.github.loadup.modules.notification.client.error.NotificationResultCodeEnum;
 import io.github.loadup.modules.notification.client.facade.InboxFacade;
 import io.github.loadup.modules.notification.domain.gateway.NotificationSubmissionGateway;
@@ -29,7 +29,7 @@ import java.util.Objects;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-public class InAppDeliveryHandler implements OutboxHandler {
+public class InAppDeliveryHandler implements TaskHandler {
     private final NotificationSubmissionGateway gateway;
     private final InboxFacade inbox;
     private final JsonMapper json;
@@ -44,21 +44,20 @@ public class InAppDeliveryHandler implements OutboxHandler {
     }
 
     @Override
-    public String eventType() {
+    public String taskType() {
         return NotificationSubmissionService.DELIVERY_EVENT;
     }
 
     @Override
     @Transactional
-    public void handle(OutboxEvent event) {
+    public void handle(TaskExecution event) {
         if (event == null
-                || event.message() == null
-                || event.message().version() != 1
-                || !Objects.equals(eventType(), event.message().type())
-                || !Objects.equals(event.message().businessId(), event.message().payload())) {
+                || event.payloadVersion() != 1
+                || !Objects.equals(taskType(), event.taskType())
+                || !Objects.equals(event.bizId(), event.payload())) {
             throw new CommonException(NotificationResultCodeEnum.INVALID_DELIVERY_EVENT);
         }
-        var delivery = gateway.lockDelivery(event.message().businessId())
+        var delivery = gateway.lockDelivery(event.bizId())
                 .orElseThrow(() -> new CommonException(NotificationResultCodeEnum.INVALID_DELIVERY_EVENT));
         if (!Objects.equals(event.id(), delivery.eventId())) {
             throw new CommonException(NotificationResultCodeEnum.INVALID_DELIVERY_EVENT);

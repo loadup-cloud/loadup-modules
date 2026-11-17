@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/dictionaries")
-@Tag(name = "Data Dictionaries", description = "Tenant-scoped business dictionary management")
+@Tag(name = "Data Dictionaries", description = "Deployment-scoped business dictionary management")
 public class DictionaryController {
     private final DictionaryWebConverter converter;
     private final DictionaryFacade service;

@@ -48,3 +48,5 @@ UPMS 应用服务与业务编排。
 `UserSensitiveReadService.read(actorId, query)` 要求可信 actor、有效 RBAC/ABAC 和可用的可靠 `SensitiveReadAudit`。recorder
 必须同步持久化且传播失败；缺失 recorder 时拒绝明文。输出 DTO 在审计成功后由 Spring MapStruct converter 构造。HTTP 入口由
 web 适配提供；配置与授权示例见 [UPMS README](../README.md)。
+
+阶段 1C：仅引入 app 时须提供六类 Gateway（User、Role、Permission、Department、LoginLog、UserOAuthBinding）及 Clock。默认数据库实现须额外引入 loadup-modules-upms-infrastructure；app 不再传递引入 JDBC/ORM 实现。应用服务按各自构造依赖正常装配，缺少必需端口会暴露装配错误，不以粗粒度条件静默禁用整个 UPMS。原 PasswordEncoder 注册规则、Delegating 编码及无前缀 BCrypt 匹配回退、领域服务 ConditionalOnMissingBean 保留。源码及装配回归源码已调整，未构建或测试。

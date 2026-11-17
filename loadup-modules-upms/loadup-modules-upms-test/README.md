@@ -38,3 +38,5 @@ mvnd -B -ntp -T 1 clean verify \
 - 不配置 `mybatis-flex.global-config`，持久化约定由 database 代码统一维护；测试也不能绕过配置保护。
 
 分层与用例边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
+
+阶段 1C 新增 UpmsAutoConfigurationTest（过滤持久化/JDBC/ORM 类，验证自定义 Gateway 独立装配与原密码匹配）、UpmsPersistenceAutoConfigurationTest（六类默认及逐项替换）。后者仅以模拟的 JDBC/Mapper 验证 Bean 图，不替代真实数据库测试。TestApplication 已使用 EnableAutoConfiguration，保留原启动方式，由新增 infrastructure imports 自动发现默认实现；其 POM 已直接声明 infrastructure，无需新增重复扫描或 Import。ServiceInputContractTest、SchemaIsolationIT、UserServiceIT 及原身份权限测试仍待运行。

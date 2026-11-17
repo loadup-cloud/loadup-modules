@@ -18,7 +18,7 @@ Web Controller → 当前认证用户的收件箱 ────┘
 `(recipient_id, request_key)` 为非空 key 提供幂等约束；不提供 key 时允许重复投递。批量投递由一个 JDBC 事务包裹，单次最多
 100 人；Gotone 渠道返回逐收件人状态。
 
-租户身份可通过可信执行上下文传播，但数据库表和查询不使用租户行列；当前仅使用默认 schema，尚未实现租户间数据库隔离。读取、已读及归档操作按收件人和软删除状态限定。归档不影响其他收件人的副本。数据库隔离现状见[数据库 README](../../loadup-components/data/loadup-components-database/README.md)。首版不自动清理历史消息。
+租户身份可通过可信执行上下文传播，但数据库表和查询不使用租户行列；当前仅使用默认 schema，尚未实现租户间数据库隔离。读取、已读及归档操作按收件人和软删除状态限定。归档不影响其他收件人的副本。数据库隔离现状见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)。首版不自动清理历史消息。
 
 ## 边界
 
@@ -32,7 +32,7 @@ HTML 转义。`actionUrl` 限制为站内路径，避免发布任意外部跳转
 ```text
 web → app → domain
        ↓       ↑
-     client  infrastructure → MySQL / Flyway
+     client  infrastructure → JDBC / Flyway
 ```
 
 - client 定义不可变请求和 DTO，domain 保留领域模型与 `InboxGateway` 端口；应用边界由 `NotificationDTOConverter` 以
@@ -46,7 +46,7 @@ web → app → domain
 - 所有子模块 parent 指向根 `loadup-parent`，所有内部依赖坐标由 BOM 管理。
 
 配置契约迁移到 `loadup.modules.notification.*`，不保留旧前缀别名。自动装配、覆盖默认 Gateway 和关闭功能的回归源码见
-`NotificationAutoConfigurationTest`，本次未执行；真实数据库与 HTTP 验收仍需由消费工程完成。
+`NotificationAutoConfigurationTest`；真实数据库与 HTTP 验收由消费工程完成。
 
 ## 公共边界与映射约束
 
@@ -99,11 +99,11 @@ contracts. No URL or frontend payload-field migration is required.
 新增 NotificationFacade → NotificationSubmissionService → NotificationSubmissionGateway。
 MapStruct 转换命令为内容快照；规范化后序列化的 SHA-256 摘要用于同 source/requestKey 冲突判定。
 数据库唯一约束加 ON CONFLICT 保证并发去重，禁止捕获唯一键异常后继续使用已失败的 PostgreSQL 事务。
-受理服务将请求、目标、Outbox 写入同一事务；InAppDeliveryHandler 在事务内 FOR UPDATE 锁定目标，
+受理服务将请求、目标、Task 写入同一事务；InAppDeliveryHandler 在事务内 FOR UPDATE 锁定目标，
 确认事件类型/版本/关联 ID 后写入站内信并标记完成。重复事件读取终态直接返回；过期目标不创建站内信。
 此处理器仅处理本地数据库，不包含外部网络副作用。
 
-独立的 NotificationSubmissionAutoConfiguration 在 Outbox 和 Notification 装配之后注册服务及处理器，
-支持禁用 notification 或 outbox 后不暴露提交入口。新流程使用 notificationClock。
+独立的 NotificationSubmissionAutoConfiguration 在 Task 和 Notification 装配之后注册服务及处理器，
+支持禁用 notification 或 task 后不暴露提交入口。新流程使用 notificationClock。
 Gotone engine/store 由宿主应用选择；当前新受理入口只支持 IN_APP，外部渠道模型和不确定结果恢复后续实现。
-多租户 schema 路由尚未实现，宿主应用需限制单配置租户，不能将 tenant 上下文视为物理隔离已实现。
+宿主应用必须按单部署单租户运行并配置固定 `loadup.database.schema`；不存在多租户 schema 路由。

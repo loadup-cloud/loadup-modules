@@ -33,11 +33,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @AutoConfiguration
 @EnableConfigurationProperties(UpmsSecurityProperties.class)
-@ComponentScan(
-        basePackages = {
-            "io.github.loadup.modules.upms.app",
-            "io.github.loadup.modules.upms.infrastructure",
-        })
+@ComponentScan(basePackages = "io.github.loadup.modules.upms.app")
 public class UpmsAutoConfiguration {
 
     @Bean

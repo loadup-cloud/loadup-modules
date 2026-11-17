@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Tag(name = "Audit", description = "Tenant-scoped administrator audit search")
+@Tag(name = "Audit", description = "Deployment-scoped administrator audit search")
 public class AuditController {
     private final AuditFacade service;
 

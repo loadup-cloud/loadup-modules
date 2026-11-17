@@ -28,7 +28,7 @@ binder；本地 @Scheduled 不需要独立 Server。
 
 ## 服务 API
 
-`TransferTaskService.submit(tenantId, ownerId, kind, handlerKey, sourceFileId, options)` 创建任务并排队。`get` 与 `list`
+`TransferTaskService.submit(ownerId, kind, handlerKey, sourceFileId, options)` 创建任务并排队。`get` 与 `list`
 按租户和所有者查询；`retry` 可重发 `QUEUED` 或重试 `FAILED` 任务。结果的 `resultFileId`
 可交给文件资源模块下载。导入源文件在处理期间被任务引用，完成或失败后释放。未知处理器、无权访问的源文件及超限文件会被拒绝。
 

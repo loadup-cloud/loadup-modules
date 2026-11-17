@@ -22,7 +22,7 @@ DFS 不承诺原子事务。
 
 ## 安全与部署
 
-Web 入口从受信认证主体与租户上下文取得 owner/tenant，不接受请求体覆盖；租户身份也用于 DFS 对象命名空间，保留其独立作用。关系型元数据当前仅使用默认 schema，不按 `tenant_id` 行过滤，运行时 schema 路由尚未实现；因此数据库不提供租户间隔离，详见[数据库 README](../../loadup-components/data/loadup-components-database/README.md)。只有所有者和超级管理员可读取或删除文件。Web
+Web 入口从受信认证主体取得 owner，不接受请求体覆盖；DFS 对象命名空间由部署配置固定。关系型元数据使用固定 `loadup.database.schema`，不按 `tenant_id` 行过滤，也不存在运行时 schema 路由，详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)。只有所有者和超级管理员可读取或删除文件。Web
 下载采用附件模式、`nosniff` 和流式传输；不会生成公开直链。业务引用不自动授予文件读取权限，业务域需要单独决定谁能查看附件。
 
 HTTP 上传受 Spring Multipart 大小限制。对高风险文件类型的病毒扫描、内容审核、下载水印、保留期限和跨租户共享应在消费应用的业务规则中实现；首版不开放公开访问。
@@ -49,7 +49,7 @@ web → app → domain
 - 所有子模块 parent 指向根 `loadup-parent`，所有内部依赖坐标由 BOM 管理。
 
 配置契约迁移到 `loadup.modules.file.*`，不保留旧前缀别名。自动装配、覆盖默认 Gateway 和关闭功能的回归源码见
-`FileAutoConfigurationTest`，本次未执行；真实数据库与 HTTP 验收仍需由消费工程完成。
+`FileAutoConfigurationTest`；真实数据库与 HTTP 验收由消费工程完成。
 
 ## 公共边界与映射约束
 

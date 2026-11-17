@@ -162,5 +162,5 @@ public class FileResourceController {
         return SuccessResponse.of(service.cleanupPending(request.limit() == null ? 100 : request.limit()));
     }
 
-    /** Public metadata omits the internal DFS storage key and tenant identifier. */
+    /** Public metadata omits the internal DFS storage key. */
 }

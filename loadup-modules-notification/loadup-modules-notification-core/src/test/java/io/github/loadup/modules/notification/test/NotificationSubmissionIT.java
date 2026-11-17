@@ -19,9 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.loadup.commons.error.CommonException;
-import io.github.loadup.components.outbox.OutboxDispatcher;
-import io.github.loadup.components.outbox.OutboxEvent;
-import io.github.loadup.components.outbox.OutboxMessage;
+import io.github.loadup.components.task.TaskDispatcher;
+import io.github.loadup.components.task.TaskExecution;
+import io.github.loadup.components.task.TaskSubmission;
 import io.github.loadup.components.testcontainers.annotation.ContainerType;
 import io.github.loadup.components.testcontainers.annotation.EnableTestContainers;
 import io.github.loadup.modules.notification.app.service.InAppDeliveryHandler;
@@ -47,17 +47,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(
         classes = NotificationSubmissionIT.Application.class,
-        properties = {"loadup.outbox.worker-enabled=false", "spring.flyway.enabled=true"})
+        properties = {"loadup.task.worker-enabled=false", "spring.flyway.enabled=true"})
 @EnableTestContainers(ContainerType.POSTGRESQL)
 @Sql(
-        scripts = {"classpath:db/schema/sequence_allocation.sql", "classpath:db/schema/outbox.sql"},
+        scripts = {"classpath:db/schema/sequence_allocation.sql", "classpath:db/schema/task.sql"},
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class NotificationSubmissionIT {
     private static final String SOURCE = "notification-submission-it";
 
     private final NotificationFacade notifications;
     private final JdbcTemplate jdbc;
-    private final OutboxDispatcher dispatcher;
+    private final TaskDispatcher dispatcher;
     private final InAppDeliveryHandler deliveryHandler;
     private final PlatformTransactionManager transactions;
 
@@ -65,7 +65,7 @@ class NotificationSubmissionIT {
     NotificationSubmissionIT(
             NotificationFacade notifications,
             JdbcTemplate jdbc,
-            OutboxDispatcher dispatcher,
+            TaskDispatcher dispatcher,
             InAppDeliveryHandler deliveryHandler,
             PlatformTransactionManager transactions) {
         this.notifications = notifications;
@@ -80,7 +80,7 @@ class NotificationSubmissionIT {
         jdbc.update("DELETE FROM notification_inbox");
         jdbc.update("DELETE FROM notification_delivery");
         jdbc.update("DELETE FROM notification_request");
-        jdbc.update("DELETE FROM loadup_outbox_event");
+        jdbc.update("DELETE FROM loadup_task");
     }
 
     @Test
@@ -89,11 +89,11 @@ class NotificationSubmissionIT {
 
         assertThat(count("notification_request")).isEqualTo(1);
         assertThat(count("notification_delivery")).isEqualTo(1);
-        assertThat(count("loadup_outbox_event")).isEqualTo(1);
+        assertThat(count("loadup_task")).isEqualTo(1);
         assertThat(inboxCount("user-submit")).isZero();
         assertThat(deliveryStatus(accepted.notificationId())).isEqualTo("PENDING");
 
-        assertThat(dispatcher.dispatchBatch()).isPositive();
+        dispatcher.execute();
 
         assertThat(deliveryStatus(accepted.notificationId())).isEqualTo("DELIVERED");
         assertThat(inboxCount("user-submit")).isEqualTo(1);
@@ -108,7 +108,7 @@ class NotificationSubmissionIT {
         assertThat(second.duplicate()).isTrue();
         assertThat(count("notification_request")).isEqualTo(1);
         assertThat(count("notification_delivery")).isEqualTo(1);
-        assertThat(count("loadup_outbox_event")).isEqualTo(1);
+        assertThat(count("loadup_task")).isEqualTo(1);
     }
 
     @Test
@@ -119,11 +119,11 @@ class NotificationSubmissionIT {
                 .isInstanceOf(CommonException.class);
         assertThat(count("notification_request")).isEqualTo(1);
         assertThat(count("notification_delivery")).isEqualTo(1);
-        assertThat(count("loadup_outbox_event")).isEqualTo(1);
+        assertThat(count("loadup_task")).isEqualTo(1);
     }
 
     @Test
-    void outerRollbackRemovesRequestDeliveryAndOutboxTogether() {
+    void outerRollbackRemovesRequestDeliveryAndTaskTogether() {
         var transaction = new TransactionTemplate(transactions);
 
         assertThatThrownBy(() -> transaction.execute(status -> {
@@ -135,11 +135,11 @@ class NotificationSubmissionIT {
 
         assertThat(count("notification_request")).isZero();
         assertThat(count("notification_delivery")).isZero();
-        assertThat(count("loadup_outbox_event")).isZero();
+        assertThat(count("loadup_task")).isZero();
     }
 
     @Test
-    void handlingTheSameEventTwiceDoesNotDuplicateInboxMessage() {
+    void handlingTheSameTaskTwiceDoesNotDuplicateInboxMessage() {
         var accepted = notifications.submit(SOURCE, command("handler-replay", "user-handler", "Once"));
         String eventId = jdbc.queryForObject(
                 "SELECT event_id FROM notification_delivery WHERE notification_id = ?",
@@ -149,9 +149,9 @@ class NotificationSubmissionIT {
                 "SELECT id FROM notification_delivery WHERE notification_id = ?",
                 String.class,
                 accepted.notificationId());
-        var event = new OutboxEvent(
+        var event = new TaskExecution(
                 eventId,
-                new OutboxMessage("notification.in-app.delivery", 1, deliveryId, deliveryId),
+                TaskSubmission.immediate("notification.in-app.delivery", 1, deliveryId, deliveryId),
                 Instant.now(),
                 null);
 
@@ -170,7 +170,7 @@ class NotificationSubmissionIT {
         assertThat(second.notificationId()).isNotEqualTo(first.notificationId());
         assertThat(count("notification_request")).isEqualTo(2);
         assertThat(count("notification_delivery")).isEqualTo(2);
-        assertThat(count("loadup_outbox_event")).isEqualTo(2);
+        assertThat(count("loadup_task")).isEqualTo(2);
     }
 
     @Test
@@ -189,7 +189,7 @@ class NotificationSubmissionIT {
 
         assertThat(count("notification_request")).isZero();
         assertThat(count("notification_delivery")).isZero();
-        assertThat(count("loadup_outbox_event")).isZero();
+        assertThat(count("loadup_task")).isZero();
     }
 
     @Test
@@ -208,7 +208,7 @@ class NotificationSubmissionIT {
         }
         assertThat(count("notification_request")).isEqualTo(1);
         assertThat(count("notification_delivery")).isEqualTo(1);
-        assertThat(count("loadup_outbox_event")).isEqualTo(1);
+        assertThat(count("loadup_task")).isEqualTo(1);
     }
 
     @Test

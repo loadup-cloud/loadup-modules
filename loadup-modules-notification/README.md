@@ -1,7 +1,7 @@
 # In-App Notifications
 
 持久化站内收件箱。业务可直接调用 `InboxFacade` 投递，也可把它作为 Gotone 的 `IN_APP`
-渠道，与邮件、短信等渠道共享发送入口。消息按收件人查询，支持分页、未读计数、已读和归档。租户身份仍可在可信上下文中传递，但当前数据库只使用默认 schema，不提供租户间数据库隔离，详见[数据库 README](../../loadup-components/data/loadup-components-database/README.md)。
+渠道，与邮件、短信等渠道共享发送入口。消息按收件人查询，支持分页、未读计数、已读和归档。租户身份仍可在可信上下文中传递，但当前数据库只使用默认 schema，不提供租户间数据库隔离，详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)。
 
 ## 引入
 
@@ -53,26 +53,9 @@ loadup:
 仅引入 app 时不注册 Controller；关闭 web 开关保留程序化服务，关闭模块 enabled 开关同时停止默认应用与持久化 Bean 装配。配置开关不控制
 Flyway 对已在 classpath 上的脚本执行。不要在已有数据库重复复制迁移脚本。
 
-## 统一接入契约
+## 公共分页与时间约定
 
-Java 消费方通过 `client.facade.XxxFacade` 注入公开业务入口；默认应用 Service 直接实现接口。引入 `*-core` 装配业务能力，引入
-`*-web` 才提供 Controller，Web 适配不再提供独立 enabled 开关。模块整体启停仍使用 `loadup.modules.notification.enabled`。
-
-JSON Controller 显式返回 SuccessResponse，分页保留已有分页报文契约；异常由全局 WebMVC 处理。下载仍为流式响应。请求与 DTO
-字段声明 OpenAPI，凭证只写。持久化使用 Spring JDBC 和 Spring MapStruct Converter；数据库连接与可信租户来源由消费工程配置。新
-schema 迁移与本轮 clean 编译、运行验证仍需本地执行。
-
-## 入参与分页约定
-
-写操作入参采用业务动作 Command，查询入参采用 Query，分页查询使用 PageQuery 后缀；纯 ID 查询复用公共 IdQuery。Facade 分页统一返回
-`PageDTO<T>`，HTTP 分页统一返回 `PageResponse<T>`：`result` 表示结果，`data` 为当前页数组，顶层 `pageInfo` 提供
-totalCount/pageIndex/pageSize。不再提供模块专用分页
-DTO。完整规则与示例见 [commons-dto](../../loadup-commons/loadup-commons-dto/README.md)。
-
-## 通用输入与时间约定
-
-分页缺省 page=1、size=20，size 上限 100；非法输入使用稳定业务错误码。业务时间与持久化使用 Spring 共享的
-Clock，默认采用系统本地时区；测试或消费工程可提供 Clock Bean 覆盖默认值。
+分页请求、DTO、HTTP 响应结构及共享时间规则见 [commons-dto 文档](../../loadup-framework/loadup-commons/loadup-commons-dto/README.md)。
 
 ## 错误码契约
 
@@ -80,35 +63,16 @@ Clock，默认采用系统本地时区；测试或消费工程可提供 Clock Be
 `NOTIFICATION_` 开头。服务/领域/仓储使用 `CommonException(enum)`；系统原因可作为 cause 保留，响应文案仅来自枚举。WebMVC 统一返回
 HTTP 200 的 result/data。枚举码按稳定公开契约维护，不用字符串消息覆盖。
 
-## Unified pagination contract
-
-Pure pagination inputs reuse `io.github.loadup.commons.dto.PageQuery`. HTTP fields remain `page` and `size`, with
-omitted/null values defaulting to 1 and 20; explicit invalid bounds are rejected and size is capped at 100. Business
-queries retain their filter fields and flat pagination fields but delegate policy to `PageQuery.normalized`, preserving
-their declared module error code. Mutable UPMS queries expose `pagination()` for validation at the service boundary.
-Sort whitelists remain business-specific.
-
-Domain Gateway results use `io.github.loadup.commons.domain.PageResult<T>`, shared with UPMS. Seven duplicate business
-Page wrappers have been removed. Application mapping uses the injected Spring MapStruct item converter and
-`PageResult.map`; `PageDTO.of(result)` adapts the unchanged total/page/size metadata. Facades return PageDTO, and
-Controllers return PageResponse. No HTTP envelope enters a Gateway.
-
-The response remains `{result, data: [...], pageInfo: {totalCount, pageIndex, pageSize, ...}}`; data is the current-page
-array. SuccessResponse serves ordinary success data only; its duplicate pagination field and ofPage factories have been
-removed. Empty PageDTO defaults to an empty array and metadata 0/1/20. Existing consumer code referencing removed
-business Page wrappers, DictionaryTypePageQuery, AccountLoginPageQuery or SuccessResponse.ofPage must use the shared
-contracts. No URL or frontend payload-field migration is required.
-
 ## 持久化异步受理（IN_APP）
 
 `NotificationFacade.submit(source, NotificationSubmitCommand)` 在本地事务中保存 notification_request、
-逐收件人 notification_delivery 与 Outbox 事件。`source` 必须由可信入口提供。渠道首期仅 IN_APP，其他渠道明确拒绝。
+逐收件人 notification_delivery 与 Task 事件。`source` 必须由可信入口提供。渠道首期仅 IN_APP，其他渠道明确拒绝。
 同 source/requestKey 和内容返回同一 ID/时间，内容改变返回 NOTIFICATION_REQUEST_CONFLICT。
 收件人按去空格、去重、排序规范化；固定已渲染正文，过期新请求拒绝，已受理重复请求仍可查询原受理结果。
 
-Outbox 后台在同一事务内锁定目标、写站内信、标记 DELIVERED；重放不重复写入。过期目标标记 EXPIRED。
-请求需 JDBC 事务、Outbox、应用 JsonMapper、IdGenerator；app 已声明相应依赖。新增迁移由 infrastructure JAR 提供。
-新入口返回受理成功，不承诺已读。目标尚为 PENDING 时需同时检查其 event_id 对应的 Outbox 是否已耗尽。
+Task 后台在同一事务内锁定目标、写站内信、标记 DELIVERED；重放不重复写入。过期目标标记 EXPIRED。
+请求需 JDBC 事务、Task、应用 JsonMapper、IdGenerator；app 已声明相应依赖。新增迁移由 infrastructure JAR 提供。
+新入口返回受理成功，不承诺已读。目标尚为 PENDING 时需同时检查其 event_id 对应的 Task 是否已耗尽。
 
 可选 web 增加 `/api/internal/v1/notifications/submit`，需要 SERVICE JWT、subject 与 service_id 一致，以及
 `SCOPE_notification:submit:in-app`。source 不从 body 获取；租户安全必须由部署应用验证（Pay notificationcenter 当前只支持配置租户）。

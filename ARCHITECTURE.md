@@ -1,5 +1,7 @@
 # 业务模块架构
 
+2026-11-15 的[阶段 0 基线](../loadup-pay/design/PHASE0_BASELINE.md)与[完整声明依赖清单](../loadup-pay/design/PHASE0_DEPENDENCIES.md)区分当前实现和目标规范。阶段 1C 已移除 UPMS app 对 infrastructure 的生产依赖及扫描，由独立 UpmsPersistenceAutoConfiguration 注册默认 Gateway；五个小型 core 的 app 自动配置通过 PersistenceAutoConfiguration 显式约束装配顺序。后者是同 JAR 装配例外，不能写成所有 app 已完全不引用基础设施；UPMS 切片源码和回归源码已同步，构建和测试未运行。其他 core 的装配规则不随之变更。
+
 业务能力位于 `commons → components → modules → 消费工程` 的第三层。modules 只按业务领域组织聚合目录，模块边界按真实消费方式划分，
 不把代码分层直接变成 Maven 模块边界。
 
@@ -44,7 +46,7 @@ authserver 适配。
 
 ## 装配与配置
 
-业务模块的默认 Spring Data JDBC / Spring JDBC Gateway 与 Flyway 脚本归 core 的 `infrastructure` 包；持久化自动配置创建端口适配。
+业务模块的默认 MyBatis-Flex / Spring JDBC Gateway 与 Flyway 脚本归 core 的 `infrastructure` 包；持久化自动配置创建端口适配。
 app 在其之后按 Gateway 和所需组件条件创建用例服务。消费者可替换 Gateway Bean。
 
 配置为 `loadup.modules.<business>.*`，Web 按 `*-web` Maven 依赖装配，无额外 enabled 开关；全局安全协议由技术组件的
@@ -52,8 +54,8 @@ app 在其之后按 Gateway 和所需组件条件创建用例服务。消费者�
 
 ## 跨业务边界
 
-Transfer core 显式复用 File core 的权限、业务引用和 DFS 生命周期。UPMS web 的敏感查询审计通过 Audit client Facade记录。
-商户与合约事实已迁移到 Pay 的 productcenter，框架不再提供 merchant/contract 业务模块。
+Transfer core 显式复用 File core 的权限、业务引用和 DFS 生命周期。UPMS web 通过 AuditFacade 记录敏感查询审计，但当前 Maven 可选依赖是 audit-core，且自动配置引用 AuditAutoConfiguration；不能将实际装配依赖写成只有 audit-client。
+商户事实归 Pay 的 merchantcenter，产品目录与合约事实归 Pay 的 productcenter，框架不再提供 merchant/contract 业务模块。
 
 ## 本次调整范围
 

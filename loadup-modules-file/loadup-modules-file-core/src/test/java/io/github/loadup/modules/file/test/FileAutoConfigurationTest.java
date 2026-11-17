@@ -20,7 +20,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.github.loadup.commons.util.TenantUtil;
 import io.github.loadup.components.dfs.DfsService;
 import io.github.loadup.modules.file.app.autoconfigure.FileResourceAutoConfiguration;
 import io.github.loadup.modules.file.app.converter.FileDTOConverter;
@@ -88,22 +87,17 @@ class FileAutoConfigurationTest {
     }
 
     @Test
-    void downloadUsesCurrentStorageTenantAndRestoresCallerContext() {
+    void downloadUsesTheFixedStorageNamespace() {
         var gateway = mock(FileResourceGateway.class);
         var dfs = mock(DfsService.class);
         var now = LocalDateTime.of(2026, 1, 1, 0, 0);
         var file =
                 new FileResource("file", "owner", "storage", "name", "text/plain", 0, "database", "ACTIVE", now, now);
         when(gateway.find("file")).thenReturn(Optional.of(file));
-        when(dfs.download("storage")).thenAnswer(invocation -> {
-            assertThat(TenantUtil.getTenantId()).isEqualTo("outer-tenant");
-            return null;
-        });
+        when(dfs.download("storage")).thenReturn(null);
         var service = new FileResourceService(gateway, dfs, mock(FileDTOConverter.class), Clock.systemUTC());
-        TenantUtil.runWithTenant("outer-tenant", () -> {
-            service.download("file", "owner", false);
-            assertThat(TenantUtil.getTenantId()).isEqualTo("outer-tenant");
-        });
+        service.download("file", "owner", false);
+        verify(dfs).download("storage");
     }
 
     @Test

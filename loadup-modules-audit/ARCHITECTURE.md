@@ -5,7 +5,7 @@
 `loadup-modules-audit` 提供 `AuditRecordCommand`、`AuditService` 和 JDBC 存储，不依赖 UPMS 或 HTTP。
 `loadup-modules-audit-web` 可选地提供 MVC 自动采集和管理员查询。业务服务可以直接注入 `AuditService` 记录非 HTTP 操作。
 
-首版存储和 Flyway DDL 面向 MySQL；模块引入 Flyway starter 与 MySQL 支持，数据库驱动由接入方提供。
+模块通过 JDBC 持久化并提供 Flyway 迁移，不声明必需的数据库厂商；消费应用配置数据库连接与驱动。Pay 消费基线为 PostgreSQL。
 
 ```text
 AuditRecordCommand → AuditService → AuditGatewayImpl → audit_event
@@ -15,7 +15,7 @@ AuditQuery → AuditService → AuditGatewayImpl → PageResult<AuditEvent>
 ## 数据契约
 
 每个事件有唯一 ID、操作者 ID、动作、HTTP 方法、路由模板、结果、traceId 和发生时间。数据库表保留 `id`、`created_at`、
-`updated_at`、`deleted` 列，不含 `tenant_id`。租户身份仍可存在于可信执行上下文，但当前 Audit 存储未实现租户列过滤或 schema 路由，运行于默认 schema；详见[数据库 README](../../loadup-components/data/loadup-components-database/README.md)。查询按发生时间与 ID 倒序分页，页大小上限 100。
+`updated_at`、`deleted` 列，不含 `tenant_id`。一套部署只服务一个租户并使用固定 `loadup.database.schema`，Audit 存储因此天然只属于本部署；详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)。查询按发生时间与 ID 倒序分页，页大小上限 100。
 
 ## 写入与失败
 
@@ -29,7 +29,7 @@ MVC 前拒绝的请求不会被该 MVC 适配器采集。可靠写入、保留/�
 ```text
 web → app → domain
        ↓       ↑
-     client  infrastructure → MySQL / Flyway
+     client  infrastructure → JDBC / Flyway
 ```
 
 - client 定义不可变请求和 DTO，domain 保留领域模型与 `AuditGateway` 端口；应用边界由 `AuditDTOConverter` 以 MapStruct
@@ -43,7 +43,7 @@ web → app → domain
 - 所有子模块 parent 指向根 `loadup-parent`，所有内部依赖坐标由 BOM 管理。
 
 配置契约迁移到 `loadup.modules.audit.*`，不保留旧前缀别名。自动装配、覆盖默认 Gateway 和关闭功能的回归源码见
-`AuditAutoConfigurationTest`，本次未执行；真实数据库与 HTTP 验收仍需由消费工程完成。
+`AuditAutoConfigurationTest`；真实数据库与 HTTP 验收由消费工程完成。
 
 ## 公共边界与映射约束
 
@@ -64,7 +64,7 @@ HTTP envelope。
 ## 查询契约
 
 Controller 与 Facade 复用 `AuditPageQuery`；page、size 缺省为 1、20，size 上限 100，非法值返回
-PARAM_ILLEGAL。时间范围使用应用本地时区；tenantId 由服务端上下文解析。事件时间和持久化 createdAt/updatedAt 使用 Spring 共享的
+PARAM_ILLEGAL。时间范围使用应用本地时区；操作者身份由认证主体解析。事件时间和持久化 createdAt/updatedAt 使用 Spring 共享的
 Clock，可由应用提供 Clock Bean 覆盖默认值。
 
 ## 错误码契约

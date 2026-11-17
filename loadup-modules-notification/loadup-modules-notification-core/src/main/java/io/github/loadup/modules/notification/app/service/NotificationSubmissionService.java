@@ -17,8 +17,8 @@ package io.github.loadup.modules.notification.app.service;
 
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.components.database.id.IdGenerator;
-import io.github.loadup.components.outbox.OutboxMessage;
-import io.github.loadup.components.outbox.OutboxTemplate;
+import io.github.loadup.components.task.TaskSubmission;
+import io.github.loadup.components.task.TaskTemplate;
 import io.github.loadup.modules.notification.app.converter.NotificationSubmissionConverter;
 import io.github.loadup.modules.notification.client.command.NotificationSubmitCommand;
 import io.github.loadup.modules.notification.client.dto.NotificationAcceptedDTO;
@@ -38,7 +38,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class NotificationSubmissionService implements NotificationFacade {
     public static final String DELIVERY_EVENT = "notification.in-app.delivery";
     private final NotificationSubmissionGateway gateway;
-    private final OutboxTemplate outbox;
+    private final TaskTemplate tasks;
     private final IdGenerator ids;
     private final JsonMapper json;
     private final NotificationSubmissionConverter converter;
@@ -46,13 +46,13 @@ public class NotificationSubmissionService implements NotificationFacade {
 
     public NotificationSubmissionService(
             NotificationSubmissionGateway gateway,
-            OutboxTemplate outbox,
+            TaskTemplate tasks,
             IdGenerator ids,
             JsonMapper json,
             NotificationSubmissionConverter converter,
             Clock clock) {
         this.gateway = gateway;
-        this.outbox = outbox;
+        this.tasks = tasks;
         this.ids = ids;
         this.json = json;
         this.converter = converter;
@@ -83,7 +83,7 @@ public class NotificationSubmissionService implements NotificationFacade {
         }
         for (String recipient : content.recipients()) {
             String deliveryId = ids.generate();
-            String eventId = outbox.publish(new OutboxMessage(DELIVERY_EVENT, 1, deliveryId, deliveryId));
+            String eventId = tasks.submit(TaskSubmission.immediate(DELIVERY_EVENT, 1, deliveryId, deliveryId));
             gateway.addDelivery(deliveryId, receipt.notificationId(), recipient, eventId, at);
         }
         return converter.toAccepted(receipt, false);

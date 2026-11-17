@@ -11,4 +11,4 @@ dependencyManagement 中的 ${project.version} 在 BOM 自身模型中解析，�
 BOM 不提供 Java 类，也不会自动引入 JAR。自身业务制品跟随 `${project.version}`，配套 Framework BOM 使用独立的
 `loadup.framework.version` 导入；框架与第三方版本随该导入提供给消费方。Testify 不进入公开 BOM，由本仓库 parent 管理内部测试版本。
 parent 中的注解处理器路径从这条 BOM 导入链解析版本，不另行维护 Framework 版本。
-本次只做 POM 结构与 IDE 静态检查，未执行 Maven 构建、安装或发布。
+待验收：当前 BOM 的 Maven 模型解析、配套制品安装及目标仓库发布。
