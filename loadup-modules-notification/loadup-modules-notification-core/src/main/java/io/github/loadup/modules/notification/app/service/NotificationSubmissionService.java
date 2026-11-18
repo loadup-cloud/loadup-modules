@@ -83,7 +83,7 @@ public class NotificationSubmissionService implements NotificationFacade {
         }
         for (String recipient : content.recipients()) {
             String deliveryId = ids.generate();
-            String eventId = tasks.submit(TaskSubmission.immediate(DELIVERY_EVENT, 1, deliveryId, deliveryId));
+            String eventId = tasks.submit(TaskSubmission.immediate(DELIVERY_EVENT, deliveryId, deliveryId));
             gateway.addDelivery(deliveryId, receipt.notificationId(), recipient, eventId, at);
         }
         return converter.toAccepted(receipt, false);

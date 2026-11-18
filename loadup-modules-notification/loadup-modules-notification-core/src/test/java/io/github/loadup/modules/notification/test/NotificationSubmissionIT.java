@@ -50,7 +50,7 @@ import org.springframework.transaction.support.TransactionTemplate;
         properties = {"loadup.task.worker-enabled=false", "spring.flyway.enabled=true"})
 @EnableTestContainers(ContainerType.POSTGRESQL)
 @Sql(
-        scripts = {"classpath:db/schema/sequence_allocation.sql", "classpath:db/schema/task.sql"},
+        scripts = {"classpath:db/schema/sequence_allocation.sql", "classpath:db/task/pg/schema.sql"},
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class NotificationSubmissionIT {
     private static final String SOURCE = "notification-submission-it";
@@ -151,7 +151,7 @@ class NotificationSubmissionIT {
                 accepted.notificationId());
         var event = new TaskExecution(
                 eventId,
-                TaskSubmission.immediate("notification.in-app.delivery", 1, deliveryId, deliveryId),
+                TaskSubmission.immediate("notification.in-app.delivery", deliveryId, deliveryId),
                 Instant.now(),
                 null);
 

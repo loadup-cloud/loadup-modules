@@ -52,7 +52,7 @@ public class InAppDeliveryHandler implements TaskHandler {
     @Transactional
     public void handle(TaskExecution event) {
         if (event == null
-                || event.payloadVersion() != 1
+
                 || !Objects.equals(taskType(), event.taskType())
                 || !Objects.equals(event.bizId(), event.payload())) {
             throw new CommonException(NotificationResultCodeEnum.INVALID_DELIVERY_EVENT);
