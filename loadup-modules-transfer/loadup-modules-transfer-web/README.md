@@ -7,7 +7,7 @@
 |------|-------------------------------|------------------------------------------------------|
 | POST | `/api/transfer-tasks/imports` | 提交导入，传 `handlerKey`、`sourceFileId`、`options` |
 | POST | `/api/transfer-tasks/exports` | 提交导出，传 `handlerKey`、`options`                 |
-| POST | `/api/transfer-tasks/list`    | JSON 分页列表，可传 `ownerId`（管理员）              |
+| POST | `/api/transfer-tasks/list`    | JSON 分页列表，可按 `kind`、`status` 筛选，管理员可传 `ownerId` |
 | POST | `/api/transfer-tasks/detail`  | JSON `{ "id": "..." }` 查询状态与进度                |
 | POST | `/api/transfer-tasks/result`  | JSON `{ "id": "..." }` 获取结果文件 ID 和下载路径    |
 | POST | `/api/transfer-tasks/retry`   | JSON `{ "id": "..." }` 重发排队任务或重试失败任务    |

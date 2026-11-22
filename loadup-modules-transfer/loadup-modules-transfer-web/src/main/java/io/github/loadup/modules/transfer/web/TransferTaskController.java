@@ -100,16 +100,11 @@ public class TransferTaskController {
     }
 
     @PostMapping("/list")
-    @Operation(summary = "List my tasks; administrators may select an owner")
+    @Operation(summary = "List tasks filtered by kind and status; administrators may select an owner")
     @PreAuthorize("isAuthenticated()")
     public PageResponse<TransferViewDTO> list(
             @RequestBody TransferTaskPageQuery request, Authentication authentication) {
-        var result = service.list(
-                actor(authentication),
-                admin(authentication),
-                request.ownerId(),
-                request.page() == null ? 1 : request.page(),
-                request.size() == null ? 20 : request.size());
+        var result = service.list(actor(authentication), admin(authentication), request);
         return PageResponse.of(result.map(converter::toView));
     }
 

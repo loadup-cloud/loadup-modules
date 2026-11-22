@@ -16,6 +16,8 @@
 package io.github.loadup.modules.transfer.domain.gateway;
 
 import io.github.loadup.commons.domain.PageResult;
+import io.github.loadup.modules.transfer.domain.model.TransferKind;
+import io.github.loadup.modules.transfer.domain.model.TransferStatus;
 import io.github.loadup.modules.transfer.domain.model.TransferTask;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +30,7 @@ public interface TransferGateway {
 
     Optional<TransferTask> find(String id);
 
-    PageResult<TransferTask> list(String ownerId, int page, int size);
+    PageResult<TransferTask> list(String ownerId, TransferKind kind, TransferStatus status, int page, int size);
 
     Map<String, String> options(String id);
 

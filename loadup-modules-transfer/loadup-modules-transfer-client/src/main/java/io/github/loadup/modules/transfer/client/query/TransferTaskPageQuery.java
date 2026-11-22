@@ -17,6 +17,8 @@ package io.github.loadup.modules.transfer.client.query;
 
 import io.github.loadup.commons.dto.PageQuery;
 import io.github.loadup.commons.json.ToStringAsJson;
+import io.github.loadup.modules.transfer.client.enums.TransferKind;
+import io.github.loadup.modules.transfer.client.enums.TransferStatus;
 import io.github.loadup.modules.transfer.client.error.TransferResultCodeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
@@ -24,6 +26,10 @@ import jakarta.validation.constraints.Min;
 
 public record TransferTaskPageQuery(
         @Schema(description = "Owner user identifier") String ownerId,
+
+        @Schema(description = "Filter by import or export") TransferKind kind,
+
+        @Schema(description = "Filter by current task status") TransferStatus status,
 
         @Schema(description = "Page number, starting at 1", minimum = "1", defaultValue = "1") @Min(1) Integer page,
 
@@ -37,6 +43,10 @@ public record TransferTaskPageQuery(
         var pagination = PageQuery.normalized(page, size, TransferResultCodeEnum.INVALID_PAGE);
         page = pagination.page();
         size = pagination.size();
+    }
+
+    public TransferTaskPageQuery(String ownerId, Integer page, Integer size) {
+        this(ownerId, null, null, page, size);
     }
 
     @Override

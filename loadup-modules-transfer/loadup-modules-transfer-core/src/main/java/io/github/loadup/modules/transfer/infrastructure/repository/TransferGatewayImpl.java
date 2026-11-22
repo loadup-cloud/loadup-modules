@@ -136,12 +136,16 @@ public class TransferGatewayImpl extends ServiceImpl<TransferTaskRowMapper, Tran
     }
 
     @Override
-    public PageResult<TransferTask> list(String owner, int page, int size) {
-        var result = page(
-                new Page<>(page, size),
-                QueryWrapper.create()
-                        .where(Tables.TRANSFER_TASK_ROW.OWNER_ID.eq(owner))
-                        .orderBy(Tables.TRANSFER_TASK_ROW.CREATED_AT.desc(), Tables.TRANSFER_TASK_ROW.ID.desc()));
+    public PageResult<TransferTask> list(String owner, TransferKind kind, TransferStatus status, int page, int size) {
+        var task = Tables.TRANSFER_TASK_ROW;
+        var query = QueryWrapper.create().where(task.OWNER_ID.eq(owner));
+        if (kind != null) {
+            query.and(task.KIND.eq(kind.name()));
+        }
+        if (status != null) {
+            query.and(task.STATUS.eq(status.name()));
+        }
+        var result = page(new Page<>(page, size), query.orderBy(task.CREATED_AT.desc(), task.ID.desc()));
         return new PageResult<>(
                 result.getRecords().stream().map(TransferGatewayImpl::task).toList(), result.getTotalRow(), page, size);
     }

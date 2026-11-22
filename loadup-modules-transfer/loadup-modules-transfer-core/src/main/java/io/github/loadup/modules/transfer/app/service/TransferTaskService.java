@@ -15,7 +15,6 @@
  */
 package io.github.loadup.modules.transfer.app.service;
 
-import io.github.loadup.commons.dto.PageQuery;
 import io.github.loadup.commons.enums.CommonResultCodeEnum;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.commons.log.LogUtil;
@@ -28,6 +27,7 @@ import io.github.loadup.modules.transfer.app.converter.TransferDTOConverter;
 import io.github.loadup.modules.transfer.client.dto.TransferTaskDTO;
 import io.github.loadup.modules.transfer.client.error.TransferResultCodeEnum;
 import io.github.loadup.modules.transfer.client.facade.TransferTaskFacade;
+import io.github.loadup.modules.transfer.client.query.TransferTaskPageQuery;
 import io.github.loadup.modules.transfer.client.spi.TransferContext;
 import io.github.loadup.modules.transfer.client.spi.TransferHandler;
 import io.github.loadup.modules.transfer.domain.gateway.TransferGateway;
@@ -154,10 +154,13 @@ public class TransferTaskService implements TransferTaskFacade {
         return task;
     }
 
-    public PageDTO<TransferTaskDTO> list(String actorId, boolean admin, String ownerId, int page, int size) {
-        PageQuery.normalized(page, size, TransferResultCodeEnum.INVALID_PAGE);
+    @Override
+    public PageDTO<TransferTaskDTO> list(String actorId, boolean admin, TransferTaskPageQuery query) {
+        String ownerId = query.ownerId();
         String owner = admin && ownerId != null && !ownerId.isBlank() ? required(ownerId, 64) : required(actorId, 64);
-        return converter.toPageDTO(repository.list(owner, page, size));
+        TransferKind kind = query.kind() == null ? null : TransferKind.valueOf(query.kind().name());
+        TransferStatus status = query.status() == null ? null : TransferStatus.valueOf(query.status().name());
+        return converter.toPageDTO(repository.list(owner, kind, status, query.page(), query.size()));
     }
 
     /**
