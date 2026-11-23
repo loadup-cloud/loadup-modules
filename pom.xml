@@ -43,6 +43,7 @@
         <module>loadup-modules-audit</module>
         <module>loadup-modules-dictionary</module>
         <module>loadup-modules-file</module>
+        <module>loadup-modules-form</module>
         <module>loadup-modules-notification</module>
         <module>loadup-modules-transfer</module>
     </modules>

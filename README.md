@@ -45,6 +45,7 @@ mvnd clean deploy -Prelease
 | [Audit](loadup-modules-audit/README.md)               | 审计记录、查询与可选 MVC 采集           |
 | [Dictionary](loadup-modules-dictionary/README.md)     | 字典类型、条目及启用选项                |
 | [File](loadup-modules-file/README.md)                 | 文件元数据、访问控制、引用与清理        |
+| [Form](loadup-modules-form/README.md)                 | 字段目录、表单发布、填写与按 Key 取值   |
 | [Notification](loadup-modules-notification/README.md) | 持久化收件箱与 Gotone IN_APP 渠道       |
 | [Transfer](loadup-modules-transfer/README.md)         | 导入导出任务、进度、结果与重试          |
 
