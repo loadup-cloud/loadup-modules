@@ -36,10 +36,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.github.loadup-cloud</groupId>
             <artifactId>loadup-modules-upms-domain</artifactId>
         </dependency>
@@ -58,23 +54,10 @@
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
-        <!-- Jakarta Servlet API -->
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- AspectJ for AOP -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aspectj</artifactId>
-        </dependency>
-
-        <!-- Jackson for JSON -->
-        <dependency>
-            <groupId>tools.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <!-- MapStruct for DO <-> Entity mapping -->
@@ -96,6 +79,23 @@
             <groupId>io.github.loadup-cloud</groupId>
             <artifactId>loadup-modules-upms-client</artifactId>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mybatis-flex</groupId>
+            <artifactId>mybatis-flex-annotation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mybatis-flex</groupId>
+            <artifactId>mybatis-flex-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mybatis-flex</groupId>
+            <artifactId>mybatis-flex-spring</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.loadup-cloud</groupId>
+            <artifactId>loadup-commons-util</artifactId>
         </dependency>
     </dependencies>
 

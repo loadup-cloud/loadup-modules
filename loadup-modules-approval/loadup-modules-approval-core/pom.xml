@@ -47,5 +47,14 @@
             <groupId>io.github.loadup-cloud</groupId>
             <artifactId>loadup-modules-notification-client</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.loadup-cloud</groupId>
+            <artifactId>loadup-commons-error</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
     </dependencies>
 </project>

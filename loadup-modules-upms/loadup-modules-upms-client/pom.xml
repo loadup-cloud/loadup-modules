@@ -27,20 +27,26 @@
             <artifactId>loadup-commons-masking</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.loadup-cloud</groupId>
-            <artifactId>loadup-commons-util</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.github.loadup-cloud</groupId>
             <artifactId>loadup-commons-json</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.loadup-cloud</groupId>
             <artifactId>loadup-commons-dto</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
