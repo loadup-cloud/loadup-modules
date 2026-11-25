@@ -20,7 +20,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.github.loadup.components.dfs.DfsService;
+import io.github.loadup.components.dfs.DfsTemplate;
+import io.github.loadup.components.dfs.autoconfigure.DfsAutoConfiguration;
 import io.github.loadup.modules.file.app.autoconfigure.FileResourceAutoConfiguration;
 import io.github.loadup.modules.file.app.converter.FileDTOConverter;
 import io.github.loadup.modules.file.app.service.FileResourceService;
@@ -38,8 +39,11 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 class FileAutoConfigurationTest {
@@ -49,13 +53,12 @@ class FileAutoConfigurationTest {
             .withBean(FileResourceInsertMapper.class, () -> mock(FileResourceInsertMapper.class))
             .withBean(FileReferenceRowMapper.class, () -> mock(FileReferenceRowMapper.class))
             .withBean("databaseClock", Clock.class, Clock::systemDefaultZone)
-            .withBean(DfsService.class, () -> mock(DfsService.class))
-            .withConfiguration(
-                    AutoConfigurations.of(FilePersistenceAutoConfiguration.class, FileResourceAutoConfiguration.class));
+            .withConfiguration(AutoConfigurations.of(
+                    FilePersistenceAutoConfiguration.class, FileResourceAutoConfiguration.class, DfsAutoConfiguration.class));
 
     @Test
     void wiresDomainPortAndApplicationMapper() {
-        runner.run(context -> {
+        runner.withBean(DfsTemplate.class, () -> mock(DfsTemplate.class)).run(context -> {
             assertThat(context)
                     .hasNotFailed()
                     .hasSingleBean(FileResourceGateway.class)
@@ -67,29 +70,47 @@ class FileAutoConfigurationTest {
     @Test
     void consumerGatewayOverridesDefaultAdapter() {
         FileResourceGateway gateway = mock(FileResourceGateway.class);
-        runner.withBean(FileResourceGateway.class, () -> gateway).run(context -> {
-            assertThat(context)
-                    .hasNotFailed()
-                    .hasSingleBean(FileResourceGateway.class)
-                    .hasSingleBean(FileResourceService.class);
-            assertThat(context.getBean(FileResourceGateway.class)).isSameAs(gateway);
-        });
+        runner.withBean(FileResourceGateway.class, () -> gateway)
+                .withBean(DfsTemplate.class, () -> mock(DfsTemplate.class))
+                .run(context -> {
+                    assertThat(context)
+                            .hasNotFailed()
+                            .hasSingleBean(FileResourceGateway.class)
+                            .hasSingleBean(FileResourceService.class);
+                    assertThat(context.getBean(FileResourceGateway.class)).isSameAs(gateway);
+                });
+    }
+
+    @Test
+    void assemblesAfterAThirdPartyDfsBinder() {
+        runner.withConfiguration(AutoConfigurations.of(TestDfsBinder.class))
+                .withPropertyValues("loadup.dfs.binder-type=external")
+                .run(context -> assertThat(context)
+                        .hasSingleBean(DfsTemplate.class)
+                        .hasSingleBean(FileResourceService.class));
+    }
+
+    @Test
+    void skipsFileServiceWhenNoDfsTemplateIsAvailable() {
+        runner.run(context -> assertThat(context)
+                .hasSingleBean(FileResourceGateway.class)
+                .doesNotHaveBean(FileResourceService.class));
     }
 
     @Test
     void respectsDisabledFeature() {
-        runner.withPropertyValues("loadup.modules.file.enabled=false").run(context -> {
-            assertThat(context)
-                    .hasNotFailed()
-                    .doesNotHaveBean(FileResourceGateway.class)
-                    .doesNotHaveBean(FileResourceService.class);
-        });
+        runner.withBean(DfsTemplate.class, () -> mock(DfsTemplate.class))
+                .withPropertyValues("loadup.modules.file.enabled=false")
+                .run(context -> assertThat(context)
+                        .hasNotFailed()
+                        .doesNotHaveBean(FileResourceGateway.class)
+                        .doesNotHaveBean(FileResourceService.class));
     }
 
     @Test
     void downloadUsesTheFixedStorageNamespace() {
         var gateway = mock(FileResourceGateway.class);
-        var dfs = mock(DfsService.class);
+        var dfs = mock(DfsTemplate.class);
         var now = LocalDateTime.of(2026, 1, 1, 0, 0);
         var file =
                 new FileResource("file", "owner", "storage", "name", "text/plain", 0, "database", "ACTIVE", now, now);
@@ -119,5 +140,14 @@ class FileAutoConfigurationTest {
         assertThat(read.storageId()).isEqualTo(file.storageId());
         assertThat(read.size()).isEqualTo(file.size());
         assertThat(read.state()).isEqualTo(file.state());
+    }
+
+    @AutoConfiguration(before = DfsAutoConfiguration.class)
+    @ConditionalOnProperty(prefix = "loadup.dfs", name = "binder-type", havingValue = "external")
+    static class TestDfsBinder {
+        @Bean
+        DfsTemplate dfsTemplate() {
+            return mock(DfsTemplate.class);
+        }
     }
 }

@@ -15,7 +15,7 @@
  */
 package io.github.loadup.modules.file.app.autoconfigure;
 
-import io.github.loadup.components.dfs.DfsService;
+import io.github.loadup.components.dfs.DfsTemplate;
 import io.github.loadup.components.dfs.autoconfigure.DfsAutoConfiguration;
 import io.github.loadup.modules.file.app.converter.FileDTOConverter;
 import io.github.loadup.modules.file.app.converter.FileDTOConverterImpl;
@@ -36,14 +36,14 @@ import org.springframework.context.annotation.Import;
 @Import(FileDTOConverterImpl.class)
 @AutoConfiguration(after = {FilePersistenceAutoConfiguration.class, DfsAutoConfiguration.class})
 @ConditionalOnSingleCandidate(DataSource.class)
-@ConditionalOnBean({FileResourceGateway.class, DfsService.class})
+@ConditionalOnBean({FileResourceGateway.class, DfsTemplate.class})
 @ConditionalOnProperty(prefix = "loadup.modules.file", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class FileResourceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(FileResourceFacade.class)
     public FileResourceService fileResourceService(
-            FileResourceGateway repository, DfsService dfs, FileDTOConverter converter, Clock clock) {
+            FileResourceGateway repository, DfsTemplate dfs, FileDTOConverter converter, Clock clock) {
         return new FileResourceService(repository, dfs, converter, clock);
     }
 }

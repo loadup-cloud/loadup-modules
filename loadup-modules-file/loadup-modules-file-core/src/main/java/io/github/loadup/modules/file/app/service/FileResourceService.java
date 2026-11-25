@@ -20,7 +20,7 @@ import io.github.loadup.commons.dto.PageQuery;
 import io.github.loadup.commons.enums.CommonResultCodeEnum;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.commons.result.PageDTO;
-import io.github.loadup.components.dfs.DfsService;
+import io.github.loadup.components.dfs.DfsTemplate;
 import io.github.loadup.components.dfs.model.FileDownloadResponse;
 import io.github.loadup.components.dfs.model.FileMetadata;
 import io.github.loadup.components.dfs.model.FileUploadRequest;
@@ -44,10 +44,10 @@ public class FileResourceService implements FileResourceFacade {
     private final Clock clock;
     private final FileDTOConverter converter;
     private final FileResourceGateway repository;
-    private final DfsService dfs;
+    private final DfsTemplate dfs;
 
     public FileResourceService(
-            FileResourceGateway repository, DfsService dfs, FileDTOConverter converter, Clock clock) {
+            FileResourceGateway repository, DfsTemplate dfs, FileDTOConverter converter, Clock clock) {
         this.clock = clock;
         this.converter = converter;
         this.repository = repository;
