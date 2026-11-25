@@ -20,6 +20,11 @@ import io.github.loadup.commons.result.ResultCode;
 
 public enum NotificationResultCodeEnum implements ResultCode {
     SERVICE_IDENTITY_REQUIRED("NOTIFICATION_SERVICE_IDENTITY_REQUIRED", "Verified service identity is required"),
+    INVALID_SERVICE_CODE("NOTIFICATION_INVALID_SERVICE_CODE", "Invalid notification service code"),
+    NO_CHANNEL_ROUTES("NOTIFICATION_NO_CHANNEL_ROUTES", "No notification channels are enabled for this service code"),
+    INVALID_CHANNEL_RECIPIENTS(
+            "NOTIFICATION_INVALID_CHANNEL_RECIPIENTS", "Provide valid recipients for each enabled channel"),
+    CHANNEL_DELIVERY_FAILED("NOTIFICATION_CHANNEL_DELIVERY_FAILED", "Notification channel delivery failed"),
     INVALID_SUBMISSION("NOTIFICATION_INVALID_SUBMISSION", "Invalid notification submission"),
     UNSUPPORTED_CHANNEL("NOTIFICATION_UNSUPPORTED_CHANNEL", "Notification channel is not supported"),
     REQUEST_CONFLICT("NOTIFICATION_REQUEST_CONFLICT", "Idempotency key was used for different content"),

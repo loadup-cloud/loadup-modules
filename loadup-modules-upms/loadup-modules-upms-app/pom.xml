@@ -70,7 +70,7 @@
 
         <!--        <dependency>-->
         <!--            <groupId>io.github.loadup-cloud</groupId>-->
-        <!--            <artifactId>loadup-components-gotone-api</artifactId>-->
+        <!--            <artifactId>loadup-modules-notification-gotone-api</artifactId>-->
         <!--            <version>${project.parent.version}</version>-->
         <!--        </dependency>-->
 

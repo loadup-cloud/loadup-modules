@@ -15,6 +15,7 @@
  */
 package io.github.loadup.modules.notification.web;
 
+import io.github.loadup.components.gotone.config.NotificationRouting;
 import io.github.loadup.modules.notification.app.autoconfigure.NotificationAutoConfiguration;
 import io.github.loadup.modules.notification.app.autoconfigure.NotificationSubmissionAutoConfiguration;
 import io.github.loadup.modules.notification.client.facade.InboxFacade;
@@ -25,13 +26,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 @Import(NotificationWebConverterImpl.class)
-@AutoConfiguration(after = {NotificationAutoConfiguration.class, NotificationSubmissionAutoConfiguration.class})
+@AutoConfiguration(
+        after = {NotificationAutoConfiguration.class, NotificationSubmissionAutoConfiguration.class},
+        afterName = "io.github.loadup.components.gotone.store.config.GotoneStoreJdbcAutoConfiguration")
 @ConditionalOnBean(InboxFacade.class)
 public class NotificationWebAutoConfiguration {
     @Bean
     @ConditionalOnBean(NotificationFacade.class)
     public NotificationSubmissionController notificationSubmissionController(NotificationFacade notifications) {
         return new NotificationSubmissionController(notifications);
+    }
+
+    @Bean
+    @ConditionalOnBean({NotificationFacade.class, NotificationRouting.class})
+    public NotificationOperationsController notificationOperationsController(
+            NotificationFacade notifications, NotificationRouting routing) {
+        return new NotificationOperationsController(notifications, routing);
     }
 
     @Bean

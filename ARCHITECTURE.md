@@ -15,6 +15,9 @@ loadup-modules/
     loadup-modules-{business}-web
 ```
 
+Notification 在上述结构下聚合 [Gotone](loadup-modules-notification/loadup-modules-notification-gotone/README.md)，独立发布
+投递 API、引擎、可选 JDBC 存储和渠道适配器。
+
 UPMS 因独立 authserver 集成保留完整分层：
 
 ```text

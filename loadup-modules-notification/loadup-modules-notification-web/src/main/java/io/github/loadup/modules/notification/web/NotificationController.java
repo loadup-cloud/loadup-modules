@@ -22,10 +22,8 @@ import io.github.loadup.components.authorization.model.LoadUpUser;
 import io.github.loadup.modules.notification.client.command.NotificationArchiveCommand;
 import io.github.loadup.modules.notification.client.command.NotificationReadAllCommand;
 import io.github.loadup.modules.notification.client.command.NotificationReadCommand;
-import io.github.loadup.modules.notification.client.command.NotificationSendCommand;
 import io.github.loadup.modules.notification.client.dto.NotificationViewDTO;
 import io.github.loadup.modules.notification.client.dto.ReadResultDTO;
-import io.github.loadup.modules.notification.client.dto.SendResultDTO;
 import io.github.loadup.modules.notification.client.dto.UnreadCountDTO;
 import io.github.loadup.modules.notification.client.error.NotificationResultCodeEnum;
 import io.github.loadup.modules.notification.client.facade.InboxFacade;
@@ -52,7 +50,7 @@ public class NotificationController {
         this.inbox = inbox;
     }
 
-    private static String actor(Authentication authentication) {
+    static String actor(Authentication authentication) {
         if (authentication == null
                 || !authentication.isAuthenticated()
                 || !(authentication.getPrincipal() instanceof LoadUpUser user)
@@ -61,22 +59,6 @@ public class NotificationController {
             throw new CommonException(NotificationResultCodeEnum.AUTHENTICATED_USER_IS_REQUIRED);
         }
         return user.getUserId();
-    }
-
-    @PostMapping("/publish")
-    @Operation(summary = "Publish a notification to selected users")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
-    public SuccessResponse<SendResultDTO> publish(
-            @RequestBody NotificationSendCommand request, Authentication authentication) {
-        int delivered = inbox.publish(
-                actor(authentication),
-                request.recipients(),
-                request.category(),
-                request.title(),
-                request.body(),
-                request.actionUrl(),
-                request.requestKey());
-        return SuccessResponse.of(new SendResultDTO(delivered));
     }
 
     @PostMapping("/list")

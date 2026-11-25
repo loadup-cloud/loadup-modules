@@ -17,6 +17,7 @@ package io.github.loadup.modules.notification.web;
 
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.commons.result.SuccessResponse;
+import io.github.loadup.modules.notification.client.command.NotificationDispatchCommand;
 import io.github.loadup.modules.notification.client.command.NotificationSubmitCommand;
 import io.github.loadup.modules.notification.client.dto.NotificationAcceptedDTO;
 import io.github.loadup.modules.notification.client.error.NotificationResultCodeEnum;
@@ -46,6 +47,18 @@ public class NotificationSubmissionController {
     @PreAuthorize("hasAuthority('SCOPE_notification:submit:in-app')")
     public SuccessResponse<NotificationAcceptedDTO> submit(
             @RequestBody NotificationSubmitCommand command, Authentication authentication) {
+        return SuccessResponse.of(notifications.submit(serviceIdentity(authentication), command));
+    }
+
+    @PostMapping("/dispatch")
+    @Operation(summary = "Accept notifications for all configured service-code channels")
+    @PreAuthorize("hasAuthority('SCOPE_notification:submit')")
+    public SuccessResponse<NotificationAcceptedDTO> dispatch(
+            @RequestBody NotificationDispatchCommand command, Authentication authentication) {
+        return SuccessResponse.of(notifications.dispatch(serviceIdentity(authentication), null, command));
+    }
+
+    private static String serviceIdentity(Authentication authentication) {
         if (authentication == null
                 || !authentication.isAuthenticated()
                 || !(authentication.getCredentials() instanceof Jwt jwt)) {
@@ -58,6 +71,6 @@ public class NotificationSubmissionController {
                 || !source.equals(jwt.getSubject())) {
             throw new CommonException(NotificationResultCodeEnum.SERVICE_IDENTITY_REQUIRED);
         }
-        return SuccessResponse.of(notifications.submit(source, command));
+        return source;
     }
 }

@@ -34,8 +34,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 @Import(NotificationDTOConverterImpl.class)
-// Gotone engine is an optional runtime dependency; keep the ordering by name so this module only compiles against
-// gotone-api.
+// Gotone engine is assembled at runtime; the core compiles against the provider SPI.
 @AutoConfiguration(
         after = NotificationPersistenceAutoConfiguration.class,
         beforeName = "io.github.loadup.components.gotone.engine.GotoneEngineAutoConfiguration")
@@ -55,7 +54,7 @@ public class NotificationAutoConfiguration {
     }
 
     @Bean
-    public NotificationChannelProvider inAppNotificationChannelProvider(InboxService inbox) {
+    public NotificationChannelProvider inAppNotificationChannelProvider(InboxFacade inbox) {
         return new InAppChannelProvider(inbox);
     }
 }

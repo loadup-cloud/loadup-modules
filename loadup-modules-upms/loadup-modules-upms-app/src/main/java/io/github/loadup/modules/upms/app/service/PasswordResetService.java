@@ -68,7 +68,7 @@ public class PasswordResetService implements PasswordResetFacade {
         // Generate code
         verificationCodeService.generateCode(email, "EMAIL");
 
-        // TODO: Send email using loadup-components-gotone
+        // TODO: Send email using Modules Notification
         LogUtil.info(
                 PasswordResetService.class,
                 "Email verification code generated for {}",
@@ -92,7 +92,7 @@ public class PasswordResetService implements PasswordResetFacade {
         // Generate code
         verificationCodeService.generateCode(mobile, "SMS");
 
-        // TODO: Send SMS using loadup-components-gotone
+        // TODO: Send SMS using Modules Notification
         LogUtil.info(
                 PasswordResetService.class,
                 "SMS verification code generated for {}",

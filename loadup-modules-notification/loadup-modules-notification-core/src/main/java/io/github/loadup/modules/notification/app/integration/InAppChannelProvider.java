@@ -19,15 +19,15 @@ import io.github.loadup.commons.log.LogUtil;
 import io.github.loadup.components.gotone.NotificationChannelProvider;
 import io.github.loadup.components.gotone.model.ChannelSendRequest;
 import io.github.loadup.components.gotone.model.ChannelSendResponse;
-import io.github.loadup.modules.notification.app.service.InboxService;
+import io.github.loadup.modules.notification.client.facade.InboxFacade;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class InAppChannelProvider implements NotificationChannelProvider {
 
-    private final InboxService inbox;
+    private final InboxFacade inbox;
 
-    public InAppChannelProvider(InboxService inbox) {
+    public InAppChannelProvider(InboxFacade inbox) {
         this.inbox = inbox;
     }
 

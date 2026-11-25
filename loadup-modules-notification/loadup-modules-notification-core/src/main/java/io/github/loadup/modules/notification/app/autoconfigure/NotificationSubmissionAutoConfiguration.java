@@ -16,16 +16,18 @@
 package io.github.loadup.modules.notification.app.autoconfigure;
 
 import io.github.loadup.components.database.id.IdGenerator;
+import io.github.loadup.components.gotone.NotificationService;
+import io.github.loadup.components.gotone.config.ChannelConfigProvider;
 import io.github.loadup.components.task.TaskAutoConfiguration;
 import io.github.loadup.components.task.TaskTemplate;
 import io.github.loadup.modules.notification.app.converter.NotificationSubmissionConverter;
 import io.github.loadup.modules.notification.app.converter.NotificationSubmissionConverterImpl;
-import io.github.loadup.modules.notification.app.service.InAppDeliveryHandler;
+import io.github.loadup.modules.notification.app.service.NotificationDeliveryHandler;
 import io.github.loadup.modules.notification.app.service.NotificationSubmissionService;
-import io.github.loadup.modules.notification.client.facade.InboxFacade;
 import io.github.loadup.modules.notification.client.facade.NotificationFacade;
 import io.github.loadup.modules.notification.domain.gateway.NotificationSubmissionGateway;
 import java.time.Clock;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -33,10 +35,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
-@AutoConfiguration(after = {NotificationAutoConfiguration.class, TaskAutoConfiguration.class})
-@ConditionalOnBean({NotificationSubmissionGateway.class, TaskTemplate.class, InboxFacade.class})
+@AutoConfiguration(
+        after = {NotificationAutoConfiguration.class, TaskAutoConfiguration.class},
+        afterName = "io.github.loadup.components.gotone.engine.GotoneEngineAutoConfiguration")
+@ConditionalOnBean({NotificationSubmissionGateway.class, TaskTemplate.class, NotificationService.class})
 @ConditionalOnProperty(
         prefix = "loadup.modules.notification",
         name = "enabled",
@@ -58,17 +64,32 @@ public class NotificationSubmissionAutoConfiguration {
             IdGenerator ids,
             JsonMapper json,
             NotificationSubmissionConverter converter,
-            @Qualifier("notificationClock") Clock clock) {
-        return new NotificationSubmissionService(gateway, tasks, ids, json, converter, clock);
+            @Qualifier("notificationClock") Clock clock,
+            Optional<ChannelConfigProvider> channelConfig) {
+        return new NotificationSubmissionService(gateway, tasks, ids, json, converter, clock, channelConfig);
     }
 
     @Bean
-    @ConditionalOnMissingBean(InAppDeliveryHandler.class)
-    public InAppDeliveryHandler inAppDeliveryHandler(
+    public NotificationDeliveryHandler notificationDeliveryHandler(
             NotificationSubmissionGateway gateway,
-            InboxFacade inbox,
+            NotificationService gotone,
             JsonMapper json,
-            @Qualifier("notificationClock") Clock clock) {
-        return new InAppDeliveryHandler(gateway, inbox, json, clock);
+            @Qualifier("notificationClock") Clock clock,
+            PlatformTransactionManager transactions) {
+        return new NotificationDeliveryHandler(
+                NotificationSubmissionService.DELIVERY_EVENT, gateway, gotone, json, clock,
+                new TransactionTemplate(transactions));
+    }
+
+    @Bean
+    public NotificationDeliveryHandler legacyNotificationDeliveryHandler(
+            NotificationSubmissionGateway gateway,
+            NotificationService gotone,
+            JsonMapper json,
+            @Qualifier("notificationClock") Clock clock,
+            PlatformTransactionManager transactions) {
+        return new NotificationDeliveryHandler(
+                NotificationSubmissionService.LEGACY_DELIVERY_EVENT, gateway, gotone, json, clock,
+                new TransactionTemplate(transactions));
     }
 }

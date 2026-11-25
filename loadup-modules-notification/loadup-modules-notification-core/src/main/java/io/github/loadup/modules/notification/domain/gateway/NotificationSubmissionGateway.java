@@ -25,9 +25,11 @@ public interface NotificationSubmissionGateway {
 
     NotificationReceipt find(String source, String requestKey);
 
-    void addDelivery(String id, String notificationId, String recipientId, String eventId, LocalDateTime at);
+    void addDelivery(
+            String id, String notificationId, String recipientId, String channel,
+            String eventId, String routeJson, LocalDateTime at);
 
-    Optional<NotificationDelivery> lockDelivery(String id);
+    Optional<NotificationDelivery> findDelivery(String id, boolean lock);
 
     void finish(String id, String status, LocalDateTime at);
 }

@@ -58,6 +58,10 @@ public record NotificationSubmitCommand(
         }
         recipients.forEach(value -> required(value, 64));
         recipients = recipients.stream().map(String::trim).distinct().sorted().toList();
+        validateActionUrl(actionUrl);
+    }
+
+    static void validateActionUrl(String actionUrl) {
         if (actionUrl != null) {
             required(actionUrl, 500);
             if (!actionUrl.startsWith("/")
@@ -69,7 +73,7 @@ public record NotificationSubmitCommand(
         }
     }
 
-    private static void required(String value, int max) {
+    static void required(String value, int max) {
         if (value == null || value.isBlank() || value.length() > max) {
             throw new CommonException(NotificationResultCodeEnum.INVALID_SUBMISSION);
         }

@@ -10,10 +10,11 @@
     <artifactId>loadup-modules-notification</artifactId>
     <packaging>pom</packaging>
     <name>LoadUp Modules Notification</name>
-    <description>User inbox notifications, read status and message publishing.</description>
+    <description>User inbox and multi-channel notification delivery.</description>
     <modules>
         <module>loadup-modules-notification-client</module>
         <module>loadup-modules-notification-core</module>
+        <module>loadup-modules-notification-gotone</module>
         <module>loadup-modules-notification-web</module>
     </modules>
     <properties/>

@@ -15,12 +15,17 @@
  */
 package io.github.loadup.modules.notification.domain.model;
 
-import io.github.loadup.commons.json.ToStringAsJson;
-
 public record NotificationDelivery(
-        String id, String notificationId, String recipientId, String eventId, String status, String contentJson) {
+        String id,
+        String notificationId,
+        String recipientId,
+        String channel,
+        String eventId,
+        String status,
+        String contentJson,
+        String routeJson) {
     @Override
     public String toString() {
-        return ToStringAsJson.reflectionToString(this);
+        return "NotificationDelivery[id=" + id + ", channel=" + channel + ", status=" + status + "]";
     }
 }

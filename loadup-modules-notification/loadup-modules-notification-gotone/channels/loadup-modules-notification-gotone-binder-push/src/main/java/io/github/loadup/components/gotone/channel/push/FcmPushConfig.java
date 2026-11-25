@@ -13,15 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.loadup.modules.notification.client.dto;
+package io.github.loadup.components.gotone.channel.push;
 
-import io.github.loadup.commons.json.ToStringAsJson;
-import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-public record SendResultDTO(
-        @Schema(description = "Delivered") int delivered) {
-    @Override
-    public String toString() {
-        return ToStringAsJson.reflectionToString(this);
+@ConfigurationProperties(prefix = "loadup.gotone.binder.push.fcm")
+public class FcmPushConfig {
+
+    private String serverKey;
+    private String projectId;
+
+    public String getServerKey() {
+        return serverKey;
+    }
+
+    public void setServerKey(String serverKey) {
+        this.serverKey = serverKey;
+    }
+
+    public String getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(String projectId) {
+        this.projectId = projectId;
     }
 }

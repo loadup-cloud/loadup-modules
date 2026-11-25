@@ -1,15 +1,17 @@
-# In-App Notifications 架构
+# Notification 架构
 
 ## 职责
 
-站内通知是可持久化、可读取的业务收件箱；Gotone 负责渠道选择、模板与发送编排。`InAppChannelProvider` 实现 Gotone
-`NotificationChannelProvider`，并调用 `InboxService` 落库；业务也可直接调用 `InboxService`。模块不依赖 UPMS，收件人 ID
+站内收件箱保存消息及已读状态。模块内的 [Gotone](loadup-modules-notification-gotone/ARCHITECTURE.md)
+按 serviceCode 解析多渠道路由，负责模板与发送编排。`InAppChannelProvider` 实现 Gotone
+`NotificationChannelProvider`，并通过 `InboxFacade` 写入收件箱。模块不依赖 UPMS，收件人 ID
 是业务身份标识。
 
 ```text
-业务调用 → InboxService → InboxGateway → notification_inbox
-Gotone NotificationService → IN_APP provider ─┘
-Web Controller → 当前认证用户的收件箱 ────┘
+发布 / 服务提交 → NotificationFacade → 渠道与接收地址快照 → Task
+Task → Gotone → IN_APP provider → InboxFacade → notification_inbox
+              → EMAIL / SMS / PUSH provider
+用户查询 / 已读 / 归档 → InboxFacade
 ```
 
 ## 数据与一致性
@@ -94,16 +96,16 @@ removed. Empty PageDTO defaults to an empty array and metadata 0/1/20. Existing 
 business Page wrappers, DictionaryTypePageQuery, AccountLoginPageQuery or SuccessResponse.ofPage must use the shared
 contracts. No URL or frontend payload-field migration is required.
 
-## 可靠受理与站内信投递
+## 多渠道受理与投递
 
-新增 NotificationFacade → NotificationSubmissionService → NotificationSubmissionGateway。
-MapStruct 转换命令为内容快照；规范化后序列化的 SHA-256 摘要用于同 source/requestKey 冲突判定。
-数据库唯一约束加 ON CONFLICT 保证并发去重，禁止捕获唯一键异常后继续使用已失败的 PostgreSQL 事务。
-受理服务将请求、目标、Task 写入同一事务；InAppDeliveryHandler 在事务内 FOR UPDATE 锁定目标，
-确认事件类型/版本/关联 ID 后写入站内信并标记完成。重复事件读取终态直接返回；过期目标不创建站内信。
-此处理器仅处理本地数据库，不包含外部网络副作用。
+管理接口读写 Gotone JDBC 中的 serviceCode 渠道映射。一次保存事务序列化同一个 serviceCode 的修改，并保留各渠道的原有模板和参数。
+通知受理读取已启用的映射，在同一事务中存储请求、每个渠道和收件人对应的目标及 Task 事件。每个目标保存其渠道配置快照，
+同一请求重试根据来源、幂等键和规范化请求摘要去重，已受理任务按原快照执行。
 
-独立的 NotificationSubmissionAutoConfiguration 在 Task 和 Notification 装配之后注册服务及处理器，
-支持禁用 notification 或 task 后不暴露提交入口。新流程使用 notificationClock。
-Gotone engine/store 由宿主应用选择；当前新受理入口只支持 IN_APP，外部渠道模型和不确定结果恢复后续实现。
-宿主应用必须按单部署单租户运行并配置固定 `loadup.database.schema`；不存在多租户 schema 路由。
+`NotificationDeliveryHandler` 将每个目标交给 Gotone。`IN_APP` Provider 负责写收件箱，写入与 DELIVERED 状态在同一事务提交。
+外部 Provider 在数据库事务外调用，失败由 Task 重试。外部投递是至少一次语义，系统 Provider 可将稳定的
+`templateParams.requestKey` 传给下游作为幂等键。每个目标独立过期、执行和完成，状态仍为 PENDING 时可用 event_id 查询 Task。
+
+新请求使用 `notification.delivery`，历史 `notification.in-app.delivery` 也由同一个处理器执行。
+`NotificationSubmissionAutoConfiguration` 在 Notification、Task 和 Gotone 已装配时注册受理和投递。
+宿主应用提供 JDBC 事务、任务队列、配置仓库和所需渠道 Provider。

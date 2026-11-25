@@ -15,10 +15,13 @@
  */
 package io.github.loadup.modules.notification.client.facade;
 
+import io.github.loadup.modules.notification.client.command.NotificationDispatchCommand;
 import io.github.loadup.modules.notification.client.command.NotificationSubmitCommand;
 import io.github.loadup.modules.notification.client.dto.NotificationAcceptedDTO;
 
 public interface NotificationFacade {
     /** The source must be established by the trusted application entry point. */
     NotificationAcceptedDTO submit(String source, NotificationSubmitCommand command);
+
+    NotificationAcceptedDTO dispatch(String source, String senderId, NotificationDispatchCommand command);
 }

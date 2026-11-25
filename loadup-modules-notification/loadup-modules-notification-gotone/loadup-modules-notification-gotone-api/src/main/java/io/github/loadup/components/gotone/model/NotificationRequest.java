@@ -1,0 +1,143 @@
+/*
+ * Copyright (C) 2025-2026 LoadUp Cloud
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.github.loadup.components.gotone.model;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+
+public record NotificationRequest(
+        String serviceCode,
+        List<String> receivers,
+        Map<String, Object> templateParams,
+        String requestId,
+        List<String> channels,
+        Boolean async,
+        Map<String, List<String>> receiversByChannel) {
+
+    public NotificationRequest {
+        Objects.requireNonNull(serviceCode, "serviceCode must not be null");
+        receivers = receivers == null ? List.of() : List.copyOf(receivers);
+        templateParams = templateParams == null ? Map.of() : Map.copyOf(templateParams);
+        channels = channels == null ? List.of() : List.copyOf(channels);
+        Map<String, List<String>> channelReceivers = new HashMap<>();
+        if (receiversByChannel != null) {
+            receiversByChannel.forEach((channel, targets) -> channelReceivers.put(channel, List.copyOf(targets)));
+        }
+        receiversByChannel = Map.copyOf(channelReceivers);
+        if (receivers.isEmpty() && receiversByChannel.values().stream().allMatch(List::isEmpty)) {
+            throw new IllegalArgumentException("receivers must not be empty");
+        }
+    }
+
+    public NotificationRequest(
+            String serviceCode,
+            List<String> receivers,
+            Map<String, Object> templateParams,
+            String requestId,
+            List<String> channels,
+            Boolean async) {
+        this(serviceCode, receivers, templateParams, requestId, channels, async, null);
+    }
+
+    /** Returns the channel-specific destinations or the shared default. */
+    public List<String> receiversForChannel(String channel) {
+        return receiversByChannel.getOrDefault(channel, receivers);
+    }
+
+    /** Counts distinct destination strings when the request includes channel-specific destinations. */
+    public int totalReceivers() {
+        if (receiversByChannel.isEmpty()) {
+            return receivers.size();
+        }
+        return Math.toIntExact(Stream.concat(
+                        receivers.stream(), receiversByChannel.values().stream().flatMap(List::stream))
+                .distinct()
+                .count());
+    }
+
+    /**
+     * Creates a request with only the mandatory fields.
+     *
+     * @param serviceCode    the service code
+     * @param receivers      the receivers
+     * @param templateParams the template params
+     * @return the request
+     */
+    public static NotificationRequest of(
+            String serviceCode, List<String> receivers, Map<String, Object> templateParams) {
+        return new NotificationRequest(serviceCode, receivers, templateParams, null, null, null);
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Fluent builder for {@link NotificationRequest}.
+     */
+    public static final class Builder {
+        private String serviceCode;
+        private List<String> receivers;
+        private Map<String, List<String>> receiversByChannel;
+        private Map<String, Object> templateParams;
+        private String requestId;
+        private List<String> channels;
+        private Boolean async;
+
+        public Builder serviceCode(String serviceCode) {
+            this.serviceCode = serviceCode;
+            return this;
+        }
+
+        public Builder receivers(List<String> receivers) {
+            this.receivers = receivers;
+            return this;
+        }
+
+        public Builder receiversByChannel(Map<String, List<String>> receiversByChannel) {
+            this.receiversByChannel = receiversByChannel;
+            return this;
+        }
+
+        public Builder templateParams(Map<String, Object> templateParams) {
+            this.templateParams = templateParams;
+            return this;
+        }
+
+        public Builder requestId(String requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        public Builder channels(List<String> channels) {
+            this.channels = channels;
+            return this;
+        }
+
+        public Builder async(Boolean async) {
+            this.async = async;
+            return this;
+        }
+
+        public NotificationRequest build() {
+            return new NotificationRequest(
+                    serviceCode, receivers, templateParams, requestId, channels, async, receiversByChannel);
+        }
+    }
+}

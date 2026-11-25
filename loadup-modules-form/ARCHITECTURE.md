@@ -94,7 +94,7 @@
 
 ## 7. 商户签约全流程
 
-1. **配置产品。** Pay 声明单值枚举字段 `PAY_METHOD`。产品 `ONLINE_ACQ V2` 绑定收单配置组 V2，允许 `JSAPI`、`H5`，默认 `JSAPI`，签约时可改。字段组另含整数字段 `SETTLEMENT_DAYS`。支付渠道和模式的适用性仍由 Pay 校验。[现有 PaymentMethod 枚举](../../loadup-framework/loadup-components/integration/loadup-components-payment-channel/loadup-components-payment-channel-contracts/src/main/java/io/github/loadup/components/payment/channel/contract/PaymentMethod.java)
+1. **配置产品。** Pay 声明单值枚举字段 `PAY_METHOD`。产品 `ONLINE_ACQ V2` 绑定收单配置组 V2，允许 `JSAPI`、`H5`，默认 `JSAPI`，签约时可改。字段组另含整数字段 `SETTLEMENT_DAYS`。支付渠道和模式的适用性仍由 Pay 校验。[现有 PaymentMethod 枚举](../../loadup-pay/loadup-pay-payment-channel/loadup-pay-payment-channel-contracts/src/main/java/io/github/loadup/components/payment/channel/contract/PaymentMethod.java)
 2. **配置组合。** 运营在 Pay 创建 `MERCHANT_STARTER V1`，选入必选的线上收单 `ONLINE` 和可选的交易通知 `NOTICE`，通知默认未选。form 不要求创建同名组合。
 3. **发布方案。** `STANDARD_ONLINE V3` 以别名 `BASE` 选择此组合，把结算周期锁定为 1 天。预览中 `BASE.ONLINE / PAY_METHOD` 为可改单选框，`BASE.ONLINE / SETTLEMENT_DAYS` 为只读整数。Pay 检查收单场景必需字段，发布得到 `R3003`。若 Pay 要求单值枚举却引用文本字段，发布失败并定位到条目和 Key。
 4. **打开并填写。** 签约人员为商户 `M10086` 及指定签约范围创建草稿 `F7001`。页面从 `R3003` 取得选项，以原 Key 提交 `BASE.ONLINE / PAY_METHOD = H5`，通知保持未选。服务端带入锁定的 1 天。直接提交 `payType` 或把结算周期改为 7 都会被拒绝。

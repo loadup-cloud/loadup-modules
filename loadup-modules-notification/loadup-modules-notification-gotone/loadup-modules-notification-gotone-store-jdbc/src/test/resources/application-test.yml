@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: gotone-test
+
+loadup:
+  flyway:
+    enabled: true
+    table: flyway_schema_history_gotone
+
+logging:
+  level:
+    io.github.loadup.components.gotone: DEBUG

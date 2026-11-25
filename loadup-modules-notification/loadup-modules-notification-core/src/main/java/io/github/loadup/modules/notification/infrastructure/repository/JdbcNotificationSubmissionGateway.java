@@ -63,29 +63,37 @@ public class JdbcNotificationSubmissionGateway implements NotificationSubmission
     }
 
     @Override
-    public void addDelivery(String id, String notificationId, String recipientId, String eventId, LocalDateTime at) {
+    public void addDelivery(
+            String id, String notificationId, String recipientId, String channel,
+            String eventId, String routeJson, LocalDateTime at) {
         int changed = jdbc.sql("""
                 INSERT INTO notification_delivery
-                    (id, notification_id, recipient_id, channel, event_id, status, created_at, updated_at)
-                VALUES (:id, :notification, :recipient, 'IN_APP', :event, 'PENDING', :at, :at)
+                    (id, notification_id, recipient_id, channel, event_id, route_json, status, created_at, updated_at)
+                VALUES (:id, :notification, :recipient, :channel, :event, :route, 'PENDING', :at, :at)
                 """)
                 .param("id", id)
                 .param("notification", notificationId)
                 .param("recipient", recipientId)
+                .param("channel", channel)
                 .param("event", eventId)
+                .param("route", routeJson, java.sql.Types.VARCHAR)
                 .param("at", at)
                 .update();
         requireChanged(changed);
     }
 
     @Override
-    public Optional<NotificationDelivery> lockDelivery(String id) {
-        return jdbc.sql("""
-            SELECT d.id, d.notification_id, d.recipient_id, d.event_id, d.status, r.content_json
-            FROM notification_delivery d JOIN notification_request r ON r.id = d.notification_id
-            WHERE d.id = :id AND d.deleted = FALSE AND r.deleted = FALSE
-            FOR UPDATE OF d
-            """).param("id", id).query(NotificationDelivery.class).optional();
+    public Optional<NotificationDelivery> findDelivery(String id, boolean lock) {
+        String query = """
+                SELECT d.id, d.notification_id, d.recipient_id, d.channel, d.event_id, d.status,
+                       r.content_json, d.route_json
+                FROM notification_delivery d JOIN notification_request r ON r.id = d.notification_id
+                WHERE d.id = :id AND d.deleted = FALSE AND r.deleted = FALSE
+                """;
+        return jdbc.sql(lock ? query + " FOR UPDATE OF d" : query)
+                .param("id", id)
+                .query(NotificationDelivery.class)
+                .optional();
     }
 
     @Override
