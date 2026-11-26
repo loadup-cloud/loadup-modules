@@ -36,6 +36,10 @@ Spotless 格式检查和修复独立于 Maven 构建生命周期，可在脚本�
 ./spotless.sh apply -pl :loadup-modules-file-core
 ```
 
+运行 `./spotless.sh install` 安装 pre-commit hook。提交时，hook 会格式化已暂存的 Java 文件和 POM，并重新暂存格式化结果。
+同一文件有未暂存改动时，hook 会中止提交，请先处理这些改动再重试。
+使用 `git commit -- <文件>` 时，若 hook 修改了格式，按提示重试提交。
+
 ## 发布
 
 本仓库的 JAR、parent 与独立 BOM 默认激活 `github`，日常发布到 GitHub Packages；准备好正式版后再手动发布 Central：
