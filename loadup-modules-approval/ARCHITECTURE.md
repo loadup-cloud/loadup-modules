@@ -91,7 +91,7 @@ Pay 保存。
    `revision`。在同一短事务内复核步骤、指派和权限，更新步骤与实例、递增版本、追加流水。换人和办理并发时，后到的一方刷新详情。审批人与接入服务身份均不得代填他人的决定。
 3. **投递。** 终态事务同时登记框架可靠任务，提交后再调用消费者。事件使用稳定 `eventId` 并携带
    `schemaVersion, instanceId, appCode, flowKey, definitionVersion, business, outcome, finishedAt`
-   。结果接收通道在接入登记时绑定，远程通知须验证服务身份；每次重试使用相同事件标识。复用[框架可靠任务](../../loadup-framework/loadup-components/reliability/loadup-components-task/)。
+   。结果接收通道在接入登记时绑定，远程通知须验证服务身份；每次重试使用相同事件标识。复用[框架可靠任务](../../loadup-framework/loadup-components/reliability/loadup-components-task/README.md)。
 4. **恢复。**
    消费方将事件去重记录与本地业务结果或待执行意图在同一事务内持久化，再确认接收。远端超时可重投；重试耗尽后显示投递状态，具备权限的人员可重放原事件。接入方也可主动查询实例并按同一业务幂等条件补偿。通知提醒失败不影响工作台待办。
 

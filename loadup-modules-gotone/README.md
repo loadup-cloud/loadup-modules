@@ -62,3 +62,9 @@ JSON 变量放在字符串值中。Inbox 跳转地址须为站内路径。
 `loadup.modules.gotone.web.enabled`。 [Inbox 接入说明](../loadup-modules-inbox/README.md)
 
 更多表结构、任务状态和验收场景见 [架构设计](DESIGN.md)。
+
+## 子模块入口
+
+- 客户端契约的[接入](loadup-modules-gotone-client/README.md)与[设计](loadup-modules-gotone-client/ARCHITECTURE.md)。
+- 业务实现的[接入](loadup-modules-gotone-core/README.md)与[设计](loadup-modules-gotone-core/ARCHITECTURE.md)。
+- Web 适配的[接入](loadup-modules-gotone-web/README.md)与[设计](loadup-modules-gotone-web/ARCHITECTURE.md)。

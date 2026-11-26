@@ -9,7 +9,7 @@ PersistenceAutoConfiguration 显式约束装配顺序。后者是同 JAR 装配�
 业务能力位于 `commons → components → modules → 消费工程` 的第三层。modules 只按业务领域组织聚合目录，模块边界按真实消费方式划分，
 不把代码分层直接变成 Maven 模块边界。
 
-默认小型业务（audit、dictionary、file、gotone、transfer）：
+默认三层业务包括 Audit、Dictionary、File、Form、Approval、Gotone、Inbox 和 Transfer。
 
 ```text
 loadup-modules/
@@ -19,7 +19,7 @@ loadup-modules/
     loadup-modules-{business}-web
 ```
 
-Gotone 使用 client、core、web 三层，覆盖服务编码、系统账号、异步投递和站内收件箱。
+Gotone 管理服务编码、系统账号和异步投递，站内信副本及收件状态由 Inbox 保存。[两者的事务与幂等边界](loadup-modules-inbox/ARCHITECTURE.md)。
 
 UPMS 因独立 authserver 集成保留完整分层：
 
@@ -55,8 +55,7 @@ authserver 适配。
 业务模块的默认 MyBatis-Flex / Spring JDBC Gateway 与 Flyway 脚本归 core 的 `infrastructure` 包；持久化自动配置创建端口适配。
 app 在其之后按 Gateway 和所需组件条件创建用例服务。消费者可替换 Gateway Bean。
 
-配置为 `loadup.modules.<business>.*`，Web 按 `*-web` Maven 依赖装配，无额外 enabled 开关；全局安全协议由技术组件的
-`loadup.security.*` 管理。配置的 enabled 开关控制 Bean，不作为 Flyway 跳过脚本机制。用户需迁移旧前缀，无兼容别名。
+配置为 `loadup.modules.<business>.*`。Web 一般按 `*-web` 依赖装配，Gotone 和 Inbox 另有各自的 Web 开关。全局安全协议由 `loadup.security.*` 管理。Enabled 开关控制 Bean，Flyway 的扫描范围由宿主迁移位置独立配置。
 
 ## 跨业务边界
 

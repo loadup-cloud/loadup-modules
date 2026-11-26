@@ -25,3 +25,9 @@ Gotone 的 `IN_APP` 任务传入收件人 ID、渲染内容和稳定的 `deliver
 | 归档一条消息 | `/api/inbox/archive`      |
 
 [Gotone 投递说明](../loadup-modules-gotone/README.md)
+
+## 子模块入口
+
+- 客户端契约的[接入](loadup-modules-inbox-client/README.md)与[设计](loadup-modules-inbox-client/ARCHITECTURE.md)。
+- 业务实现的[接入](loadup-modules-inbox-core/README.md)与[设计](loadup-modules-inbox-core/ARCHITECTURE.md)。
+- Web 适配的[接入](loadup-modules-inbox-web/README.md)与[设计](loadup-modules-inbox-web/ARCHITECTURE.md)。

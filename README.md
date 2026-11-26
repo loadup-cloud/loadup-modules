@@ -22,12 +22,9 @@
 Modules BOM 已导入配套的 `loadup-framework-bom`，可同时管理直接使用的框架依赖版本；配套 Framework 版本在 Modules BOM 内维护。
 [Modules BOM](loadup-modules-bom/README.md) 覆盖当前发布的 JAR，不管理聚合目录或内部测试模块。
 
-## OpenAPI documentation
+## 查看 OpenAPI
 
-Add `io.github.loadup-cloud:loadup-components-springdoc` to the host application to document its enabled module controllers.
-Open `/scalar` for the interactive reference or `/v3/api-docs` for the OpenAPI JSON.
-If the host sets `springdoc.packages-to-scan`, include `io.github.loadup.modules` or the relevant controller packages.
-See the [SpringDoc component guide](../loadup-framework/loadup-components/web/loadup-components-springdoc/README.md) for host configuration.
+宿主引入 `io.github.loadup-cloud:loadup-components-springdoc` 生成已装配 Controller 的文档。交互页面为 `/scalar`，OpenAPI JSON 位于 `/v3/api-docs`。如果自定义 `springdoc.packages-to-scan`，纳入 `io.github.loadup.modules` 或所需 Controller 的包。详见 [SpringDoc 接入](../loadup-framework/loadup-components/web/loadup-components-springdoc/README.md)。
 
 ## 构建与格式检查
 
@@ -72,6 +69,7 @@ mvnd clean deploy -Prelease
 | [Dictionary](loadup-modules-dictionary/README.md) | 字典类型、条目及启用选项                   |
 | [File](loadup-modules-file/README.md)             | 文件元数据、访问控制、引用与清理           |
 | [Form](loadup-modules-form/README.md)             | 字段目录、表单发布、填写与按 Key 取值      |
+| [Approval](loadup-modules-approval/README.md)     | 顺序审批模板、待办、换人与结果投递         |
 | [Gotone](loadup-modules-gotone/README.md)         | 按服务编码配置多渠道异步投递               |
 | [Inbox](loadup-modules-inbox/README.md)           | 站内消息的幂等接收、收件箱查询、已读及归档 |
 | [Transfer](loadup-modules-transfer/README.md)     | 导入导出任务、进度、结果与重试             |
@@ -83,7 +81,7 @@ authserver 集成保留完整 `client / domain / infrastructure / app / web / te
 下单列为业务模块。
 
 - 仅共享协议：引入 `*-client`。
-- 程序化使用用例：引入 `*-core`（UPMS 为 `*-app`），自动带入默认持久化适配。
+- 程序化使用用例：引入 `*-core`（UPMS 为 `*-app`），同一 JAR 带入默认持久化适配（完整分层模块按宿主装配）。
 - 提供 HTTP 接口：引入同一业务目录下的 `*-web`，自动带入 core。
 - 扩展持久化：依赖 domain Gateway，实现并注册接口 Bean。
 - 独立测试模块只用于验证，不引入生产工程；默认测试跟随 core。

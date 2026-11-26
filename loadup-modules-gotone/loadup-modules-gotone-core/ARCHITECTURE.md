@@ -1,6 +1,7 @@
-# Gotone core
+# Gotone Core 架构
 
-实现渠道配置、任务受理与发送、供应商选择和数据库存储。宿主提供 Framework Task；迁移只建表和索引，不包含服务或账号种子数据。建表
-DDL 已在 MySQL 8.0、H2 2.4 验证，其他引擎的端到端接入尚未验证。
+`GotoneAutoConfiguration` 在 Task 可用时组装受理、运营、发送、Provider 和持久化服务。应用层以已发布的服务修订解析渠道和模板，生成渲染快照，再与目标及 Task 一起提交。生成的 MyBatis-Flex Mapper 与 Task 共用宿主事务。
 
-[使用说明](../README.md) · [总体架构](../ARCHITECTURE.md)
+执行时各渠道 Handler 解析启用的账号。站内投递通过 `InboxReceiver` 与 `SENT` 更新同事务提交。外部渠道先保存尝试记录，再在数据库事务外传输，根据确认结果写入投递状态。未知结果交由运营核对。路由与投递的完整状态、幂等和回执规则见 [Gotone 总体设计](../ARCHITECTURE.md)。
+
+[Core 接入](README.md) · [Inbox 事务边界](../../loadup-modules-inbox/ARCHITECTURE.md)

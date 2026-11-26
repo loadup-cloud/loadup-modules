@@ -75,3 +75,9 @@ schema。`loadup.modules.form.enabled=false` 可关闭用例自动装配。Web �
 
 目前组和模板共用版本表，定义正文使用类型明确的 DTO 保存。字段、字段版本、发布版本、选中条目和提交字段值都有独立记录，提交值通过字段版本的外键定位。设计文档中的
 Pay 生成模板、合约绑定和对应管理页面属于后续接入。
+
+## 子模块入口
+
+- 客户端契约的[接入](loadup-modules-form-client/README.md)与[设计](loadup-modules-form-client/ARCHITECTURE.md)。
+- 业务实现的[接入](loadup-modules-form-core/README.md)与[设计](loadup-modules-form-core/ARCHITECTURE.md)。
+- Web 适配的[接入](loadup-modules-form-web/README.md)与[设计](loadup-modules-form-web/ARCHITECTURE.md)。

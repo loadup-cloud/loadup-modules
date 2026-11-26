@@ -56,3 +56,9 @@ loadup:
 
 同一应用使用一个接收通道。没有回调与 Handler 的应用通过查询接口获取结果。审批端将失败投递保留在可靠任务中，可由持有 retry
 权限的用户在详情页填写原因重投。
+
+## 子模块入口
+
+- 客户端契约的[接入](loadup-modules-approval-client/README.md)与[设计](loadup-modules-approval-client/ARCHITECTURE.md)。
+- 业务实现的[接入](loadup-modules-approval-core/README.md)与[设计](loadup-modules-approval-core/ARCHITECTURE.md)。
+- Web 适配的[接入](loadup-modules-approval-web/README.md)与[设计](loadup-modules-approval-web/ARCHITECTURE.md)。

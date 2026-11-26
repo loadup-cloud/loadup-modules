@@ -1,6 +1,14 @@
-# Gotone core
+# Gotone Core 接入
 
-实现渠道配置、任务受理与发送、供应商选择和数据库存储。宿主提供 Framework Task；迁移只建表和索引，不包含服务或账号种子数据。建表
-DDL 已在 MySQL 8.0、H2 2.4 验证，其他引擎的端到端接入尚未验证。
+本工件在宿主内提供服务配置、投递受理、任务 Handler、供应商适配和默认持久化。需要 Java 调用方时依赖 [Gotone Client](../loadup-modules-gotone-client/README.md) 的 `GotoneFacade`，需要 HTTP 时装配 [Gotone Web](../loadup-modules-gotone-web/README.md)。
 
-[使用说明](../README.md) · [总体架构](../ARCHITECTURE.md)
+```xml
+<dependency>
+    <groupId>io.github.loadup-cloud</groupId>
+    <artifactId>loadup-modules-gotone-core</artifactId>
+</dependency>
+```
+
+宿主提供共享数据源、JDBC 事务、Database 的序列分配表和 Framework `TaskTemplate`。将 `classpath:db/migration/modules/gotone` 纳入 Flyway，迁移完成后创建账号并发布服务编码。配置 `loadup.modules.gotone.enabled=false` 可关闭组件装配。启用 `IN_APP` 渠道时组合 Inbox Core，并让两个模块共享事务。
+
+[渠道配置、任务类型与接入检查](../README.md) · [本层架构](ARCHITECTURE.md)

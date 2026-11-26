@@ -7,6 +7,16 @@ transfer.scan），只调用 service 的有界队列扫描。文件操作复用 
 
 ## 事务与执行
 
+```mermaid
+stateDiagram-v2
+    [*] --> QUEUED: 提交并建立文件引用
+    QUEUED --> RUNNING: 扫描器条件领取
+    RUNNING --> SUCCEEDED: 保存处理结果
+    RUNNING --> FAILED: 执行失败并完成清理
+    FAILED --> QUEUED: 显式重试
+    SUCCEEDED --> [*]
+```
+
 提交在同一业务数据库事务内建立源文件引用并插入 QUEUED 记录；显式重试在事务内 CAS 重排队并保护输入引用。不调用远程调度
 API，消除“业务库已提交、远程任务未注册”的双写窗口。文件资源表与任务表必须使用同一事务 DataSource。
 
