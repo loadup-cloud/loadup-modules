@@ -22,6 +22,13 @@
 Modules BOM 已导入配套的 `loadup-framework-bom`，可同时管理直接使用的框架依赖版本；配套 Framework 版本在 Modules BOM 内维护。
 [Modules BOM](loadup-modules-bom/README.md) 覆盖当前发布的 JAR，不管理聚合目录或内部测试模块。
 
+## OpenAPI documentation
+
+Add `io.github.loadup-cloud:loadup-components-springdoc` to the host application to document its enabled module controllers.
+Open `/scalar` for the interactive reference or `/v3/api-docs` for the OpenAPI JSON.
+If the host sets `springdoc.packages-to-scan`, include `io.github.loadup.modules` or the relevant controller packages.
+See the [SpringDoc component guide](../loadup-framework/loadup-components/web/loadup-components-springdoc/README.md) for host configuration.
+
 ## 构建与格式检查
 
 Modules 继承 Framework parent 的 Maven 插件配置。并列检出时使用本地 Framework POM，独立检出时从 Maven 本地仓库或 GitHub

@@ -33,6 +33,9 @@ import io.github.loadup.commons.result.SuccessResponse;
 import io.github.loadup.modules.form.client.FormCatalog;
 import io.github.loadup.modules.form.client.FormException;
 import io.github.loadup.modules.form.client.FormRuntime;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,6 +50,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Forms", description = "Versioned form definitions, releases and form instances")
 @RequestMapping("/forms/{namespace}")
 public class FormController {
     private static final String AUTHORITY_PREFIX = "'form:' + #p0.toLowerCase(T(java.util.Locale).ROOT)";
@@ -63,6 +67,7 @@ public class FormController {
     }
 
     @GetMapping("/fields")
+    @Operation(summary = "List form field versions", description = "Optionally filter by field key prefix.")
     @PreAuthorize(DESIGN)
     public SuccessResponse<List<FieldVersion>> fields(
             @PathVariable("namespace") String namespace,
@@ -73,6 +78,7 @@ public class FormController {
     }
 
     @PostMapping("/fields/publish")
+    @Operation(summary = "Publish a form field version")
     @PreAuthorize(PUBLISH)
     public SuccessResponse<FieldVersion> publishField(
             @PathVariable("namespace") String namespace, @RequestBody PublishField request) {
@@ -80,6 +86,7 @@ public class FormController {
     }
 
     @GetMapping("/groups")
+    @Operation(summary = "List field group versions")
     @PreAuthorize(DESIGN)
     public SuccessResponse<List<Version<Group>>> groups(
             @PathVariable("namespace") String namespace,
@@ -89,6 +96,7 @@ public class FormController {
     }
 
     @GetMapping("/groups/{id}")
+    @Operation(summary = "Get a field group version")
     @PreAuthorize(DESIGN)
     public SuccessResponse<Version<Group>> group(
             @PathVariable("namespace") String namespace, @PathVariable("id") String id) {
@@ -96,6 +104,7 @@ public class FormController {
     }
 
     @PutMapping("/groups")
+    @Operation(summary = "Save a field group draft")
     @PreAuthorize(DESIGN)
     public SuccessResponse<Version<Group>> saveGroup(
             @PathVariable("namespace") String namespace, @RequestBody Save<Group> request) {
@@ -103,6 +112,7 @@ public class FormController {
     }
 
     @PostMapping("/groups/{id}/publish")
+    @Operation(summary = "Publish a field group version")
     @PreAuthorize(PUBLISH)
     public SuccessResponse<Version<Group>> publishGroup(
             @PathVariable("namespace") String namespace, @PathVariable("id") String id, @RequestBody Revision request) {
@@ -110,6 +120,7 @@ public class FormController {
     }
 
     @GetMapping("/templates")
+    @Operation(summary = "List form template versions")
     @PreAuthorize(DESIGN)
     public SuccessResponse<List<Version<Template>>> templates(
             @PathVariable("namespace") String namespace,
@@ -119,6 +130,7 @@ public class FormController {
     }
 
     @GetMapping("/templates/{id}")
+    @Operation(summary = "Get a form template version")
     @PreAuthorize(DESIGN)
     public SuccessResponse<Version<Template>> template(
             @PathVariable("namespace") String namespace, @PathVariable("id") String id) {
@@ -126,6 +138,7 @@ public class FormController {
     }
 
     @PutMapping("/templates")
+    @Operation(summary = "Save a form template draft")
     @PreAuthorize(DESIGN)
     public SuccessResponse<Version<Template>> saveTemplate(
             @PathVariable("namespace") String namespace, @RequestBody Save<Template> request) {
@@ -133,6 +146,9 @@ public class FormController {
     }
 
     @GetMapping("/templates/{id}/preview")
+    @Operation(
+            summary = "Preview the resolved form template",
+            description = "Resolves the template version into renderable items and fields.")
     @PreAuthorize(DESIGN)
     public SuccessResponse<Release> preview(
             @PathVariable("namespace") String namespace, @PathVariable("id") String id) {
@@ -140,6 +156,9 @@ public class FormController {
     }
 
     @PostMapping("/templates/{id}/publish")
+    @Operation(
+            summary = "Publish a form template version",
+            description = "Returns the immutable release used to start form instances.")
     @PreAuthorize(PUBLISH)
     public SuccessResponse<Release> publishTemplate(
             @PathVariable("namespace") String namespace, @PathVariable("id") String id, @RequestBody Revision request) {
@@ -147,6 +166,9 @@ public class FormController {
     }
 
     @PostMapping("/templates/{id}/retire")
+    @Operation(
+            summary = "Retire a form template version",
+            description = "Stops creation of instances from this release. Existing drafts keep their release.")
     @PreAuthorize(PUBLISH)
     public SuccessResponse<Void> retireTemplate(
             @PathVariable("namespace") String namespace, @PathVariable("id") String id, @RequestBody Revision request) {
@@ -155,6 +177,9 @@ public class FormController {
     }
 
     @PostMapping("/instances/start")
+    @Operation(
+            summary = "Start a form instance",
+            description = "Creates a draft from the release. Reuse the request key to retrieve the existing instance.")
     @PreAuthorize(FILL)
     public SuccessResponse<Detail> start(
             @PathVariable("namespace") String namespace, Principal principal, @RequestBody Start request) {
@@ -162,6 +187,9 @@ public class FormController {
     }
 
     @GetMapping("/instances/{id}")
+    @Operation(
+            summary = "Get my form instance",
+            description = "Includes the pinned release, selected items and resolved values.")
     @PreAuthorize(FILL)
     public SuccessResponse<Detail> detail(
             @PathVariable("namespace") String namespace, @PathVariable("id") String id, Principal principal) {
@@ -169,6 +197,10 @@ public class FormController {
     }
 
     @PutMapping("/instances/draft")
+    @Operation(
+            summary = "Save my form draft",
+            description =
+                    "Replaces the selected items and user overrides. Omitted overrides revert to inherited values.")
     @PreAuthorize(FILL)
     public SuccessResponse<Detail> saveDraft(
             @PathVariable("namespace") String namespace, Principal principal, @RequestBody SaveDraft request) {
@@ -176,6 +208,11 @@ public class FormController {
     }
 
     @PostMapping("/instances/submit")
+    @Operation(
+            summary = "Submit my form instance",
+            description =
+                    "Validates required values and freezes the submitted values. Retry with the same request key and"
+                            + " draft version.")
     @PreAuthorize(FILL)
     public SuccessResponse<Detail> submit(
             @PathVariable("namespace") String namespace, Principal principal, @RequestBody Submit request) {
@@ -190,9 +227,16 @@ public class FormController {
                 null);
     }
 
+    @Schema(name = "FormPublishField", description = "Field definition and its version number")
     public record PublishField(int version, Field field) {}
 
-    public record Revision(long expectedRowVersion) {}
+    @Schema(name = "FormRevision")
+    public record Revision(
+            @Schema(description = "Current rowVersion of the group or template", example = "1")
+            long expectedRowVersion) {}
 
+    @Schema(
+            name = "FormErrorDetail",
+            description = "Form failure details with the affected item and field when available")
     public record ErrorDetail(String itemKey, String fieldKey, String reason) {}
 }

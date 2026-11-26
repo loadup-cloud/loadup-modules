@@ -17,6 +17,7 @@ package io.github.loadup.modules.form.client;
 
 import io.github.loadup.modules.form.client.FormDefinitions.Origin;
 import io.github.loadup.modules.form.client.FormDefinitions.Release;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 import java.util.Set;
 import tools.jackson.databind.JsonNode;
@@ -29,23 +30,49 @@ public final class FormInstances {
         SUBMITTED
     }
 
-    public record Start(String releaseId, String requestKey) {}
+    @Schema(name = "FormStart", description = "Request to start a form instance from a release")
+    public record Start(
+            String releaseId,
 
+            @Schema(description = "Idempotency key for starting the form instance")
+            String requestKey) {}
+
+    @Schema(name = "FormSaveDraft", description = "Replacement selection and user-entered values for a draft")
     public record SaveDraft(
             String instanceId,
+
+            @Schema(description = "Current rowVersion of the draft")
             long expectedRowVersion,
+
+            @Schema(description = "Complete set of selected item keys")
             Set<String> selectedItems,
+
+            @Schema(
+                    description = "User overrides keyed by item and field. Values follow the release's field types.",
+                    example = "{\"ROOT\":{\"DEVICE_TYPE\":\"LAPTOP\",\"QUANTITY\":2}}")
             Map<String, Map<String, JsonNode>> values) {}
 
-    public record Submit(String instanceId, long expectedRowVersion, String requestKey) {}
+    @Schema(name = "FormSubmit", description = "Request to submit a form draft")
+    public record Submit(
+            String instanceId,
 
+            @Schema(description = "Current rowVersion of the draft")
+            long expectedRowVersion,
+
+            @Schema(description = "Idempotency key for submitting the draft")
+            String requestKey) {}
+
+    @Schema(name = "FormValue", description = "Resolved field value and its source")
     public record Value(JsonNode value, Origin origin) {}
 
+    @Schema(name = "FormDetail", description = "Form instance, release and resolved values")
     public record Detail(
             String id,
             Release release,
             Status status,
             long rowVersion,
             Set<String> selectedItems,
+
+            @Schema(description = "Resolved values keyed first by item key and then by field key")
             Map<String, Map<String, Value>> values) {}
 }

@@ -29,6 +29,10 @@ import io.github.loadup.modules.file.client.error.FileResultCodeEnum;
 import io.github.loadup.modules.file.client.facade.FileResourceFacade;
 import io.github.loadup.modules.file.client.query.FilePageQuery;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -123,6 +127,14 @@ public class FileResourceController {
 
     @GetMapping("/{id}/content")
     @Operation(summary = "Download file content")
+    @ApiResponse(
+            responseCode = "200",
+            description = "File content returned as an attachment",
+            headers = @Header(name = HttpHeaders.CONTENT_DISPOSITION, description = "Attachment filename"),
+            content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                            schema = @Schema(type = "string", format = "binary")))
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<StreamingResponseBody> download(@PathVariable String id, Authentication authentication) {
         String actor = actor(authentication);

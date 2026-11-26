@@ -38,5 +38,9 @@
             <groupId>io.github.loadup-cloud</groupId>
             <artifactId>loadup-commons-error</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+        </dependency>
     </dependencies>
 </project>
