@@ -53,7 +53,7 @@ public final class TwilioSmsProvider implements GotoneProvider {
                 "From", account.settings().get("from"), "Body", work.snapshot().fields().get("body")));
         try {
             var response = GotoneHttp.send(account, GotoneHttp.post(endpoint, account,
-                    "application/x-www-form-urlencoded", body, work.id().toString())
+                    "application/x-www-form-urlencoded", body, work.id())
                     .header("Authorization", "Basic " + auth).build());
             if (response.statusCode() == 201) return Outcome.sent(json.readTree(response.body()).path("sid").asText(null));
             return GotoneHttp.failure(response.statusCode());

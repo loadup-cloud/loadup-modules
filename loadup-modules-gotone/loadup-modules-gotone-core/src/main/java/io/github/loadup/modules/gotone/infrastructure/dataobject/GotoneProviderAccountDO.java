@@ -15,13 +15,11 @@
  */
 package io.github.loadup.modules.gotone.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Id;
-import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
+import io.github.loadup.components.database.dataobject.BaseDO;
 
 @Table("gotone_provider_account")
-public class GotoneProviderAccountDO {
-    @Id(keyType = KeyType.None)
+public class GotoneProviderAccountDO extends BaseDO {
     private String accountCode;
     private String channel;
     private String adapter;
@@ -31,6 +29,7 @@ public class GotoneProviderAccountDO {
     private Integer connectTimeoutMs;
     private Integer requestTimeoutMs;
     private Integer version;
+    private String settings;
 
     public String getAccountCode() {
         return accountCode;
@@ -103,4 +102,13 @@ public class GotoneProviderAccountDO {
     public void setVersion(Integer version) {
         this.version = version;
     }
+
+    public String getSettings() {
+        return settings;
+    }
+
+    public void setSettings(String settings) {
+        this.settings = settings;
+    }
+
 }

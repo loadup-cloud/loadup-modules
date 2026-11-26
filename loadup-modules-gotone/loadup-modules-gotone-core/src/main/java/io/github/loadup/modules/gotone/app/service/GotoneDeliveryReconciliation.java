@@ -21,7 +21,6 @@ import io.github.loadup.modules.gotone.client.Gotone.Channel;
 import io.github.loadup.modules.gotone.client.Gotone.Delivery;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore;
 import java.time.Clock;
-import java.util.UUID;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public final class GotoneDeliveryReconciliation {
@@ -40,12 +39,12 @@ public final class GotoneDeliveryReconciliation {
     public boolean sync(Delivery delivery) {
         if (!delivery.status().equals("SENDING") && !delivery.status().equals("PENDING")
                 && !delivery.status().equals("RETRY_WAIT")) return false;
-        return Boolean.TRUE.equals(tx.execute(transaction -> reconcile(UUID.fromString(delivery.id()), delivery.channel())));
+        return Boolean.TRUE.equals(tx.execute(transaction -> reconcile(delivery.id(), delivery.channel())));
     }
 
-    public boolean reconcile(UUID id, Channel channel) {
+    public boolean reconcile(String id, Channel channel) {
         var work = store.lock(id).orElseThrow();
-        var queue = tasks.find(GotoneSubmissionService.taskType(channel), id.toString());
+        var queue = tasks.find(GotoneSubmissionService.taskType(channel), id);
         if (queue.isPresent() && queue.get().status() != TaskStatus.FAILED
                 && queue.get().status() != TaskStatus.CANCELLED) return false;
         switch (work.status()) {

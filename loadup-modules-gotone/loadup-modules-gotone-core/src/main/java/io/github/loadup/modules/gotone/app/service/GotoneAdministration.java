@@ -32,6 +32,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public final class GotoneAdministration implements GotoneOperations {
@@ -67,7 +68,11 @@ public final class GotoneAdministration implements GotoneOperations {
     @Override
     public void saveDraft(Route route, String actor) {
         validateShape(route);
-        configuration.saveDraft(route, actor);
+        try {
+            tx.executeWithoutResult(status -> configuration.saveDraft(route, actor));
+        } catch (DuplicateKeyException concurrentInsert) {
+            tx.executeWithoutResult(status -> configuration.saveDraft(route, actor));
+        }
     }
 
     @Override
@@ -125,8 +130,8 @@ public final class GotoneAdministration implements GotoneOperations {
         GotoneSubmissionService.required(binding.remoteTemplateId(), 200);
         if (binding.remoteSignature() != null) GotoneSubmissionService.required(binding.remoteSignature(), 200);
         var variables = GotoneSubmissionService.parameters(binding.variableMapping());
-        configuration.saveSmsBinding(new SmsBinding(binding.serviceCode(), binding.revision(), binding.accountCode(),
-                binding.remoteTemplateId(), binding.remoteSignature(), variables));
+        tx.executeWithoutResult(status -> configuration.saveSmsBinding(new SmsBinding(binding.serviceCode(), binding.revision(), binding.accountCode(),
+                binding.remoteTemplateId(), binding.remoteSignature(), variables)));
     }
 
     @Override public List<Receipt> recentRequests() { return store.recent(); }
@@ -144,12 +149,12 @@ public final class GotoneAdministration implements GotoneOperations {
                 throw new CommonException(REQUEST_CONFLICT);
             }
             String taskType = GotoneSubmissionService.taskType(work.channel());
-            var existing = tasks.find(taskType, id.toString());
+            var existing = tasks.find(taskType, id);
             if (existing.isPresent()) {
                 if (existing.get().status() != TaskStatus.FAILED) throw new CommonException(REQUEST_CONFLICT);
                 tasks.retryFailed(existing.get().id(), actor, retry.reason());
             } else {
-                tasks.submit(TaskSubmission.immediate(taskType, id.toString(), id.toString()));
+                tasks.submit(TaskSubmission.immediate(taskType, id, id));
             }
             store.retry(work, retry, actor);
         });

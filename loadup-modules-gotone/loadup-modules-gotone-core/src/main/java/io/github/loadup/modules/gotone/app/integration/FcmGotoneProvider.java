@@ -83,7 +83,7 @@ public final class FcmGotoneProvider implements GotoneProvider {
         URI endpoint = URI.create("https://fcm.googleapis.com/v1/projects/" + account.settings().get("projectId") + "/messages:send");
         try {
             var response = GotoneHttp.send(account, GotoneHttp.post(endpoint, account, "application/json",
-                    json.writeValueAsString(Map.of("message", message)), work.id().toString())
+                    json.writeValueAsString(Map.of("message", message)), work.id())
                     .header("Authorization", "Bearer " + token).build());
             if (response.statusCode() == 200) return Outcome.sent(json.readTree(response.body()).path("name").asText(null));
             return GotoneHttp.failure(response.statusCode());

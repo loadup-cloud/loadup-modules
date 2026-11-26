@@ -18,9 +18,11 @@ package io.github.loadup.modules.inbox.web;
 import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.inbox.client.dto.InboxMessageDTO;
 import io.github.loadup.modules.inbox.client.dto.NotificationViewDTO;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 
 @Mapper(config = LoadUpMapStructConfig.class)
 public interface InboxWebConverter {
+    @BeanMapping(ignoreUnmappedSourceProperties = "recipientId")
     NotificationViewDTO toView(InboxMessageDTO value);
 }

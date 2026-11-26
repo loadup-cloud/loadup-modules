@@ -21,7 +21,6 @@ import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryS
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore.Work;
 import io.github.loadup.modules.inbox.client.facade.InboxReceiver;
 import java.time.Clock;
-import java.util.UUID;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public final class InboxDeliveryHandler extends GotoneDeliveryHandler {
@@ -33,16 +32,16 @@ public final class InboxDeliveryHandler extends GotoneDeliveryHandler {
     }
 
     @Override
-    protected void deliver(UUID id, TaskExecution task) {
+    protected void deliver(String id, TaskExecution task) {
         tx.executeWithoutResult(status -> sendInbox(id));
     }
 
-    private void sendInbox(UUID id) {
+    private void sendInbox(String id) {
         Work work = readWork(id);
         if (work == null) return;
         int attempt = store.start(work, null, null);
         var fields = work.snapshot().fields();
-        inbox.receive(id.toString(), work.snapshot().target().address(), work.senderId(), fields.get("category"),
+        inbox.receive(id, work.snapshot().target().address(), work.senderId(), fields.get("category"),
                 fields.get("title"), fields.get("body"), fields.get("actionPath"));
         store.finish(id, attempt, "SENT", null, null);
     }

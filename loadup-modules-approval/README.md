@@ -25,7 +25,7 @@
 1. 管理员使用 Admin 或模板 API 发布流程。
 2. 业务应用查询启用版本与候选人，冻结业务内容并生成业务引用及摘要。
 3. 调用 `ApprovalFacade.start` 或 `POST /api/v1/approval/{app}/instances`，保存返回的实例 ID。发起参数与 HTTP 示例见 [架构设计](ARCHITECTURE.md#6-java-和-http-接入契约)。
-4. 业务应用通过 `ApprovalFacade.detail` 或 `GET /api/v1/approval/{app}/instances/{id}` 取得状态。审批工作台提供待办、通过、驳回、撤回及授权换人。具名待办在宿主装配通知模块时会发送站内提醒，共享角色待办显示在个人待办列表中。
+4. 业务应用通过 `ApprovalFacade.detail` 或 `GET /api/v1/approval/{app}/instances/{id}` 取得状态。审批工作台提供待办、通过、驳回、撤回及授权换人。具名待办在宿主装配 Gotone 和 Inbox 时可发送站内提醒；管理员须先发布 `approval.pending` 的 IN_APP 服务配置（声明 `actionUrl`，并设置类别、标题、正文和 `actionPath=${actionUrl}`）。Gotone 迁移不预置该服务或模板。共享角色待办显示在个人待办列表中。
 5. 业务应用处理终态，并先核对实例与本地冻结版本。结果事件允许重复，消费端以 `eventId` 去重。撤回和驳回也会产生终态事件。
 
 ## 结果接收

@@ -23,7 +23,6 @@ import io.github.loadup.modules.inbox.domain.InboxGateway;
 import io.github.loadup.modules.inbox.domain.InboxMessage;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 final class InboxReceiverService implements InboxReceiver {
     private final InboxGateway inbox;
@@ -48,7 +47,7 @@ final class InboxReceiverService implements InboxReceiver {
             throw new CommonException(InboxResultCode.INVALID_ACTION_URL);
         }
         String key = required(requestKey, 128);
-        var message = new InboxMessage(UUID.randomUUID().toString(), recipient, sender, kind, heading, text, path,
+        var message = new InboxMessage(null, recipient, sender, kind, heading, text, path,
                 null, LocalDateTime.now(clock));
         inbox.insert(message, key);
     }

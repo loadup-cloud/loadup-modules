@@ -28,18 +28,21 @@ import io.github.loadup.modules.inbox.infrastructure.mapper.InboxMessageMapper;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Objects;
-import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 public class InboxGatewayImpl implements InboxGateway {
     private final InboxMessageMapper mapper;
-    private final JdbcClient jdbc;
+    private final TransactionTemplate insertTransaction;
     private final IdGenerator ids;
     private final Clock clock;
 
-    public InboxGatewayImpl(InboxMessageMapper mapper, JdbcClient jdbc, Clock clock, IdGenerator ids) {
+    public InboxGatewayImpl(InboxMessageMapper mapper, PlatformTransactionManager transactions, Clock clock, IdGenerator ids) {
         this.mapper = mapper;
-        this.jdbc = jdbc;
+        this.insertTransaction = new TransactionTemplate(transactions);
+        this.insertTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED);
         this.clock = clock;
         this.ids = ids;
     }
@@ -59,13 +62,16 @@ public class InboxGatewayImpl implements InboxGateway {
         row.setRequestKey(requestKey);
         row.setCreatedAt(message.createdAt() == null ? now : message.createdAt());
         row.setUpdatedAt(now);
-        return jdbc.sql("""
-                INSERT INTO inbox_message (id, recipient_id, sender_id, category, title, body, action_url,
-                    request_key, read_at, created_at, updated_at, deleted)
-                VALUES (:id, :recipientId, :senderId, :category, :title, :body, :actionUrl,
-                    :requestKey, :readAt, :createdAt, :updatedAt, FALSE)
-                ON CONFLICT (recipient_id, request_key) DO NOTHING
-                """).paramSource(new BeanPropertySqlParameterSource(row)).update();
+        row.setDeleted(false);
+        try {
+            // Roll back a duplicate insert to its savepoint so the caller can finish the delivery.
+            return insertTransaction.execute(status -> mapper.insert(row));
+        } catch (DuplicateKeyException duplicate) {
+            var existing = mapper.selectOneByQuery(owned(message.recipientId())
+                    .and(INBOX_MESSAGE.REQUEST_KEY.eq(requestKey)).forUpdate());
+            if (existing == null) throw duplicate;
+            return 0;
+        }
     }
 
     @Override

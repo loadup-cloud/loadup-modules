@@ -15,15 +15,14 @@
  */
 package io.github.loadup.modules.gotone.app.autoconfigure;
 
+import io.github.loadup.components.database.id.IdGenerator;
 import io.github.loadup.components.kms.KmsSecretManager;
 import io.github.loadup.components.task.TaskAutoConfiguration;
 import io.github.loadup.components.task.TaskTemplate;
 import io.github.loadup.modules.gotone.app.integration.*;
 import io.github.loadup.modules.gotone.app.service.*;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneProviderAccountMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneRequestMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.*;
+import io.github.loadup.modules.gotone.infrastructure.repository.GotoneRows;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigurationStore;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore;
 import io.github.loadup.modules.inbox.client.facade.InboxReceiver;
@@ -45,7 +44,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -57,15 +55,22 @@ import tools.jackson.databind.json.JsonMapper;
 @Import(GotoneAutoConfiguration.SmtpConfiguration.class)
 public class GotoneAutoConfiguration {
     @Bean
-    GotoneConfigurationStore gotoneConfigurationStore(JdbcClient jdbc, GotoneServiceMapper services,
-            GotoneProviderAccountMapper accounts, JsonMapper json) {
-        return new GotoneConfigurationStore(jdbc, services, accounts, json);
+    GotoneRows gotoneRows(IdGenerator ids, Clock clock) {
+        return new GotoneRows(ids, clock);
     }
 
     @Bean
-    GotoneDeliveryStore gotoneDeliveryStore(JdbcClient jdbc, GotoneRequestMapper requests,
-            GotoneDeliveryMapper deliveries, JsonMapper json) {
-        return new GotoneDeliveryStore(jdbc, requests, deliveries, json);
+    GotoneConfigurationStore gotoneConfigurationStore(GotoneServiceMapper services, GotoneServiceDraftMapper drafts,
+            GotoneServiceRevisionMapper revisions, GotoneServiceChannelMapMapper channels,
+            GotoneProviderAccountMapper accounts, GotoneSmsTemplateBindingMapper bindings, GotoneRows rows, JsonMapper json) {
+        return new GotoneConfigurationStore(services, drafts, revisions, channels, accounts, bindings, rows, json);
+    }
+
+    @Bean
+    GotoneDeliveryStore gotoneDeliveryStore(GotoneRequestMapper requests, GotoneDeliveryMapper deliveries,
+            GotoneDeliveryAttemptMapper attempts, GotoneDeliveryRetryMapper retries, GotoneDeliveryResolutionMapper resolutions,
+            GotoneRows rows, JsonMapper json) {
+        return new GotoneDeliveryStore(requests, deliveries, attempts, retries, resolutions, rows, json);
     }
 
     @Bean

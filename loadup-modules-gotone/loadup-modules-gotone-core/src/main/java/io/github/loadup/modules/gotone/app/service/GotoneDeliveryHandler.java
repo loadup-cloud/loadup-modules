@@ -21,7 +21,6 @@ import io.github.loadup.modules.gotone.client.Gotone.Channel;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore.Work;
 import java.time.Clock;
-import java.util.UUID;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public abstract class GotoneDeliveryHandler implements TaskHandler {
@@ -44,14 +43,14 @@ public abstract class GotoneDeliveryHandler implements TaskHandler {
 
     @Override
     public final void handle(TaskExecution task) {
-        UUID id = UUID.fromString(task.bizId());
+        String id = GotoneSubmissionService.id(task.bizId());
         if (!task.bizId().equals(task.payload())) throw new IllegalArgumentException("Invalid Gotone task");
         deliver(id, task);
     }
 
-    protected abstract void deliver(UUID id, TaskExecution task);
+    protected abstract void deliver(String id, TaskExecution task);
 
-    protected final Work readWork(UUID id) {
+    protected final Work readWork(String id) {
         Work work = store.lock(id).orElse(null);
         if (work == null) return null;
         if (work.channel() != channel) throw new IllegalArgumentException("Gotone task channel mismatch");

@@ -13,7 +13,7 @@ Maven 聚合坐标为 `io.github.loadup-cloud:loadup-modules-gotone`，仅聚合
 | Maven artifactId | 职责与调用方 |
 | --- | --- |
 | `loadup-modules-gotone-client` | 提交、投递状态查询与配置管理 Facade，以及相应的 Command、DTO 和错误码。业务方只需依赖此契约。 |
-| `loadup-modules-gotone-core` | 应用服务、版本化路由、模板校验与渲染、各渠道处理、供应商选择、MyBatis-Flex 仓储、Flyway、Task Handler 和自动装配。渠道适配器与可扩展的 Provider SPI 放在 core 的集成包，邮件依赖由宿主按需引入，其他内置适配器通过 HTTPS 传输。 |
+| `loadup-modules-gotone-core` | 应用服务、版本化路由、模板校验与渲染、各渠道处理、供应商选择、持久化、Task Handler 和自动装配。渠道适配器与 Provider SPI 放在 core；邮件依赖由宿主按需引入。 |
 | `loadup-modules-gotone-web` | 管理配置与发布、内部提交与查询的 HTTP 适配。负责身份、授权及响应封装，业务规则通过 Facade 执行。 |
 
 Java 主包统一为 `io.github.loadup.modules.gotone`。旧 `gotone-api/engine/store-jdbc/binder-*` 的职责分别归入上述契约或 core 内部包。投递处理器通过 `loadup-modules-inbox-client` 的 `InboxReceiver` 写用户消息副本，Inbox 模块的 `InboxFacade` 提供查询和状态更新。业务提交统一走 Gotone，避免同步直发绕过路由、幂等或审计。
@@ -22,18 +22,21 @@ Java 主包统一为 `io.github.loadup.modules.gotone`。旧 `gotone-api/engine/
 
 同一部署的默认 schema 内，`service_code` 唯一，沿用现有大小写语义。管理员一次发布的是**整个编码的一版配置**，包括启用的渠道、每个渠道的模板与目标策略。这样修改邮件标题和增加 Inbox 可以同时生效。配置表按服务编码、修订和渠道关联。
 
-| 配置表 | 主要字段与关系 |
+| 持久化表 | 主要字段与关系 |
 | --- | --- |
 | `gotone_service` | `service_code, name, description, enabled, active_revision, version`。编码唯一，发布指针只能指向本服务的版本。停用后停止新受理。 |
-| `gotone_service_revision` | `service_code, revision, required_parameters, published_by, published_at`。唯一键为 `(service_code, revision)`。参数均按字符串传入，模板引用的字段须预先声明。 |
-| `gotone_service_channel_map` | `id, service_code, revision, channel`。唯一键为 `(service_code, revision, channel)`，一版可启用多个渠道。存储值沿用 `SMS / EMAIL / PUSH / IN_APP`，新增 `WEBHOOK`，页面显示 Inbox 或站内信。 |
-| `gotone_sms_template` | `map_id` 及 `fields` 中的 `templateCode, body`。逻辑模板对业务稳定，运营商或云厂商的备案模板编号单独映射。 |
-| `gotone_inbox_config` | `map_id` 及 `fields` 中的 `category, title, body, actionPath`。渲染后校验站内路径，写入现有收件箱模型。 |
-| `gotone_email_template` | `map_id` 及 `fields` 中的 `subject, text, html`。主题和至少一种正文必填，HTML 模板按上下文转义变量。发件账号、连接参数归系统配置。 |
-| `gotone_push_config` | `map_id` 及 `fields` 中的 `title, body, ttlSeconds, platform`。平台用于匹配设备令牌与可用账号。 |
-| `gotone_webhook_config` | `map_id, endpoint_code` 及 `fields` 中的 JSON `payload`。每条 Webhook 路由引用一个系统登记的端点，每个请求对该端点生成一笔投递。 |
+| `gotone_service_draft` | `service_code, actor, config`。每位编辑者一份草稿，完整配置以文本 JSON 保存。 |
+| `gotone_service_revision` | `service_code, revision, required_parameters, published_by, published_at`。唯一键为 `(service_code, revision)`；发布版本不可变。 |
+| `gotone_service_channel_map` | `service_code, revision, channel, fields`。唯一键为 `(service_code, revision, channel)`；`fields` 文本 JSON 按渠道描述模板和目标策略，渠道值为 `SMS / EMAIL / PUSH / IN_APP / WEBHOOK`。 |
+| `gotone_provider_account` | 通用账号属性及渠道专属 `settings` 文本 JSON，按 `channel` 和 `adapter` 校验。 |
+| `gotone_sms_template_binding` | `map_id, account_code, remote_template_id, remote_signature, variable_mapping, service_code, revision`。将短信配置修订与供应商备案模板绑定；唯一键为 `(map_id, account_code)`。 |
+| `gotone_request` | 请求幂等键、规范化摘要、服务修订、发送人、参数文本 JSON、受理时间、过期时间和目标数；唯一键 `(source, request_key)`。 |
+| `gotone_delivery` | 请求和渠道映射、目标摘要、投递快照文本 JSON、状态、尝试序号、发送人和到期时间。保存提交时的发送人及过期快照。 |
+| `gotone_delivery_attempt` | 每次供应商尝试、账号与配置版本、结果、回执和起止时间；唯一键 `(delivery_id, number)`。 |
+| `gotone_delivery_resolution` | 对未知结果的人工核对记录，包含接受结论、原因、操作者和时间；唯一键 `(delivery_id, attempt_no)`。 |
+| `gotone_delivery_retry` | 人工重试的投递、操作者、原因和请求时间。 |
 
-五张渠道专表均以 `map_id` 为主键并引用映射表。通过固定的渠道判别值和复合外键 `(map_id, channel)` 保证专表类型与映射一致。发布时校验每个启用映射恰有一条对应的完整配置、模板可渲染、Webhook 端点已登记。草稿允许分次编辑。发布在一个短事务中检查 `version`、冻结修订并切换指针，并发覆盖返回版本冲突。已发布内容保持不可变，回退通过复制历史模板发布新版本完成。存量在途任务引用的修订和渠道记录须保留。受理记录固定修订 ID，后续编辑仅影响新受理的请求。
+渠道模板和账号设置以文本 JSON 存储，由应用校验；所有表名均以 `gotone_` 开头。持久化对象继承 `BaseDO`，使用字符串 `IdGenerator`，Mapper 由 Database processor 生成。表间关系由应用逻辑、唯一约束及事务维护，不建外键或使用多表 JOIN。`(source, request_key)` 唯一键竞争失败后重新读取已提交请求：摘要相同则返回原结果，不同则报告冲突。发布时检查版本并冻结修订；在途任务继续使用原修订。
 
 ## 3. 系统级账号、端点与自动选取
 
@@ -41,14 +44,9 @@ Java 主包统一为 `io.github.loadup.modules.gotone`。旧 `gotone-api/engine/
 
 | 系统表 | 主要字段与用途 |
 | --- | --- |
-| `gotone_provider_account` | `account_code, channel, adapter, enabled, priority, secret_ref, connect_timeout_ms, request_timeout_ms, version`。账号编码唯一，渠道与适配器注册信息须匹配。 |
-| `gotone_sms_account` | `account_code, settings`。每个账号关联一个已安装的短信适配器。 |
-| `gotone_sms_template_binding` | `map_id, account_code, remote_template_id, remote_signature, variable_mapping`。引用短信模板的主键 `map_id` 及短信账号，二者组成唯一键。需要备案模板的适配器仅在存在匹配绑定时参与选择。 |
-| `gotone_email_account` | `account_code` 及 `settings` 中的 `host, port, tls, username, fromAddress, fromName`。SMTP 密码通过账号上的 `secret_ref` 解析，发送时按当前账号设置创建客户端。 |
-| `gotone_push_account` | `account_code` 及 `settings` 中的 `platform, projectId, appId`。按设备平台和应用标识匹配，密钥或服务账号文件由凭证引用提供。 |
-| `gotone_webhook_endpoint` | `account_code` 及 `settings` 中的 `url` 或 `destinationRef`。签名凭证引用存在账号通用表。。端点登记时验证 HTTPS 和允许的目的地址，发送时也校验解析目标并限制重定向。含机器人令牌的 URL 作为秘密引用。 |
+| `gotone_provider_account.settings` | 按 `channel` 和 `adapter` 校验账号专属的 SMTP、FCM、Webhook 等设置。密码、签名凭证及服务账号文件通过通用 `secret_ref` 解析。 |
 
-账号专表以 `account_code` 为主键，发布系统配置时校验其类型和字段。Inbox 使用本地数据库能力。Webhook 绑定逻辑端点，因为端点决定消息发给谁；端点的目的地或协议变更应创建新端点并重新发布路由，原引用可轮换凭证或被紧急停用。系统表保存凭证引用，运行时通过宿主的密钥服务解析。管理接口返回账号设置和凭证引用。原始秘密仅由 Worker 解析，模板快照和 Task 载荷不含账号秘密。
+发布系统配置时按账号的 `channel` 和 `adapter` 校验字段。Inbox 使用本地数据库能力。账号设置发布后保持不变；Webhook 目的地或协议变化时，创建新账号并发布服务新修订，旧账号设置不修改。系统表保存凭证引用，运行时通过宿主的密钥服务解析。管理接口返回账号设置和凭证引用；原始秘密仅由 Worker 解析，模板快照和 Task 载荷不含账号秘密。
 
 每笔外部投递先按渠道、模板能力、目标平台及应用过滤已启用账号，再校验适配器已安装且凭证可读。首次按 `priority`、`account_code` 升序稳定选取。明确可重试的失败后优先使用尚未尝试的账号，之后使用最久未尝试的账号。投递明细显示实际账号、版本和缺少可用账号等原因。供应商选择只在执行阶段发生，一条服务编码可复用全系统的账号池。
 
@@ -86,11 +84,11 @@ Java 主包统一为 `io.github.loadup.modules.gotone`。旧 `gotone-api/engine/
 
 若 Worker 在结果落库前失联，重领取时先检查未闭合尝试，按“结果未知”恢复。管理页按投递状态汇总待发送、已受理、失败及待核对的数量。按请求和投递 ID 查询，以投递记录为准。人工补发记录操作人、原因和关联的新尝试。Framework Task 提供队列待处理量、失败和最老任务等待时长。投递明细汇总各状态数量。
 
-## 5. 初始化与实现约定
+## 5. 数据库与初始化约定
 
-配置落在各渠道专表及账号专表，渠道专属字段使用 JSONB 并由应用服务校验。服务草稿用 `gotone_service_draft` 保存。请求、目标、尝试与人工操作使用 `gotone_request`、`gotone_delivery`、`gotone_delivery_attempt`、`gotone_delivery_resolution` 和 `gotone_delivery_retry`。收件人消息存于 Inbox 模块的 `inbox_message`。运行记录和配置按部署 schema 隔离。Task 的状态用于请求查询时的对账。
+Gotone 迁移不使用数据库专属 JSON 类型或 PostgreSQL 专属运行时 SQL；DDL 已在 MySQL 8.0 和 H2 2.4 验证可创建 11 张业务表。现有宿主使用 PostgreSQL，其他引擎的完整应用接入尚未验证。Gotone 依赖宿主提供 Framework Task；任务状态用于请求查询对账。收件人消息存于 Inbox 的 `inbox_message`，运行记录和配置按部署 schema 隔离。
 
-Boot 与 Pay NotificationCenter 在新 schema 中启用 `classpath:db/migration/modules/gotone` 和 `classpath:db/migration/modules/inbox`。Approval 依赖新 client，实现通过 `approval.reminder` 后台提交 `approval.pending`。初始化脚本为该编码提供 Inbox 模板。Admin 使用 `/api/gotone` 管理服务编码、系统账号、短信备案映射和投递，使用 `/api/inbox` 操作当前用户的收件箱。
+Boot 与 Pay NotificationCenter 启用 `classpath:db/migration/modules/gotone` 和 `classpath:db/migration/modules/inbox`。Flyway 只创建表和索引，不插入示例服务、系统账号或渠道种子数据；部署后由管理员配置账号并发布 Service Code。Approval 通过 `approval.reminder` 后台提交 `approval.pending`，使用提醒前，管理员须在 Gotone 创建并发布同编码的 `IN_APP` 服务配置。示例：声明参数 `actionUrl`，设置 `category=APPROVAL`、`title=待办审批`、`body=你有一项审批待处理`、`actionPath=${actionUrl}`。Admin 使用 `/api/gotone` 管理服务编码、系统账号、短信备案映射和投递，使用 `/api/inbox` 操作当前用户的收件箱。
 
 ## 6. 实施验收
 

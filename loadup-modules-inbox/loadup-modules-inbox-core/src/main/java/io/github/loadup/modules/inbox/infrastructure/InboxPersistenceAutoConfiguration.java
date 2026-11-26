@@ -29,7 +29,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @AutoConfiguration(
         after = {
@@ -47,7 +47,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 public class InboxPersistenceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(InboxGateway.class)
-    InboxGateway inboxGateway(InboxMessageMapper mapper, JdbcClient jdbc, IdGenerator ids, Clock clock) {
-        return new InboxGatewayImpl(mapper, jdbc, clock, ids);
+    InboxGateway inboxGateway(InboxMessageMapper mapper, PlatformTransactionManager transactions, IdGenerator ids, Clock clock) {
+        return new InboxGatewayImpl(mapper, transactions, clock, ids);
     }
 }

@@ -31,6 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -40,15 +41,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
 public final class GotoneSubmissionService implements GotoneFacade {
     private record Input(String serviceCode, String senderId, Map<String, String> parameters,
                          Map<Channel, List<Target>> recipients, Instant expiresAt) {}
-    private record Planned(UUID mapId, Channel channel, Snapshot snapshot) {}
+    private record Planned(String mapId, Channel channel, Snapshot snapshot) {}
 
     private final GotoneConfigurationStore configuration;
     private final GotoneDeliveryStore store;
@@ -81,46 +82,55 @@ public final class GotoneSubmissionService implements GotoneFacade {
         String sender = senderId == null ? null : required(senderId, 64);
         Map<String, String> parameters = parameters(command.parameters());
         var recipients = recipients(command.recipientsByChannel());
-        String digest = digest(json.writeValueAsString(new Input(code, sender, parameters, recipients, command.expiresAt())));
-        return tx.execute(transaction -> {
-            store.lockRequest(caller, key);
-            var existing = store.existing(caller, key);
-            if (existing.isPresent()) {
-                if (!existing.get().digest().equals(digest)) throw new CommonException(REQUEST_CONFLICT);
-                return existing.get().receipt();
+        var input = new Input(code, sender, parameters, recipients, command.expiresAt());
+        String digest = digest(json.writeValueAsString(input));
+        try {
+            return tx.execute(status -> accept(caller, key, digest, input));
+        } catch (DuplicateKeyException conflict) {
+            // The unique-key winner is visible in a fresh transaction after our insert rolls back.
+            return tx.execute(status -> replay(store.existing(caller, key).orElseThrow(() -> conflict), digest));
+        }
+    }
+
+    private Receipt accept(String source, String key, String digest, Input input) {
+        var existing = store.existing(source, key);
+        if (existing.isPresent()) return replay(existing.get(), digest);
+
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
+        Instant expires = input.expiresAt() == null ? now.plus(Duration.ofDays(1)) : input.expiresAt();
+        if (!now.isBefore(expires)) throw new CommonException(INVALID_SUBMISSION);
+        var revision = configuration.active(input.serviceCode()).orElseThrow(() -> new CommonException(NO_CHANNEL_ROUTES));
+        var planned = plan(revision, input);
+        var receipt = store.insertRequest(source, key, digest, input.serviceCode(), revision.number(), input.senderId(),
+                input.parameters(), now, expires, planned.size());
+        for (Planned target : planned) {
+            String id = store.insertDelivery(receipt.requestId(), target.mapId(), target.channel(),
+                    digest(json.writeValueAsString(target.snapshot().target())), target.snapshot(), input.senderId(), expires);
+            tasks.submit(TaskSubmission.immediate(taskType(target.channel()), id, id));
+        }
+        return receipt;
+    }
+
+    private List<Planned> plan(GotoneConfigurationStore.Revision revision, Input input) {
+        if (!input.parameters().keySet().containsAll(revision.parameters())) throw new CommonException(INVALID_TEMPLATE);
+        Set<Channel> expected = revision.templates().stream().map(item -> item.template().channel())
+                .filter(channel -> channel != Channel.WEBHOOK).collect(Collectors.toSet());
+        if (!expected.equals(input.recipients().keySet())) throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
+        List<Planned> planned = new ArrayList<>();
+        for (var item : revision.templates()) {
+            Channel channel = item.template().channel();
+            var fields = templates.render(item.template(), input.parameters());
+            var targets = channel == Channel.WEBHOOK
+                    ? List.of(Target.address(fields.get("endpointCode"))) : input.recipients().get(channel);
+            for (Target target : targets) {
+                if (channel == Channel.PUSH && fields.containsKey("platform")
+                        && !fields.get("platform").equals(target.platform())) throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
+                var snapshot = new Snapshot(target, fields, channel == Channel.SMS ? input.parameters() : Map.of());
+                planned.add(new Planned(item.id(), channel, snapshot));
             }
-            Instant now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
-            Instant expires = command.expiresAt() == null ? now.plus(Duration.ofDays(1)) : command.expiresAt();
-            if (!now.isBefore(expires)) throw new CommonException(INVALID_SUBMISSION);
-            var revision = configuration.active(code).orElseThrow(() -> new CommonException(NO_CHANNEL_ROUTES));
-            if (!parameters.keySet().containsAll(revision.parameters())) throw new CommonException(INVALID_TEMPLATE);
-            Set<Channel> expected = revision.templates().stream().map(item -> item.template().channel())
-                    .filter(channel -> channel != Channel.WEBHOOK).collect(Collectors.toSet());
-            if (!expected.equals(recipients.keySet())) throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
-            List<Planned> planned = new ArrayList<>();
-            for (var item : revision.templates()) {
-                Channel channel = item.template().channel();
-                var fields = templates.render(item.template(), parameters);
-                var targets = channel == Channel.WEBHOOK
-                        ? List.of(Target.address(fields.get("endpointCode"))) : recipients.get(channel);
-                for (Target target : targets) {
-                    if (channel == Channel.PUSH && fields.containsKey("platform")
-                            && !fields.get("platform").equals(target.platform())) throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
-                    var snapshot = new Snapshot(target, fields, channel == Channel.SMS ? parameters : Map.of());
-                    planned.add(new Planned(item.id(), channel, snapshot));
-                }
-            }
-            if (planned.isEmpty()) throw new CommonException(NO_CHANNEL_ROUTES);
-            var receipt = new Receipt(UUID.randomUUID().toString(), code, revision.number(), now, planned.size());
-            store.insertRequest(receipt, caller, key, digest, sender, expires, parameters);
-            for (Planned plan : planned) {
-                UUID id = UUID.randomUUID();
-                store.insertDelivery(id, receipt.requestId(), plan.mapId(), plan.channel(),
-                        digest(json.writeValueAsString(plan.snapshot().target())), plan.snapshot());
-                tasks.submit(TaskSubmission.immediate(taskType(plan.channel()), id.toString(), id.toString()));
-            }
-            return receipt;
-        });
+        }
+        if (planned.isEmpty()) throw new CommonException(NO_CHANNEL_ROUTES);
+        return planned;
     }
 
     @Override
@@ -157,12 +167,14 @@ public final class GotoneSubmissionService implements GotoneFacade {
         return value;
     }
 
-    static UUID id(String value) {
-        try {
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException | NullPointerException exception) {
-            throw new CommonException(GOTONE_NOT_FOUND);
-        }
+    private static Receipt replay(GotoneDeliveryStore.StoredRequest stored, String digest) {
+        if (!stored.digest().equals(digest)) throw new CommonException(REQUEST_CONFLICT);
+        return stored.receipt();
+    }
+
+    static String id(String value) {
+        if (value == null || value.isBlank() || value.length() > 64) throw new CommonException(GOTONE_NOT_FOUND);
+        return value;
     }
 
     static Map<String, String> parameters(Map<String, String> input) {
@@ -185,7 +197,7 @@ public final class GotoneSubmissionService implements GotoneFacade {
                 throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
             }
             normalized.put(channel, targets.stream().map(target -> normalize(channel, target)).distinct()
-                    .sorted(Comparator.comparing(Target::address)
+                    .sorted(Comparator.comparing((Target target) -> target.address())
                             .thenComparing(target -> target.platform() == null ? "" : target.platform())
                             .thenComparing(target -> target.appId() == null ? "" : target.appId())).toList());
         });

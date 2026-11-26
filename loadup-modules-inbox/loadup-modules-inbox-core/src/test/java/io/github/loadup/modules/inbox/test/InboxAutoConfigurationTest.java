@@ -32,13 +32,13 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.PlatformTransactionManager;
 
 class InboxAutoConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withBean(DataSource.class, () -> mock(DataSource.class))
             .withBean(InboxMessageMapper.class, () -> mock(InboxMessageMapper.class))
-            .withBean(JdbcClient.class, () -> mock(JdbcClient.class))
+            .withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class))
             .withBean(IdGenerator.class, () -> () -> "notification-id")
             .withConfiguration(AutoConfigurations.of(
                     ClockAutoConfiguration.class,

@@ -80,7 +80,7 @@ public final class AliyunSmsGotoneProvider implements GotoneProvider {
         fields.put("SignName", signature);
         fields.put("TemplateCode", binding.remoteTemplateId());
         fields.put("TemplateParam", json.writeValueAsString(variables));
-        fields.put("OutId", work.id().toString());
+        fields.put("OutId", work.id());
         String canonical = fields.entrySet().stream().map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue()))
                 .collect(Collectors.joining("&"));
         try {
@@ -89,7 +89,7 @@ public final class AliyunSmsGotoneProvider implements GotoneProvider {
             String toSign = "POST&%2F&" + encode(canonical);
             String signed = Base64.getEncoder().encodeToString(mac.doFinal(toSign.getBytes(StandardCharsets.UTF_8)));
             var response = GotoneHttp.send(account, GotoneHttp.post(ENDPOINT, account, "application/x-www-form-urlencoded",
-                    canonical + "&Signature=" + encode(signed), work.id().toString()).build());
+                    canonical + "&Signature=" + encode(signed), work.id()).build());
             if (response.statusCode() != 200) return GotoneHttp.failure(response.statusCode());
             var result = json.readTree(response.body());
             String code = result.path("Code").asText();

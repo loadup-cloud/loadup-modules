@@ -15,14 +15,12 @@
  */
 package io.github.loadup.modules.gotone.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Id;
-import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
+import io.github.loadup.components.database.dataobject.BaseDO;
+import java.time.LocalDateTime;
 
 @Table("gotone_delivery")
-public class GotoneDeliveryDO {
-    @Id(keyType = KeyType.None)
-    private String id;
+public class GotoneDeliveryDO extends BaseDO {
     private String requestId;
     private String mapId;
     private String channel;
@@ -31,14 +29,8 @@ public class GotoneDeliveryDO {
     private String snapshot;
     private String status;
     private Integer attemptNo;
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
+    private String senderId;
+    private LocalDateTime expiresAt;
 
     public String getRequestId() {
         return requestId;
@@ -103,4 +95,21 @@ public class GotoneDeliveryDO {
     public void setAttemptNo(Integer attemptNo) {
         this.attemptNo = attemptNo;
     }
+
+    public String getSenderId() {
+        return senderId;
+    }
+
+    public void setSenderId(String senderId) {
+        this.senderId = senderId;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
 }

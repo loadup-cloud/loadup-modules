@@ -15,13 +15,11 @@
  */
 package io.github.loadup.modules.gotone.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Id;
-import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
+import io.github.loadup.components.database.dataobject.BaseDO;
 
 @Table("gotone_service")
-public class GotoneServiceDO {
-    @Id(keyType = KeyType.None)
+public class GotoneServiceDO extends BaseDO {
     private String serviceCode;
     private String name;
     private String description;
@@ -76,4 +74,5 @@ public class GotoneServiceDO {
     public void setActiveRevision(Integer activeRevision) {
         this.activeRevision = activeRevision;
     }
+
 }

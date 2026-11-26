@@ -41,8 +41,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -56,15 +59,14 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(classes = GotoneDeliveryIT.Application.class, properties = {
-        "loadup.task.worker-enabled=false", "loadup.flyway.enabled=false", "spring.flyway.enabled=false",
+        "loadup.task.worker-enabled=false", "loadup.database.schema=gotone_it",
+        "loadup.flyway.locations=classpath:db/migration/modules/inbox,classpath:db/migration/modules/gotone",
         "GOTONE_SECRET_TEST=fixture"
 })
-@EnableTestContainers(ContainerType.POSTGRESQL)
+@EnableTestContainers(value = ContainerType.POSTGRESQL, reuse = false)
 @Sql(scripts = {
         "classpath:db/schema/sequence_allocation.sql",
-        "classpath:db/task/pg/schema.sql",
-        "classpath:db/migration/modules/inbox/V20261126000001__create_inbox.sql",
-        "classpath:db/migration/modules/gotone/V20261126000002__create_gotone.sql"
+        "classpath:db/task/pg/schema.sql"
 }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class GotoneDeliveryIT {
     @Autowired GotoneFacade gotone;
@@ -91,7 +93,10 @@ class GotoneDeliveryIT {
 
         try {
             receiver.receive("request", recipient, null, "NOTICE", "Title", "Body", null);
-            receiver.receive("request", recipient, null, "NOTICE", "Duplicate", "Body", null);
+            new TransactionTemplate(transactions).executeWithoutResult(status -> {
+                receiver.receive("request", recipient, null, "NOTICE", "Duplicate", "Body", null);
+                assertThat(inbox.unreadCount(recipient)).isOne();
+            });
             var listed = inbox.list(recipient, true, 1, 20).getData();
             assertThat(listed).singleElement().satisfies(item -> {
                 assertThat(item.title()).isEqualTo("Title");
@@ -110,7 +115,31 @@ class GotoneDeliveryIT {
     }
 
     @Test
-    void publishesFourIndependentTargetsAndFreezesTheRenderedTemplates() {
+    void restoringASmsRevisionCopiesItsTemplateAndBinding() {
+        String code = "restore-sms";
+        String account = "restore-account";
+        operations.saveAccount(new Account(account, Channel.SMS, "fixture", false, 100, "env:GOTONE_SECRET_TEST",
+                1000, 2000, 0, Map.of()));
+        var template = new Template(Channel.SMS, Map.of("body", "Order ${orderNo}"));
+        var route = new Route(code, "Orders", null, true, 0, List.of("orderNo"), List.of(template));
+        operations.publish(route, "admin");
+        var variables = Map.of("order", "orderNo");
+        var binding = new SmsBinding(code, 1, account, "template-1", null, variables);
+        operations.saveSmsBinding(binding);
+        assertThatThrownBy(() -> operations.publish(route, "admin")).isInstanceOf(CommonException.class);
+        operations.publish(new Route(code, "Orders", null, true, 1, List.of(),
+                List.of(new Template(Channel.SMS, Map.of("body", "Updated")))), "admin");
+
+        var restored = operations.restore(code, 1, 2, "admin");
+        assertThat(restored.version()).isEqualTo(3);
+        assertThat(restored.channels()).containsExactly(template);
+        assertThat(operations.routes()).contains(restored);
+        assertThat(operations.smsBindings()).contains(binding,
+                new SmsBinding(code, 3, account, "template-1", null, variables));
+    }
+
+    @Test
+    void publishesFourIndependentTargetsAndFreezesTheRenderedTemplates() throws Exception {
         assertThat(handlers).extracting(GotoneDeliveryHandler::taskType).containsExactlyInAnyOrder(
                 "gotone.deliver.sms", "gotone.deliver.email", "gotone.deliver.push",
                 "gotone.deliver.inbox", "gotone.deliver.webhook");
@@ -126,13 +155,28 @@ class GotoneDeliveryIT {
                 new Template(Channel.EMAIL, Map.of("subject", "Order ${orderNo}", "text", "Successful")),
                 new Template(Channel.PUSH, Map.of("title", "Order", "body", "Successful")),
                 new Template(Channel.IN_APP, Map.of("category", "ORDER", "title", "Order ${orderNo}", "body", "Successful")));
-        operations.publish(new Route("servicecodeA", "Orders", null, true, 0, List.of("orderNo"), routes), "admin");
+        var draft = new Route("servicecodeA", "Orders", null, true, 0, List.of("orderNo"), routes);
+        operations.saveDraft(draft, "admin");
+        assertThat(operations.drafts("admin")).containsExactly(draft);
+        operations.publish(draft, "admin");
+        assertThat(operations.drafts("admin")).isEmpty();
         var targets = Map.of(Channel.SMS, List.of(Target.address("+8613800000000")),
                 Channel.EMAIL, List.of(Target.address("buyer@example.org")),
                 Channel.PUSH, List.of(new Target("token-42", "ANDROID", "buyer-app")),
                 Channel.IN_APP, List.of(Target.address("user-42")));
         var command = new Submit("servicecodeA", "order-42", Map.of("orderNo", "42"), targets, null);
-        Receipt receipt = gotone.submit("orders", null, command);
+        Receipt receipt;
+        var start = new CyclicBarrier(2);
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            Callable<Receipt> submit = () -> {
+                start.await(10, TimeUnit.SECONDS);
+                return gotone.submit("orders", null, command);
+            };
+            var first = executor.submit(submit);
+            var second = executor.submit(submit);
+            receipt = first.get(20, TimeUnit.SECONDS);
+            assertThat(second.get(20, TimeUnit.SECONDS)).isEqualTo(receipt);
+        }
         assertThat(receipt.targetCount()).isEqualTo(4);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM loadup_task", Integer.class)).isEqualTo(4);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM inbox_message", Integer.class)).isZero();
@@ -143,11 +187,10 @@ class GotoneDeliveryIT {
                 new Submit("servicecodeA", "order-42", Map.of("orderNo", "43"), targets, null)))
                 .isInstanceOf(CommonException.class);
         var queued = gotone.status("orders", receipt.requestId());
-        String inboxDelivery = queued.deliveries().stream()
+        String deliveryId = queued.deliveries().stream()
                 .filter(row -> row.channel() == Channel.IN_APP).findFirst().orElseThrow().id();
-        var deliveryId = UUID.fromString(inboxDelivery);
         var task = new TaskExecution("inbox-fixture",
-                TaskSubmission.immediate(inboxHandler.taskType(), inboxDelivery, inboxDelivery), Instant.now(), null);
+                TaskSubmission.immediate(inboxHandler.taskType(), deliveryId, deliveryId), Instant.now(), null);
         var failure = new IllegalStateException("Fixture: unable to finish the inbox delivery");
         doThrow(failure).when(deliveryStore).finish(deliveryId, 1, "SENT", null, null);
         assertThatThrownBy(() -> inboxHandler.handle(task)).isSameAs(failure);

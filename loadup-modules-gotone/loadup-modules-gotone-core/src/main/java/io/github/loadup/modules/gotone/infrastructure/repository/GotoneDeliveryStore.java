@@ -15,102 +15,95 @@
  */
 package io.github.loadup.modules.gotone.infrastructure.repository;
 
+import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.GOTONE_NOT_FOUND;
+import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.REQUEST_CONFLICT;
+import static io.github.loadup.modules.gotone.infrastructure.table.Tables.*;
+
 import com.mybatisflex.core.query.QueryWrapper;
 import io.github.loadup.commons.error.CommonException;
-import io.github.loadup.modules.gotone.client.Gotone.Attempt;
-import io.github.loadup.modules.gotone.client.Gotone.Channel;
-import io.github.loadup.modules.gotone.client.Gotone.Delivery;
-import io.github.loadup.modules.gotone.client.Gotone.Receipt;
-import io.github.loadup.modules.gotone.client.Gotone.Resolution;
-import io.github.loadup.modules.gotone.client.Gotone.Retry;
-import io.github.loadup.modules.gotone.client.Gotone.Target;
-import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneDeliveryDO;
-import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneRequestDO;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneRequestMapper;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import tools.jackson.databind.json.JsonMapper;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import io.github.loadup.modules.gotone.client.Gotone.*;
+import io.github.loadup.modules.gotone.infrastructure.dataobject.*;
+import io.github.loadup.modules.gotone.infrastructure.mapper.*;
 import java.time.Instant;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
-
-import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.GOTONE_NOT_FOUND;
-import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.REQUEST_CONFLICT;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_DELIVERY;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_REQUEST;
+import java.util.stream.Collectors;
+import tools.jackson.databind.json.JsonMapper;
 
 public final class GotoneDeliveryStore {
-    public record StoredRequest(Receipt receipt, String digest) {
-    }
+    public record StoredRequest(Receipt receipt, String digest) {}
+    public record Snapshot(Target target, Map<String, String> fields, Map<String, String> parameters) {}
+    public record Work(String id, String mapId, Channel channel, String status, int attemptNo,
+                       String senderId, Instant expiresAt, Snapshot snapshot) {}
 
-    public record Snapshot(Target target, Map<String, String> fields, Map<String, String> parameters) {
-    }
-
-    public record Work(UUID id, UUID mapId, Channel channel, String status, int attemptNo,
-                       String senderId, Instant expiresAt, Snapshot snapshot) {
-    }
-
-    private final JdbcClient jdbc;
     private final GotoneRequestMapper requests;
     private final GotoneDeliveryMapper deliveries;
+    private final GotoneDeliveryAttemptMapper attempts;
+    private final GotoneDeliveryRetryMapper retries;
+    private final GotoneDeliveryResolutionMapper resolutions;
+    private final GotoneRows rows;
     private final JsonMapper json;
 
-    public GotoneDeliveryStore(JdbcClient jdbc, GotoneRequestMapper requests, GotoneDeliveryMapper deliveries, JsonMapper json) {
-        this.jdbc = jdbc;
+    public GotoneDeliveryStore(GotoneRequestMapper requests, GotoneDeliveryMapper deliveries,
+            GotoneDeliveryAttemptMapper attempts, GotoneDeliveryRetryMapper retries,
+            GotoneDeliveryResolutionMapper resolutions, GotoneRows rows, JsonMapper json) {
         this.requests = requests;
         this.deliveries = deliveries;
+        this.attempts = attempts;
+        this.retries = retries;
+        this.resolutions = resolutions;
+        this.rows = rows;
         this.json = json;
-    }
-
-    public void lockRequest(String source, String key) {
-        jdbc.sql("SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(?, 0))")
-                .param(source.length() + ":" + source + key).query(Integer.class).single();
     }
 
     public Optional<StoredRequest> existing(String source, String key) {
         var query = requestSummary().where(GOTONE_REQUEST.SOURCE.eq(source)).and(GOTONE_REQUEST.REQUEST_KEY.eq(key));
-        return Optional.ofNullable(requests.selectOneByQuery(query))
-                .map(row -> new StoredRequest(receipt(row), row.getContentDigest()));
+        return Optional.ofNullable(requests.selectOneByQuery(query)).map(row -> new StoredRequest(receipt(row), row.getContentDigest()));
     }
 
-    public void insertRequest(Receipt receipt, String source, String key, String digest, String sender,
-                              Instant expires, Map<String, String> parameters) {
-        jdbc.sql("""
-                INSERT INTO gotone_request
-                    (id, source, request_key, content_digest, service_code, revision, sender_id,
-                     parameters, accepted_at, expires_at, target_count)
-                VALUES (?, ?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?)
-                """).params(UUID.fromString(receipt.requestId()), source, key, digest, receipt.serviceCode(), receipt.revision(),
-                sender, json.writeValueAsString(parameters), receipt.acceptedAt().atOffset(ZoneOffset.UTC),
-                expires.atOffset(ZoneOffset.UTC), receipt.targetCount()).update();
+    public Receipt insertRequest(String source, String key, String digest, String code, int revision, String sender,
+            Map<String, String> parameters, Instant accepted, Instant expires, int targetCount) {
+        var row = rows.create(new GotoneRequestDO());
+        row.setSource(source);
+        row.setRequestKey(key);
+        row.setContentDigest(digest);
+        row.setServiceCode(code);
+        row.setRevision(revision);
+        row.setSenderId(sender);
+        row.setParameters(json.writeValueAsString(parameters));
+        row.setAcceptedAt(utc(accepted));
+        row.setExpiresAt(utc(expires));
+        row.setTargetCount(targetCount);
+        requests.insert(row);
+        return receipt(row);
     }
 
-    public void insertDelivery(UUID id, String requestId, UUID mapId, Channel channel, String targetKey, Snapshot snapshot) {
+    public String insertDelivery(String requestId, String mapId, Channel channel, String targetKey, Snapshot snapshot,
+            String sender, Instant expires) {
+        var row = rows.create(new GotoneDeliveryDO());
+        row.setRequestId(requestId);
+        row.setMapId(mapId);
+        row.setChannel(channel.name());
+        row.setTargetKey(targetKey);
         String address = snapshot.target().address();
-        String masked = "••••" + address.substring(Math.max(0, address.length() - 4));
-        jdbc.sql("""
-                INSERT INTO gotone_delivery
-                    (id, request_id, map_id, channel, target_key, masked_target, snapshot, status)
-                VALUES (?, ?, ?, ?, ?, ?, CAST(? AS jsonb), 'PENDING')
-                """).params(id, UUID.fromString(requestId), mapId, channel.name(), targetKey, masked,
-                json.writeValueAsString(snapshot)).update();
+        row.setMaskedTarget("••••" + address.substring(Math.max(0, address.length() - 4)));
+        row.setSnapshot(json.writeValueAsString(snapshot));
+        row.setStatus("PENDING");
+        row.setAttemptNo(0);
+        row.setSenderId(sender);
+        row.setExpiresAt(utc(expires));
+        deliveries.insert(row);
+        return row.getId();
     }
 
-    public Receipt receipt(UUID id, String source) {
+    public Receipt receipt(String id, String source) {
         var query = requestSummary().where(GOTONE_REQUEST.ID.eq(id));
-        if (source != null) {
-            query.and(GOTONE_REQUEST.SOURCE.eq(source));
-        }
+        if (source != null) query.and(GOTONE_REQUEST.SOURCE.eq(source));
         return Optional.ofNullable(requests.selectOneByQuery(query))
                 .map(GotoneDeliveryStore::receipt).orElseThrow(() -> new CommonException(GOTONE_NOT_FOUND));
     }
@@ -121,100 +114,95 @@ public final class GotoneDeliveryStore {
                 .stream().map(GotoneDeliveryStore::receipt).toList();
     }
 
-    public List<Delivery> deliveries(UUID request) {
-        var rows = deliveries.selectListByQuery(QueryWrapper.create()
+    public List<Delivery> deliveries(String request) {
+        var targets = deliveries.selectListByQuery(QueryWrapper.create()
                 .select(GOTONE_DELIVERY.ID, GOTONE_DELIVERY.CHANNEL, GOTONE_DELIVERY.MASKED_TARGET, GOTONE_DELIVERY.STATUS)
                 .where(GOTONE_DELIVERY.REQUEST_ID.eq(request))
                 .orderBy(GOTONE_DELIVERY.CHANNEL.asc(), GOTONE_DELIVERY.ID.asc()));
-        Map<String, List<Attempt>> attempts = jdbc.sql("""
-                SELECT a.* FROM gotone_delivery_attempt a
-                JOIN gotone_delivery d ON d.id = a.delivery_id WHERE d.request_id = ?
-                ORDER BY a.delivery_id, a.number
-                """).param(request).query(rs -> {
-            Map<String, List<Attempt>> result = new HashMap<>();
-            while (rs.next()) {
-                var attempt = new Attempt(rs.getInt("number"), rs.getString("account_code"),
-                        rs.getObject("config_version", Integer.class), rs.getString("status"), rs.getString("reason"),
-                        rs.getString("remote_id"), instant(rs, "started_at"), instant(rs, "finished_at"));
-                result.computeIfAbsent(rs.getString("delivery_id"), ignored -> new ArrayList<>()).add(attempt);
-            }
-            return result;
-        });
-        return rows.stream().map(row -> new Delivery(row.getId(), Channel.valueOf(row.getChannel()), row.getMaskedTarget(),
-                row.getStatus(), attempts.getOrDefault(row.getId(), List.of()))).toList();
+        if (targets.isEmpty()) return List.of();
+        var history = attempts.selectListByQuery(QueryWrapper.create().where(GOTONE_DELIVERY_ATTEMPT.DELIVERY_ID
+                        .in(targets.stream().map(GotoneDeliveryDO::getId).toList())).orderBy(GOTONE_DELIVERY_ATTEMPT.NUMBER.asc()))
+                .stream().collect(Collectors.groupingBy(GotoneDeliveryAttemptDO::getDeliveryId,
+                        Collectors.mapping(GotoneDeliveryStore::attempt, Collectors.toList())));
+        return targets.stream().map(row -> new Delivery(row.getId(), Channel.valueOf(row.getChannel()), row.getMaskedTarget(),
+                row.getStatus(), history.getOrDefault(row.getId(), List.of()))).toList();
     }
 
-    public Map<String, Integer> triedAccounts(UUID delivery) {
-        return jdbc.sql("""
-                SELECT account_code, max(number) AS last_attempt FROM gotone_delivery_attempt
-                WHERE delivery_id = ? AND account_code IS NOT NULL GROUP BY account_code
-                """).param(delivery).query(rs -> {
-            Map<String, Integer> accounts = new HashMap<>();
-            while (rs.next()) {
-                accounts.put(rs.getString("account_code"), rs.getInt("last_attempt"));
-            }
-            return accounts;
-        });
+    public Map<String, Integer> triedAccounts(String delivery) {
+        var entries = attempts.selectListByQuery(QueryWrapper.create().select(GOTONE_DELIVERY_ATTEMPT.ACCOUNT_CODE,
+                        GOTONE_DELIVERY_ATTEMPT.NUMBER).where(GOTONE_DELIVERY_ATTEMPT.DELIVERY_ID.eq(delivery))
+                .and(GOTONE_DELIVERY_ATTEMPT.ACCOUNT_CODE.isNotNull()));
+        var tried = new HashMap<String, Integer>();
+        for (var entry : entries) tried.merge(entry.getAccountCode(), entry.getNumber(), Math::max);
+        return tried;
     }
 
-    public Optional<Work> lock(UUID id) {
-        return jdbc.sql("""
-                SELECT d.*, r.sender_id, r.expires_at FROM gotone_delivery d
-                JOIN gotone_request r ON r.id = d.request_id WHERE d.id = ? FOR UPDATE OF d
-                """).param(id).query((rs, row) -> new Work(id, rs.getObject("map_id", UUID.class),
-                Channel.valueOf(rs.getString("channel")), rs.getString("status"), rs.getInt("attempt_no"),
-                rs.getString("sender_id"), instant(rs, "expires_at"),
-                json.readValue(rs.getString("snapshot"), Snapshot.class))).optional();
+    public Optional<Work> lock(String id) {
+        return Optional.ofNullable(deliveries.selectOneByQuery(byId(id).forUpdate())).map(row -> new Work(id,
+                row.getMapId(), Channel.valueOf(row.getChannel()), row.getStatus(), row.getAttemptNo(),
+                row.getSenderId(), instant(row.getExpiresAt()), json.readValue(row.getSnapshot(), Snapshot.class)));
     }
 
     public int start(Work work, String account, Integer version) {
         int number = work.attemptNo() + 1;
-        var row = new GotoneDeliveryDO();
-        row.setAttemptNo(number);
-        row.setStatus("SENDING");
-        deliveries.updateByQuery(row, byId(work.id()));
-        jdbc.sql("""
-                INSERT INTO gotone_delivery_attempt (delivery_id, number, account_code, config_version, status)
-                VALUES (?, ?, ?, ?, 'SENDING')
-                """).params(work.id(), number, account, version).update();
+        var patch = rows.touch(new GotoneDeliveryDO());
+        patch.setAttemptNo(number);
+        patch.setStatus("SENDING");
+        deliveries.updateByQuery(patch, byId(work.id()));
+        var attempt = rows.create(new GotoneDeliveryAttemptDO());
+        attempt.setDeliveryId(work.id());
+        attempt.setNumber(number);
+        attempt.setAccountCode(account);
+        attempt.setConfigVersion(version);
+        attempt.setStatus("SENDING");
+        attempt.setStartedAt(utc(rows.clock().instant()));
+        attempts.insert(attempt);
         return number;
     }
 
-    public void finish(UUID id, int attempt, String status, String reason, String remoteId) {
+    public void finish(String id, int attempt, String status, String reason, String remoteId) {
         var query = byId(id).and(GOTONE_DELIVERY.ATTEMPT_NO.eq(attempt)).and(GOTONE_DELIVERY.STATUS.eq("SENDING"));
-        if (updateStatus(query, status) != 0) {
-            jdbc.sql("""
-                    UPDATE gotone_delivery_attempt SET status = ?, reason = ?, remote_id = ?, finished_at = now()
-                    WHERE delivery_id = ? AND number = ?
-                    """).params(status, reason, remoteId, id, attempt).update();
-        }
+        if (updateStatus(query, status) == 0) return;
+        var patch = rows.touch(new GotoneDeliveryAttemptDO());
+        patch.setStatus(status);
+        patch.setReason(reason);
+        patch.setRemoteId(remoteId);
+        patch.setFinishedAt(utc(rows.clock().instant()));
+        if (attempts.updateByQuery(patch, QueryWrapper.create().where(GOTONE_DELIVERY_ATTEMPT.DELIVERY_ID.eq(id))
+                .and(GOTONE_DELIVERY_ATTEMPT.NUMBER.eq(attempt))) != 1) throw new CommonException(REQUEST_CONFLICT);
     }
 
-    public void expire(UUID id) {
+    public void expire(String id) {
         updateStatus(byId(id).and(GOTONE_DELIVERY.STATUS.in(List.of("PENDING", "RETRY_WAIT"))), "EXPIRED");
     }
 
     public void retry(Work work, Retry retry, String actor) {
-        jdbc.sql("INSERT INTO gotone_delivery_retry (id, delivery_id, actor, reason) VALUES (?, ?, ?, ?)")
-                .params(UUID.randomUUID(), work.id(), actor, retry.reason()).update();
+        var row = rows.create(new GotoneDeliveryRetryDO());
+        row.setDeliveryId(work.id());
+        row.setActor(actor);
+        row.setReason(retry.reason());
+        row.setRequestedAt(row.getCreatedAt());
+        retries.insert(row);
         updateStatus(byId(work.id()), "PENDING");
     }
 
     public void resolve(Work work, Resolution resolution, String actor) {
-        if (!work.status().equals("UNKNOWN")) {
-            throw new CommonException(REQUEST_CONFLICT);
-        }
-        jdbc.sql("""
-                INSERT INTO gotone_delivery_resolution (delivery_id, attempt_no, accepted, reason, actor)
-                VALUES (?, ?, ?, ?, ?)
-                """).params(work.id(), work.attemptNo(), resolution.accepted(), resolution.reason(), actor).update();
+        if (!work.status().equals("UNKNOWN")) throw new CommonException(REQUEST_CONFLICT);
+        var row = rows.create(new GotoneDeliveryResolutionDO());
+        row.setDeliveryId(work.id());
+        row.setAttemptNo(work.attemptNo());
+        row.setAccepted(resolution.accepted());
+        row.setReason(resolution.reason());
+        row.setActor(actor);
+        row.setResolvedAt(row.getCreatedAt());
+        resolutions.insert(row);
         updateStatus(byId(work.id()), resolution.accepted() ? "SENT" : "FAILED");
     }
 
     private int updateStatus(QueryWrapper query, String status) {
-        var row = new GotoneDeliveryDO();
-        row.setStatus(status);
-        return deliveries.updateByQuery(row, query);
+        var patch = rows.touch(new GotoneDeliveryDO());
+        patch.setStatus(status);
+        return deliveries.updateByQuery(patch, query);
     }
 
     private static QueryWrapper requestSummary() {
@@ -222,17 +210,24 @@ public final class GotoneDeliveryStore {
                 GOTONE_REQUEST.ACCEPTED_AT, GOTONE_REQUEST.TARGET_COUNT, GOTONE_REQUEST.CONTENT_DIGEST);
     }
 
-    private static QueryWrapper byId(UUID id) {
+    private static QueryWrapper byId(String id) {
         return QueryWrapper.create().where(GOTONE_DELIVERY.ID.eq(Objects.requireNonNull(id)));
     }
 
     private static Receipt receipt(GotoneRequestDO row) {
-        return new Receipt(row.getId(), row.getServiceCode(), row.getRevision(), row.getAcceptedAt().toInstant(),
-                row.getTargetCount());
+        return new Receipt(row.getId(), row.getServiceCode(), row.getRevision(), instant(row.getAcceptedAt()), row.getTargetCount());
     }
 
-    private static Instant instant(ResultSet result, String name) throws SQLException {
-        OffsetDateTime timestamp = result.getObject(name, OffsetDateTime.class);
-        return timestamp == null ? null : timestamp.toInstant();
+    private static Attempt attempt(GotoneDeliveryAttemptDO row) {
+        return new Attempt(row.getNumber(), row.getAccountCode(), row.getConfigVersion(), row.getStatus(), row.getReason(),
+                row.getRemoteId(), instant(row.getStartedAt()), instant(row.getFinishedAt()));
+    }
+
+    private static Instant instant(LocalDateTime value) {
+        return value == null ? null : value.toInstant(ZoneOffset.UTC);
+    }
+
+    private static LocalDateTime utc(Instant value) {
+        return LocalDateTime.ofInstant(value, ZoneOffset.UTC);
     }
 }

@@ -32,7 +32,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -62,7 +61,7 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
     }
 
     @Override
-    protected final void deliver(UUID id, TaskExecution task) {
+    protected final void deliver(String id, TaskExecution task) {
         Work work = tx.execute(status -> readWork(id));
         if (work == null) return;
         Future<Boolean> future = transport.submit(() -> {
@@ -157,7 +156,7 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
     }
 
     private void timeout(Work original, TaskExecution task) {
-        UUID id = original.id();
+        String id = original.id();
         boolean retry = Boolean.TRUE.equals(tx.execute(status -> {
             Work work = store.lock(id).orElseThrow();
             if (work.status().equals("SENDING")) {
@@ -188,11 +187,11 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
         }));
     }
 
-    private boolean finish(UUID id, int attempt, Outcome outcome, TaskExecution task) {
+    private boolean finish(String id, int attempt, Outcome outcome, TaskExecution task) {
         return Boolean.TRUE.equals(tx.execute(status -> complete(id, attempt, outcome, task)));
     }
 
-    private boolean complete(UUID id, int attempt, Outcome outcome, TaskExecution task) {
+    private boolean complete(String id, int attempt, Outcome outcome, TaskExecution task) {
         boolean retry = outcome.result() == Result.RETRY_WAIT && task.attempts() < task.maxAttempts();
         String status = !retry && outcome.result() == Result.RETRY_WAIT ? "FAILED" : outcome.result().name();
         String remote = outcome.remoteId();

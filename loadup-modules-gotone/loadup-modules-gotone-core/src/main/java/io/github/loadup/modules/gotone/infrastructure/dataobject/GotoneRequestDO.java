@@ -15,15 +15,12 @@
  */
 package io.github.loadup.modules.gotone.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Id;
-import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
-import java.time.OffsetDateTime;
+import io.github.loadup.components.database.dataobject.BaseDO;
+import java.time.LocalDateTime;
 
 @Table("gotone_request")
-public class GotoneRequestDO {
-    @Id(keyType = KeyType.None)
-    private String id;
+public class GotoneRequestDO extends BaseDO {
     private String source;
     private String requestKey;
     private String contentDigest;
@@ -31,17 +28,9 @@ public class GotoneRequestDO {
     private Integer revision;
     private String senderId;
     private String parameters;
-    private OffsetDateTime acceptedAt;
-    private OffsetDateTime expiresAt;
+    private LocalDateTime acceptedAt;
+    private LocalDateTime expiresAt;
     private Integer targetCount;
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
 
     public String getSource() {
         return source;
@@ -99,19 +88,19 @@ public class GotoneRequestDO {
         this.parameters = parameters;
     }
 
-    public OffsetDateTime getAcceptedAt() {
+    public LocalDateTime getAcceptedAt() {
         return acceptedAt;
     }
 
-    public void setAcceptedAt(OffsetDateTime acceptedAt) {
+    public void setAcceptedAt(LocalDateTime acceptedAt) {
         this.acceptedAt = acceptedAt;
     }
 
-    public OffsetDateTime getExpiresAt() {
+    public LocalDateTime getExpiresAt() {
         return expiresAt;
     }
 
-    public void setExpiresAt(OffsetDateTime expiresAt) {
+    public void setExpiresAt(LocalDateTime expiresAt) {
         this.expiresAt = expiresAt;
     }
 
@@ -122,4 +111,5 @@ public class GotoneRequestDO {
     public void setTargetCount(Integer targetCount) {
         this.targetCount = targetCount;
     }
+
 }

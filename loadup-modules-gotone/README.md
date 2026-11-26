@@ -5,10 +5,10 @@ Gotone 按 `serviceCode` 展开 SMS、Email、Push、站内信和 Webhook。一�
 | Maven 坐标后缀 | 用途 |
 | --- | --- |
 | `loadup-modules-gotone-client` | 业务调用方依赖。提供 `GotoneFacade`、投递查询和配置管理契约。 |
-| `loadup-modules-gotone-core` | 配置、模板、持久化受理、Task、渠道适配器和 PostgreSQL 初始化。 |
+| `loadup-modules-gotone-core` | 配置、模板、持久化受理、Task、渠道适配器和数据库迁移。 |
 | `loadup-modules-gotone-web` | HTTP 接入，传递依赖 core 和 client。 |
 
-坐标由 `loadup-modules-bom` 管理，groupId 为 `io.github.loadup-cloud`。宿主提供 PostgreSQL DataSource。Core 通过 `loadup-components-database` 接入 MyBatis-Flex，编译时由 Modules 父 POM 的 Database processor 根据 DataObject 生成 Mapper 和表定义。Mapper 与 Framework Task 复用同一个 Spring JDBC 事务管理器。选用 Flyway 位置 `classpath:db/migration/modules/gotone`，并准备 Framework 的 Task 和序列分配表。初始化脚本面向新 schema。Boot 和 Pay NotificationCenter 同时装配 Gotone 与 Inbox，并启用两个模块的 Flyway 位置。
+坐标由 `loadup-modules-bom` 管理，groupId 为 `io.github.loadup-cloud`。现有宿主使用 PostgreSQL。Gotone 的建表 DDL 已在 MySQL 8.0 和 H2 2.4 验证可创建 11 张表，但其他引擎的完整接入尚未验证。宿主须提供 Framework Task 和序列分配表。Flyway 只建表和索引，不导入账号、服务编码或模板；新部署需由管理员配置发送账号并发布服务编码。Boot 和 Pay NotificationCenter 同时装配 Gotone 与 Inbox，并启用两个模块的 Flyway 位置。持久化细节见[架构设计](ARCHITECTURE.md)。
 
 ## 配置与投递
 

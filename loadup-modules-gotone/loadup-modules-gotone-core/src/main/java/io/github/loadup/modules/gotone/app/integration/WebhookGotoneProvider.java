@@ -77,7 +77,7 @@ public final class WebhookGotoneProvider implements GotoneProvider {
             return Outcome.retry("WEBHOOK_DNS_UNAVAILABLE");
         }
         String body = work.snapshot().fields().get("payload");
-        var request = GotoneHttp.post(uri, account, "application/json", body, work.id().toString());
+        var request = GotoneHttp.post(uri, account, "application/json", body, work.id());
         if (secret != null) {
             try {
                 var mac = Mac.getInstance("HmacSHA256");
