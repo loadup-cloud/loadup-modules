@@ -18,7 +18,14 @@ package io.github.loadup.modules.gotone.web;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.commons.result.SuccessResponse;
 import io.github.loadup.components.authorization.model.LoadUpUser;
-import io.github.loadup.modules.gotone.client.Gotone.*;
+import io.github.loadup.modules.gotone.client.Gotone.Account;
+import io.github.loadup.modules.gotone.client.Gotone.Receipt;
+import io.github.loadup.modules.gotone.client.Gotone.Request;
+import io.github.loadup.modules.gotone.client.Gotone.Resolution;
+import io.github.loadup.modules.gotone.client.Gotone.Retry;
+import io.github.loadup.modules.gotone.client.Gotone.Route;
+import io.github.loadup.modules.gotone.client.Gotone.SmsBinding;
+import io.github.loadup.modules.gotone.client.Gotone.Submit;
 import io.github.loadup.modules.gotone.client.error.GotoneResultCode;
 import io.github.loadup.modules.gotone.client.facade.GotoneFacade;
 import io.github.loadup.modules.gotone.client.facade.GotoneOperations;
@@ -26,7 +33,13 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/gotone")
@@ -51,11 +64,10 @@ public class GotoneOperationsController {
         return user.getUserId();
     }
 
-    public record Preview(Route route, Map<String, String> parameters) {}
-    public record Restore(String serviceCode, int revision, int expectedVersion) {}
-
     @GetMapping("/routes")
-    public SuccessResponse<List<Route>> routes() { return SuccessResponse.of(operations.routes()); }
+    public SuccessResponse<List<Route>> routes() {
+        return SuccessResponse.of(operations.routes());
+    }
 
     @GetMapping("/routes/drafts")
     public SuccessResponse<List<Route>> drafts(Authentication authentication) {
@@ -80,12 +92,14 @@ public class GotoneOperationsController {
 
     @PostMapping("/routes/restore")
     public SuccessResponse<Route> restoreRoute(@RequestBody Restore restore, Authentication authentication) {
-        return SuccessResponse.of(operations.restore(restore.serviceCode(), restore.revision(), restore.expectedVersion(),
-                actor(authentication)));
+        return SuccessResponse.of(operations.restore(
+                restore.serviceCode(), restore.revision(), restore.expectedVersion(), actor(authentication)));
     }
 
     @GetMapping("/accounts")
-    public SuccessResponse<List<Account>> accounts() { return SuccessResponse.of(operations.accounts()); }
+    public SuccessResponse<List<Account>> accounts() {
+        return SuccessResponse.of(operations.accounts());
+    }
 
     @PutMapping("/accounts")
     public SuccessResponse<Account> saveAccount(@RequestBody Account account) {
@@ -93,7 +107,9 @@ public class GotoneOperationsController {
     }
 
     @GetMapping("/sms-bindings")
-    public SuccessResponse<List<SmsBinding>> smsBindings() { return SuccessResponse.of(operations.smsBindings()); }
+    public SuccessResponse<List<SmsBinding>> smsBindings() {
+        return SuccessResponse.of(operations.smsBindings());
+    }
 
     @PutMapping("/sms-bindings")
     public SuccessResponse<Void> saveSmsBinding(@RequestBody SmsBinding binding) {
@@ -108,7 +124,9 @@ public class GotoneOperationsController {
     }
 
     @GetMapping("/requests")
-    public SuccessResponse<List<Receipt>> requests() { return SuccessResponse.of(operations.recentRequests()); }
+    public SuccessResponse<List<Receipt>> requests() {
+        return SuccessResponse.of(operations.recentRequests());
+    }
 
     @GetMapping("/requests/{id}")
     public SuccessResponse<Request> request(@PathVariable String id) {
@@ -126,4 +144,8 @@ public class GotoneOperationsController {
         operations.resolveUnknown(resolution, actor(authentication));
         return SuccessResponse.success();
     }
+
+    public record Preview(Route route, Map<String, String> parameters) {}
+
+    public record Restore(String serviceCode, int revision, int expectedVersion) {}
 }

@@ -83,5 +83,4 @@ public class GotoneSmsTemplateBindingDO extends BaseDO {
     public void setRevision(Integer revision) {
         this.revision = revision;
     }
-
 }

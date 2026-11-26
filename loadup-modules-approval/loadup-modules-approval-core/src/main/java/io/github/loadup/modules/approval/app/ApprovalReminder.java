@@ -15,7 +15,9 @@
  */
 package io.github.loadup.modules.approval.app;
 
-import static io.github.loadup.modules.approval.client.Approval.*;
+import static io.github.loadup.modules.approval.client.Approval.Instance;
+import static io.github.loadup.modules.approval.client.Approval.Status;
+import static io.github.loadup.modules.approval.client.Approval.Step;
 
 import io.github.loadup.components.task.TaskExecution;
 import io.github.loadup.components.task.TaskHandler;
@@ -35,14 +37,12 @@ final class ApprovalReminder implements TaskHandler {
     private final ObjectProvider<TaskTemplate> tasks;
     private final ObjectProvider<GotoneFacade> notifications;
 
-    ApprovalReminder(ApprovalStore store, ObjectProvider<TaskTemplate> tasks,
-                     ObjectProvider<GotoneFacade> notifications) {
+    ApprovalReminder(
+            ApprovalStore store, ObjectProvider<TaskTemplate> tasks, ObjectProvider<GotoneFacade> notifications) {
         this.store = store;
         this.tasks = tasks;
         this.notifications = notifications;
     }
-
-    public record Pending(String app, String instanceId, String stepId, String userId) {}
 
     @Override
     public String taskType() {
@@ -50,25 +50,42 @@ final class ApprovalReminder implements TaskHandler {
     }
 
     void enqueue(Instance instance, Step step) {
-        if (step.assigneeUserId() == null || step.assigneeUserId().length() > 64
-                || notifications.getIfAvailable() == null) return;
+        if (step.assigneeUserId() == null
+                || step.assigneeUserId().length() > 64
+                || notifications.getIfAvailable() == null) {
+            return;
+        }
         var pending = new Pending(instance.appCode(), instance.id(), step.id(), step.assigneeUserId());
-        tasks.getObject().submit(TaskSubmission.immediate(taskType(), instance.id() + ":" + instance.revision(),
-                store.json(pending)));
+        tasks.getObject()
+                .submit(TaskSubmission.immediate(
+                        taskType(), instance.id() + ":" + instance.revision(), store.json(pending)));
     }
 
     @Override
     public void handle(TaskExecution task) {
         var pending = store.read(task.payload(), Pending.class);
         var sender = notifications.getIfAvailable();
-        if (sender == null || store.instance(pending.app(), pending.instanceId(), false).isEmpty()) return;
-        boolean stillAssigned = store.steps(pending.instanceId()).stream().anyMatch(step ->
-                step.id().equals(pending.stepId()) && step.status() == Status.PENDING
+        if (sender == null
+                || store.instance(pending.app(), pending.instanceId(), false).isEmpty()) {
+            return;
+        }
+        boolean stillAssigned = store.steps(pending.instanceId()).stream()
+                .anyMatch(step -> step.id().equals(pending.stepId())
+                        && step.status() == Status.PENDING
                         && pending.userId().equals(step.assigneeUserId()));
-        if (!stillAssigned) return;
-        sender.submit("approval", null, new Submit(
-                "approval.pending", "pending:" + task.bizId(),
-                Map.of("actionUrl", "/approval?app=" + pending.app() + "&instance=" + pending.instanceId()),
-                Map.of(Channel.IN_APP, List.of(Target.address(pending.userId()))), null));
+        if (!stillAssigned) {
+            return;
+        }
+        sender.submit(
+                "approval",
+                null,
+                new Submit(
+                        "approval.pending",
+                        "pending:" + task.bizId(),
+                        Map.of("actionUrl", "/approval?app=" + pending.app() + "&instance=" + pending.instanceId()),
+                        Map.of(Channel.IN_APP, List.of(Target.address(pending.userId()))),
+                        null));
     }
+
+    public record Pending(String app, String instanceId, String stepId, String userId) {}
 }

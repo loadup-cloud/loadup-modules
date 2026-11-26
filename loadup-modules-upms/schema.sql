@@ -326,22 +326,26 @@ CREATE TABLE IF NOT EXISTS upms_user_config
 INSERT INTO upms_department (id, parent_id, dept_name, dept_code, dept_level, sort_order, status, created_by,
                              created_at, updated_at)
 VALUES ('1', '0', '总公司', 'ROOT', 1, 0, 1, '1', NOW(), now())
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 
 INSERT INTO upms_role (id, role_name, role_code, role_level, data_scope, sort_order, status, created_by,
                        created_at, updated_at)
 VALUES ('1', '超级管理员', 'ROLE_SUPER_ADMIN', 1, 1, 0, 1, '1', NOW(), now())
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 
 INSERT INTO upms_user (id, username, password, nickname, real_name, dept_id, email, mobile, status, created_by,
                        created_at, updated_at)
 VALUES ('1', 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iYS5TuIG',
         '超级管理员', 'Admin', '1', 'admin@loadup.com', '13800138000', 1, '1', NOW(), now())
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 
 INSERT INTO upms_user_role (id, user_id, role_id, created_by, created_at, updated_at)
 VALUES ('1', '1', '1', '1', NOW(), now())
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 
 INSERT INTO upms_permission (id, parent_id, permission_name, permission_code, permission_type, resource_path,
                              sort_order, status, created_by, created_at, updated_at)
@@ -356,7 +360,8 @@ VALUES ('1', '0', '系统管理', 'system', 1, '/system', 1, 1, '1', NOW(), now(
        ('9', '1', '权限管理', 'system:permission', 1, '/system/perm', 4, 1, '1', NOW(), now()),
        ('10', '1', '审计中心', 'system:audit', 1, '/system/audit', 5, 1, '1', NOW(), now()),
        ('11', '1', '数据字典', 'system:dictionary', 1, '/system/dictionary', 6, 1, '1', NOW(), now())
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 
 INSERT INTO upms_role_permission (id, role_id, permission_id, created_by, created_at, updated_at)
 VALUES ('1', '1', '1', '1', NOW(), now()),
@@ -370,7 +375,8 @@ VALUES ('1', '1', '1', '1', NOW(), now()),
        ('9', '1', '9', '1', NOW(), now()),
        ('10', '1', '10', '1', NOW(), now()),
        ('11', '1', '11', '1', NOW(), now())
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 
 -- Contract API permissions for the local super administrator.
 INSERT INTO upms_permission (id, parent_id, permission_name, permission_code, permission_type, resource_path,
@@ -382,7 +388,8 @@ VALUES ('contract-catalog-read', '0', '合约目录查询', 'contract:catalog:re
        ('contract-merchant-sign', '0', '商户合约签约', 'contract:merchant:sign', 3, NULL, 5, 1, '1', NOW(), NOW()),
        ('contract-merchant-manage', '0', '商户合约管理', 'contract:merchant:manage', 3, NULL, 6, 1, '1', NOW(), NOW()),
        ('contract-runtime-resolve', '0', '合约运行解析', 'contract:runtime:resolve', 3, NULL, 7, 1, '1', NOW(), NOW())
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 
 INSERT INTO upms_role_permission (id, role_id, permission_id, created_by, created_at, updated_at)
 SELECT CONCAT('contract-rp-', REPLACE(permission_code, ':', '-')), '1', id, '1', NOW(), NOW()
@@ -390,7 +397,8 @@ FROM upms_permission
 WHERE permission_code IN ('contract:catalog:read', 'contract:catalog:write', 'contract:catalog:publish',
                           'contract:merchant:read', 'contract:merchant:sign', 'contract:merchant:manage',
                           'contract:runtime:resolve')
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 
 -- Merchant permissions for the local integration launcher only; consumers manage their own grants.
 INSERT INTO upms_permission (id, parent_id, permission_name, permission_code, permission_type, resource_path,
@@ -398,9 +406,11 @@ INSERT INTO upms_permission (id, parent_id, permission_name, permission_code, pe
 VALUES ('merchant-read', '0', '商户资料查询', 'merchant:read', 3, NULL, 1, 1, '1', NOW(), NOW()),
        ('merchant-write', '0', '商户资料编辑', 'merchant:write', 3, NULL, 2, 1, '1', NOW(), NOW()),
        ('merchant-manage', '0', '商户启停管理', 'merchant:manage', 3, NULL, 3, 1, '1', NOW(), NOW())
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;
 INSERT INTO upms_role_permission (id, role_id, permission_id, created_by, created_at, updated_at)
 SELECT CONCAT('merchant-rp-', REPLACE(permission_code, ':', '-')), '1', id, '1', NOW(), NOW()
 FROM upms_permission
 WHERE permission_code IN ('merchant:read', 'merchant:write', 'merchant:manage')
-ON CONFLICT DO NOTHING;
+ON CONFLICT
+DO NOTHING;

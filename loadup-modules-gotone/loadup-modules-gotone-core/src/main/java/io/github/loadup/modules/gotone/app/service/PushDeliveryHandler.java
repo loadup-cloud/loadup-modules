@@ -27,8 +27,13 @@ import java.util.concurrent.ExecutorService;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public final class PushDeliveryHandler extends ExternalDeliveryHandler {
-    public PushDeliveryHandler(GotoneDeliveryStore store, GotoneConfigurationStore configuration,
-            GotoneProviders providers, GotoneSecrets secrets, Clock clock, TransactionTemplate tx,
+    public PushDeliveryHandler(
+            GotoneDeliveryStore store,
+            GotoneConfigurationStore configuration,
+            GotoneProviders providers,
+            GotoneSecrets secrets,
+            Clock clock,
+            TransactionTemplate tx,
             ExecutorService transport) {
         super(Channel.PUSH, store, configuration, providers, secrets, clock, tx, transport);
     }

@@ -57,5 +57,4 @@ public class GotoneDeliveryRetryDO extends BaseDO {
     public void setRequestedAt(LocalDateTime requestedAt) {
         this.requestedAt = requestedAt;
     }
-
 }

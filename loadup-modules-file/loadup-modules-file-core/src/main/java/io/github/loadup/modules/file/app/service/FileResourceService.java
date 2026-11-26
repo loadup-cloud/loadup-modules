@@ -15,7 +15,6 @@
  */
 package io.github.loadup.modules.file.app.service;
 
-import io.github.loadup.commons.constant.CommonConstants;
 import io.github.loadup.commons.dto.PageQuery;
 import io.github.loadup.commons.enums.CommonResultCodeEnum;
 import io.github.loadup.commons.error.CommonException;
@@ -60,7 +59,6 @@ public class FileResourceService implements FileResourceFacade {
         }
     }
 
-
     private static String key(String value) {
         String result = required(value, 128);
         if (!result.matches("[A-Za-z0-9_.:-]+")) {
@@ -89,8 +87,8 @@ public class FileResourceService implements FileResourceFacade {
         }
         String type =
                 contentType == null || contentType.isBlank() ? "application/octet-stream" : required(contentType, 255);
-        FileMetadata stored = dfs.upload(new FileUploadRequest(
-                safeName, content, size, type, "resources/" + UUID.randomUUID(), Map.of()));
+        FileMetadata stored = dfs.upload(
+                new FileUploadRequest(safeName, content, size, type, "resources/" + UUID.randomUUID(), Map.of()));
         LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), clock.getZone());
         FileResource file = new FileResource(
                 UUID.randomUUID().toString(),

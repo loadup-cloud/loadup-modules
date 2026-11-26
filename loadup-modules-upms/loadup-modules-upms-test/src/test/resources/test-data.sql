@@ -24,16 +24,16 @@
 INSERT INTO upms_department (id, parent_id, dept_name, dept_code, dept_level, sort_order, status, deleted,
     # created_at)
     #
-VALUES ('1', '0', 'LoadUp科技', 'LOADUP', 1, 0, 1, FALSE, CURRENT_TIMESTAMP), #
+                             VALUES ('1', '0', 'LoadUp科技', 'LOADUP', 1, 0, 1, FALSE, CURRENT_TIMESTAMP), #
     ('2', '1', '研发部', 'RD', 2, 1, 1, FALSE, CURRENT_TIMESTAMP)
     ,
-#        ('3', '1', '产品部', 'PD', 2, 2, 1, FALSE, CURRENT_TIMESTAMP),
+    #        ('3', '1', '产品部', 'PD', 2, 2, 1, FALSE, CURRENT_TIMESTAMP),
 #        ('4', '2', '后端组', 'RD_BACKEND', 3, 1, 1, FALSE, CURRENT_TIMESTAMP),
 #        ('5', '2', '前端组', 'RD_FRONTEND', 3, 2, 1, FALSE, CURRENT_TIMESTAMP);
 #
 # -- Insert test users
 #
-INSERT INTO upms_user (id, username, password, nickname, email, mobile, status, dept_id, deleted, created_at)
+    INSERT INTO upms_user (id, username, password, nickname, email, mobile, status, dept_id, deleted, created_at)
     #
 VALUES ('1', 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '管理员', 'admin@loadup.com',
         '13800138000', 1, '1',

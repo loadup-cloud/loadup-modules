@@ -57,8 +57,8 @@ loadup:
 | RBAC + 资源属性判定 API | `loadup-modules-upms-client`、`-app`            |
 | 可选 HTTP Controller    | `loadup-modules-upms-web`                       |
 | SAS 用户认证适配        | `loadup-modules-upms-authserver`                |
-| 令牌签发与刷新          | `loadup-components-oauth-server-core`       |
-| Bearer 验签             | `loadup-components-oauth-server-core`             |
+| 令牌签发与刷新          | `loadup-components-oauth-server-core`           |
+| Bearer 验签             | `loadup-components-oauth-server-core`           |
 | 方法级授权              | `loadup-components-authorization`               |
 
 ## 敏感数据展示与明文读取
@@ -88,9 +88,13 @@ recorder。
 
 ## 输入与安全约定
 
-新密码至少为 8 个 Unicode 字符、最多 72 个 UTF-8 字节；创建、注册、修改和重置共用 `PasswordPolicy` 与 `@ValidPassword`，避免 BCrypt 截断。验证码不写日志，邮箱和手机号显式脱敏。敏感数据展示和明文读取约束见上文。
+新密码至少为 8 个 Unicode 字符、最多 72 个 UTF-8 字节；创建、注册、修改和重置共用 `PasswordPolicy` 与 `@ValidPassword`，避免
+BCrypt 截断。验证码不写日志，邮箱和手机号显式脱敏。敏感数据展示和明文读取约束见上文。
 
-分页请求、DTO、HTTP 响应结构及共享时间规则见 [commons-dto 文档](../../loadup-framework/loadup-commons/loadup-commons-dto/README.md)。用户排序字段限于 `createdAt`、`username`、`nickname`、`id`，角色查询只接受已声明字段白名单。业务与持久化时间使用 Spring 共享的 Clock，默认采用系统本地时区。
+分页请求、DTO、HTTP
+响应结构及共享时间规则见 [commons-dto 文档](../../loadup-framework/loadup-commons/loadup-commons-dto/README.md)。用户排序字段限于
+`createdAt`、`username`、`nickname`、`id`，角色查询只接受已声明字段白名单。业务与持久化时间使用 Spring 共享的
+Clock，默认采用系统本地时区。
 
 ## 错误码契约
 
@@ -104,4 +108,5 @@ result/data。枚举码按稳定公开契约维护，不用字符串消息覆盖
 `loadup.flyway.locations` 中显式加入 `classpath:db/migration/framework/upms`，与应用自己的迁移共同自动执行。
 不要用共享根 `classpath:db/migration` 表达应用隔离；它也会扫描依赖 JAR。已执行版本只追加升级，不改写历史。
 
-阶段 1C 已分开 app 与默认持久化装配。仅使用自定义 Gateway 时可只引入 app；Web/AuthServer 已显式包含默认 infrastructure，应用可逐接口替换 Gateway。未改登录策略、身份、权限、token 协议、SQL 或部署配置。源码及回归源码已同步，未构建或测试。
+阶段 1C 已分开 app 与默认持久化装配。仅使用自定义 Gateway 时可只引入 app；Web/AuthServer 已显式包含默认
+infrastructure，应用可逐接口替换 Gateway。未改登录策略、身份、权限、token 协议、SQL 或部署配置。源码及回归源码已同步，未构建或测试。

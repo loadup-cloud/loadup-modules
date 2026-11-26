@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 
 public final class GotoneProviders {
-    private record Key(Channel channel, String adapter) {}
     private final Map<Key, GotoneProvider> adapters;
 
     public GotoneProviders(List<GotoneProvider> adapters) {
@@ -39,4 +38,6 @@ public final class GotoneProviders {
     public Optional<GotoneProvider> find(Account account) {
         return Optional.ofNullable(adapters.get(new Key(account.channel(), account.adapter())));
     }
+
+    private record Key(Channel channel, String adapter) {}
 }

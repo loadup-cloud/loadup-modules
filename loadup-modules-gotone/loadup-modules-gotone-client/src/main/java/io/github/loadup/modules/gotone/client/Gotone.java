@@ -22,7 +22,13 @@ import java.util.Map;
 public final class Gotone {
     private Gotone() {}
 
-    public enum Channel { SMS, EMAIL, PUSH, IN_APP, WEBHOOK }
+    public enum Channel {
+        SMS,
+        EMAIL,
+        PUSH,
+        IN_APP,
+        WEBHOOK
+    }
 
     public record Target(String address, String platform, String appId) {
         public static Target address(String address) {
@@ -30,13 +36,24 @@ public final class Gotone {
         }
     }
 
-    public record Submit(String serviceCode, String requestKey, Map<String, String> parameters,
-                         Map<Channel, List<Target>> recipientsByChannel, Instant expiresAt) {}
+    public record Submit(
+            String serviceCode,
+            String requestKey,
+            Map<String, String> parameters,
+            Map<Channel, List<Target>> recipientsByChannel,
+            Instant expiresAt) {}
 
     public record Receipt(String requestId, String serviceCode, int revision, Instant acceptedAt, int targetCount) {}
 
-    public record Attempt(int number, String accountCode, Integer configVersion, String status, String reason,
-                          String remoteId, Instant startedAt, Instant finishedAt) {}
+    public record Attempt(
+            int number,
+            String accountCode,
+            Integer configVersion,
+            String status,
+            String reason,
+            String remoteId,
+            Instant startedAt,
+            Instant finishedAt) {}
 
     public record Delivery(String id, Channel channel, String target, String status, List<Attempt> attempts) {}
 
@@ -44,15 +61,34 @@ public final class Gotone {
 
     public record Template(Channel channel, Map<String, String> fields) {}
 
-    public record Route(String serviceCode, String name, String description, boolean enabled, int version,
-                        List<String> requiredParameters, List<Template> channels) {}
+    public record Route(
+            String serviceCode,
+            String name,
+            String description,
+            boolean enabled,
+            int version,
+            List<String> requiredParameters,
+            List<Template> channels) {}
 
-    public record Account(String accountCode, Channel channel, String adapter, boolean enabled, int priority,
-                          String secretRef, int connectTimeoutMs, int requestTimeoutMs, int version,
-                          Map<String, String> settings) {}
+    public record Account(
+            String accountCode,
+            Channel channel,
+            String adapter,
+            boolean enabled,
+            int priority,
+            String secretRef,
+            int connectTimeoutMs,
+            int requestTimeoutMs,
+            int version,
+            Map<String, String> settings) {}
 
-    public record SmsBinding(String serviceCode, int revision, String accountCode, String remoteTemplateId,
-                             String remoteSignature, Map<String, String> variableMapping) {}
+    public record SmsBinding(
+            String serviceCode,
+            int revision,
+            String accountCode,
+            String remoteTemplateId,
+            String remoteSignature,
+            Map<String, String> variableMapping) {}
 
     public record Retry(String deliveryId, String reason) {}
 

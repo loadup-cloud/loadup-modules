@@ -102,5 +102,4 @@ public class GotoneDeliveryAttemptDO extends BaseDO {
     public void setFinishedAt(LocalDateTime finishedAt) {
         this.finishedAt = finishedAt;
     }
-
 }

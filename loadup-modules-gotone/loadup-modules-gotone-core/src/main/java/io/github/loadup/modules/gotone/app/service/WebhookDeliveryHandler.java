@@ -28,8 +28,13 @@ import java.util.concurrent.ExecutorService;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public final class WebhookDeliveryHandler extends ExternalDeliveryHandler {
-    public WebhookDeliveryHandler(GotoneDeliveryStore store, GotoneConfigurationStore configuration,
-            GotoneProviders providers, GotoneSecrets secrets, Clock clock, TransactionTemplate tx,
+    public WebhookDeliveryHandler(
+            GotoneDeliveryStore store,
+            GotoneConfigurationStore configuration,
+            GotoneProviders providers,
+            GotoneSecrets secrets,
+            Clock clock,
+            TransactionTemplate tx,
             ExecutorService transport) {
         super(Channel.WEBHOOK, store, configuration, providers, secrets, clock, tx, transport);
     }
@@ -41,11 +46,23 @@ public final class WebhookDeliveryHandler extends ExternalDeliveryHandler {
 
     @Override
     protected Account resolveDestination(Account account) {
-        if (!account.settings().containsKey("destinationRef")) return account;
+        if (!account.settings().containsKey("destinationRef")) {
+            return account;
+        }
         String url = secrets.resolve(account.settings().get("destinationRef"));
-        if (url == null || url.isBlank()) return null;
-        return new Account(account.accountCode(), account.channel(), account.adapter(), account.enabled(),
-                account.priority(), account.secretRef(), account.connectTimeoutMs(), account.requestTimeoutMs(),
-                account.version(), Map.of("url", url));
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        return new Account(
+                account.accountCode(),
+                account.channel(),
+                account.adapter(),
+                account.enabled(),
+                account.priority(),
+                account.secretRef(),
+                account.connectTimeoutMs(),
+                account.requestTimeoutMs(),
+                account.version(),
+                Map.of("url", url));
     }
 }

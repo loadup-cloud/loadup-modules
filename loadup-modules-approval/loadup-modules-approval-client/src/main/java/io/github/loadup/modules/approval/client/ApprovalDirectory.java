@@ -15,22 +15,33 @@
  */
 package io.github.loadup.modules.approval.client;
 
-import static io.github.loadup.modules.approval.client.Approval.*;
+import static io.github.loadup.modules.approval.client.Approval.DirectoryType;
+import static io.github.loadup.modules.approval.client.Approval.Option;
+import static io.github.loadup.modules.approval.client.Approval.Person;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-/** An identity adapter must scope both lookup and enumeration to the registered application. */
+/**
+ * An identity adapter must scope both lookup and enumeration to the registered application.
+ */
 public interface ApprovalDirectory {
     Optional<Person> person(String app, String userId);
+
     Stream<Person> people(String app);
+
     List<Option> search(String app, DirectoryType type, String query, int offset, int limit);
+
     boolean exists(String app, DirectoryType type, String id);
 
     default Optional<String> label(String app, DirectoryType type, String id) {
-        if (type == DirectoryType.USER) return person(app, id).map(Person::label);
+        if (type == DirectoryType.USER) {
+            return person(app, id).map(Person::label);
+        }
         return search(app, type, id, 0, 100).stream()
-                .filter(option -> option.id().equals(id)).findFirst().map(Option::label);
+                .filter(option -> option.id().equals(id))
+                .findFirst()
+                .map(Option::label);
     }
 }

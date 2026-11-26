@@ -36,11 +36,11 @@ Web API 与配置见 [Web 适配说明](loadup-modules-file-web/README.md)，设
 
 本目录的 Maven 坐标 `loadup-modules-file` 为聚合 POM。业务接入选择具体 jar，版本由根 BOM 管理：
 
-| 子模块 | 用途 |
-| --- | --- |
-| [`client`](loadup-modules-file-client/README.md) | 对外 DTO、请求契约；不依赖 Spring 或持久化实现 |
-| [`core`](loadup-modules-file-core/README.md) | 领域模型、用例服务、DTO 映射、默认 Spring JDBC Gateway 与 Flyway 迁移；程序化接入入口 |
-| [`web`](loadup-modules-file-web/README.md) | 可选 Spring MVC 适配；自动引入 core |
+| 子模块                                           | 用途                                                                                  |
+|--------------------------------------------------|---------------------------------------------------------------------------------------|
+| [`client`](loadup-modules-file-client/README.md) | 对外 DTO、请求契约；不依赖 Spring 或持久化实现                                        |
+| [`core`](loadup-modules-file-core/README.md)     | 领域模型、用例服务、DTO 映射、默认 Spring JDBC Gateway 与 Flyway 迁移；程序化接入入口 |
+| [`web`](loadup-modules-file-web/README.md)       | 可选 Spring MVC 适配；自动引入 core                                                   |
 
 `FileResourceService` 现在位于 `io.github.loadup.modules.file.app.service`；公开结果位于
 `io.github.loadup.modules.file.client.dto`。领域 Gateway 不引用客户端 DTO，也不引用数据库或 Spring API。HTTP
@@ -57,12 +57,14 @@ loadup:
         enabled: true
 ```
 
-仅引入 core 时不注册 Controller；关闭 web 开关保留程序化服务，关闭模块 enabled 开关同时停止默认应用与持久化 Bean 装配。配置开关不控制
+仅引入 core 时不注册 Controller；关闭 web 开关保留程序化服务，关闭模块 enabled 开关同时停止默认应用与持久化 Bean
+装配。配置开关不控制
 Flyway 对已在 classpath 上的脚本执行。不要在已有数据库重复复制迁移脚本。
 
 ## 公共分页与时间约定
 
-分页请求、DTO、HTTP 响应结构及共享时间规则见 [commons-dto 文档](../../loadup-framework/loadup-commons/loadup-commons-dto/README.md)。
+分页请求、DTO、HTTP
+响应结构及共享时间规则见 [commons-dto 文档](../../loadup-framework/loadup-commons/loadup-commons-dto/README.md)。
 
 ## 错误码契约
 

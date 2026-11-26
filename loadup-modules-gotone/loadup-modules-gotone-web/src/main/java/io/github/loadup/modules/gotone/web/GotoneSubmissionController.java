@@ -25,14 +25,36 @@ import io.github.loadup.modules.gotone.client.facade.GotoneFacade;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/internal/v1/gotone")
 public class GotoneSubmissionController {
     private final GotoneFacade gotone;
 
-    public GotoneSubmissionController(GotoneFacade gotone) { this.gotone = gotone; }
+    public GotoneSubmissionController(GotoneFacade gotone) {
+        this.gotone = gotone;
+    }
+
+    private static String serviceIdentity(Authentication authentication) {
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getCredentials() instanceof Jwt jwt) {
+            String source = jwt.getClaimAsString("service_id");
+            if ("SERVICE".equals(jwt.getClaimAsString("principal_type"))
+                    && source != null
+                    && !source.isBlank()
+                    && source.equals(jwt.getSubject())) {
+                return "service:" + source;
+            }
+        }
+        throw new CommonException(GotoneResultCode.SERVICE_IDENTITY_REQUIRED);
+    }
 
     @PostMapping("/submit")
     @PreAuthorize("hasAuthority('SCOPE_gotone:submit')")
@@ -44,14 +66,5 @@ public class GotoneSubmissionController {
     @PreAuthorize("hasAuthority('SCOPE_gotone:status')")
     public SuccessResponse<Request> request(@PathVariable String id, Authentication authentication) {
         return SuccessResponse.of(gotone.status(serviceIdentity(authentication), id));
-    }
-
-    private static String serviceIdentity(Authentication authentication) {
-        if (authentication != null && authentication.isAuthenticated() && authentication.getCredentials() instanceof Jwt jwt) {
-            String source = jwt.getClaimAsString("service_id");
-            if ("SERVICE".equals(jwt.getClaimAsString("principal_type")) && source != null
-                    && !source.isBlank() && source.equals(jwt.getSubject())) return "service:" + source;
-        }
-        throw new CommonException(GotoneResultCode.SERVICE_IDENTITY_REQUIRED);
     }
 }

@@ -29,7 +29,8 @@ public record TransferTaskPageQuery(
 
         @Schema(description = "Filter by import or export") TransferKind kind,
 
-        @Schema(description = "Filter by current task status") TransferStatus status,
+        @Schema(description = "Filter by current task status")
+        TransferStatus status,
 
         @Schema(description = "Page number, starting at 1", minimum = "1", defaultValue = "1") @Min(1) Integer page,
 

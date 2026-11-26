@@ -83,10 +83,10 @@ public class TransferGatewayImpl extends ServiceImpl<TransferTaskRowMapper, Tran
         LocalDateTime now = LocalDateTime.now(clock);
         int inserted = jdbc.update(
                 """
-                INSERT INTO transfer_task (id, owner_id, kind, handler_key, source_file_id, result_file_id,
-                    status, processed_count, total_count, error_message, created_at, started_at, finished_at, updated_at, deleted)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)
-                """,
+                        INSERT INTO transfer_task (id, owner_id, kind, handler_key, source_file_id, result_file_id,
+                            status, processed_count, total_count, error_message, created_at, started_at, finished_at, updated_at, deleted)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)
+                        """,
                 task.id(),
                 task.ownerId(),
                 task.kind().name(),
@@ -106,9 +106,9 @@ public class TransferGatewayImpl extends ServiceImpl<TransferTaskRowMapper, Tran
         }
         for (var entry : values.entrySet()) {
             int count = jdbc.update("""
-                INSERT INTO transfer_task_option (id, task_id, option_name, option_value, created_at, updated_at, deleted)
-                VALUES (?, ?, ?, ?, ?, ?, FALSE)
-                """, ids.generate(), task.id(), entry.getKey(), entry.getValue(), now, now);
+                    INSERT INTO transfer_task_option (id, task_id, option_name, option_value, created_at, updated_at, deleted)
+                    VALUES (?, ?, ?, ?, ?, ?, FALSE)
+                    """, ids.generate(), task.id(), entry.getKey(), entry.getValue(), now, now);
             if (count != 1) {
                 throw new IllegalStateException("Unexpected transfer option insert count");
             }

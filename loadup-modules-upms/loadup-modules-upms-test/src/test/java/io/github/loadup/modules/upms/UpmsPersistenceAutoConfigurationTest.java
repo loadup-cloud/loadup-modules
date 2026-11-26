@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2026 LoadUp Cloud
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.loadup.modules.upms;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +48,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 
 class UpmsPersistenceAutoConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(UpmsAutoConfiguration.class, UpmsPersistenceAutoConfiguration.class))
+            .withConfiguration(
+                    AutoConfigurations.of(UpmsAutoConfiguration.class, UpmsPersistenceAutoConfiguration.class))
             .withBean(Clock.class, Clock::systemUTC)
             .withBean(NamedParameterJdbcTemplate.class, () -> mock(NamedParameterJdbcTemplate.class))
             .withBean(JdbcClient.class, () -> mock(JdbcClient.class))
@@ -53,7 +69,9 @@ class UpmsPersistenceAutoConfigurationTest {
             assertThat(context).hasSingleBean(PermissionGateway.class).hasSingleBean(PermissionGatewayImpl.class);
             assertThat(context).hasSingleBean(DepartmentGateway.class).hasSingleBean(DepartmentGatewayImpl.class);
             assertThat(context).hasSingleBean(LoginLogGateway.class).hasSingleBean(LoginLogGatewayImpl.class);
-            assertThat(context).hasSingleBean(UserOAuthBindingGateway.class).hasSingleBean(UserOAuthBindingGatewayImpl.class);
+            assertThat(context)
+                    .hasSingleBean(UserOAuthBindingGateway.class)
+                    .hasSingleBean(UserOAuthBindingGatewayImpl.class);
         });
     }
 
@@ -73,17 +91,23 @@ class UpmsPersistenceAutoConfigurationTest {
             assertThat(context).hasNotFailed().hasSingleBean(AuthenticationService.class);
             assertThat(context.getBean(gatewayType)).isSameAs(replacement);
             assertThat(context).hasSingleBean(UserGateway.class);
-            assertThat(context.getBeansOfType(UserGatewayImpl.class)).hasSize(gatewayType.equals(UserGateway.class) ? 0 : 1);
+            assertThat(context.getBeansOfType(UserGatewayImpl.class))
+                    .hasSize(gatewayType.equals(UserGateway.class) ? 0 : 1);
             assertThat(context).hasSingleBean(RoleGateway.class);
-            assertThat(context.getBeansOfType(RoleGatewayImpl.class)).hasSize(gatewayType.equals(RoleGateway.class) ? 0 : 1);
+            assertThat(context.getBeansOfType(RoleGatewayImpl.class))
+                    .hasSize(gatewayType.equals(RoleGateway.class) ? 0 : 1);
             assertThat(context).hasSingleBean(PermissionGateway.class);
-            assertThat(context.getBeansOfType(PermissionGatewayImpl.class)).hasSize(gatewayType.equals(PermissionGateway.class) ? 0 : 1);
+            assertThat(context.getBeansOfType(PermissionGatewayImpl.class))
+                    .hasSize(gatewayType.equals(PermissionGateway.class) ? 0 : 1);
             assertThat(context).hasSingleBean(DepartmentGateway.class);
-            assertThat(context.getBeansOfType(DepartmentGatewayImpl.class)).hasSize(gatewayType.equals(DepartmentGateway.class) ? 0 : 1);
+            assertThat(context.getBeansOfType(DepartmentGatewayImpl.class))
+                    .hasSize(gatewayType.equals(DepartmentGateway.class) ? 0 : 1);
             assertThat(context).hasSingleBean(LoginLogGateway.class);
-            assertThat(context.getBeansOfType(LoginLogGatewayImpl.class)).hasSize(gatewayType.equals(LoginLogGateway.class) ? 0 : 1);
+            assertThat(context.getBeansOfType(LoginLogGatewayImpl.class))
+                    .hasSize(gatewayType.equals(LoginLogGateway.class) ? 0 : 1);
             assertThat(context).hasSingleBean(UserOAuthBindingGateway.class);
-            assertThat(context.getBeansOfType(UserOAuthBindingGatewayImpl.class)).hasSize(gatewayType.equals(UserOAuthBindingGateway.class) ? 0 : 1);
+            assertThat(context.getBeansOfType(UserOAuthBindingGatewayImpl.class))
+                    .hasSize(gatewayType.equals(UserOAuthBindingGateway.class) ? 0 : 1);
         });
     }
 }

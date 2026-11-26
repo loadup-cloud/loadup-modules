@@ -23,12 +23,38 @@ import java.util.Set;
 public final class Approval {
     private Approval() {}
 
-    public enum Mode { USER, ROLE, SELECT_AT_START }
-    public enum Status { DRAFT, ACTIVE, RETIRED, WAITING, PENDING, APPROVED, REJECTED, CANCELLED, WITHDRAWN }
-    public enum Decision { APPROVE, REJECT }
-    public enum DirectoryType { USER, ROLE, DEPARTMENT }
+    public enum Mode {
+        USER,
+        ROLE,
+        SELECT_AT_START
+    }
 
-    /** Constructed by a trusted authentication adapter, never deserialized from request data. */
+    public enum Status {
+        DRAFT,
+        ACTIVE,
+        RETIRED,
+        WAITING,
+        PENDING,
+        APPROVED,
+        REJECTED,
+        CANCELLED,
+        WITHDRAWN
+    }
+
+    public enum Decision {
+        APPROVE,
+        REJECT
+    }
+
+    public enum DirectoryType {
+        USER,
+        ROLE,
+        DEPARTMENT
+    }
+
+    /**
+     * Constructed by a trusted authentication adapter, never deserialized from request data.
+     */
     public record Caller(String subject, boolean human, Set<String> authorities) {
         public Caller {
             authorities = Set.copyOf(authorities);
@@ -48,47 +74,105 @@ public final class Approval {
     }
 
     public record Rule(
-            String key, String name, Mode mode, Scope scope, String defaultUserId, String roleId, boolean allowOverride) {}
+            String key,
+            String name,
+            Mode mode,
+            Scope scope,
+            String defaultUserId,
+            String roleId,
+            boolean allowOverride) {}
 
-    public record Spec(String name, boolean allowWithdraw, boolean excludeApplicant,
-                       boolean distinctApprovers, List<Rule> steps) {
+    public record Spec(
+            String name, boolean allowWithdraw, boolean excludeApplicant, boolean distinctApprovers, List<Rule> steps) {
         public Spec {
             steps = steps == null ? List.of() : List.copyOf(steps);
         }
     }
 
-    public record Definition(String id, String appCode, String flowKey, int version, long revision, Status status, Spec spec) {}
+    public record Definition(
+            String id, String appCode, String flowKey, int version, long revision, Status status, Spec spec) {}
+
     public record Business(String type, String id, String version, String contentHash) {}
-    public record Start(String flowKey, int expectedDefinitionVersion, Business business, String title,
-                        Map<String, String> selectedApprovers) {}
+
+    public record Start(
+            String flowKey,
+            int expectedDefinitionVersion,
+            Business business,
+            String title,
+            Map<String, String> selectedApprovers) {}
+
     public record Change(String stepKey, String assigneeId) {}
+
     public record Reassign(List<Change> changes, String reason) {}
+
     public record Decide(Decision decision, String comment) {}
-    public record AssignmentChange(String stepKey, String beforeUserId, String beforeRoleId,
-                                   String afterUserId, String afterRoleId) {}
 
-    public record Instance(String id, String appCode, String flowKey, int definitionVersion,
-                           Business business, String title, String applicantId, Status status,
-                           long revision, Instant createdAt, Instant finishedAt) {}
+    public record AssignmentChange(
+            String stepKey, String beforeUserId, String beforeRoleId, String afterUserId, String afterRoleId) {}
 
-    public record Step(String id, Rule rule, String assigneeUserId, String assigneeRoleId,
-                       Status status, String completedBy, Instant activatedAt, Instant completedAt) {}
+    public record Instance(
+            String id,
+            String appCode,
+            String flowKey,
+            int definitionVersion,
+            Business business,
+            String title,
+            String applicantId,
+            Status status,
+            long revision,
+            Instant createdAt,
+            Instant finishedAt) {}
 
-    public record Action(String action, String stepId, String actorId, String matchedPrincipal,
-                         String reason, List<AssignmentChange> changes, long revision, Instant occurredAt) {}
+    public record Step(
+            String id,
+            Rule rule,
+            String assigneeUserId,
+            String assigneeRoleId,
+            Status status,
+            String completedBy,
+            Instant activatedAt,
+            Instant completedAt) {}
 
-    public record Detail(Instance instance, List<Step> steps, List<Action> actions, boolean canAdjust,
-                         boolean canDecide, boolean canWithdraw, boolean blocked, String deliveryStatus,
-                         Map<String, String> userLabels, Map<String, String> roleLabels) {}
+    public record Action(
+            String action,
+            String stepId,
+            String actorId,
+            String matchedPrincipal,
+            String reason,
+            List<AssignmentChange> changes,
+            long revision,
+            Instant occurredAt) {}
+
+    public record Detail(
+            Instance instance,
+            List<Step> steps,
+            List<Action> actions,
+            boolean canAdjust,
+            boolean canDecide,
+            boolean canWithdraw,
+            boolean blocked,
+            String deliveryStatus,
+            Map<String, String> userLabels,
+            Map<String, String> roleLabels) {}
 
     public record Task(Instance instance, String stepId, String stepName) {}
+
     public record Option(String id, String label) {}
+
     public record Person(String id, String label, String departmentId, Set<String> roleIds) {
         public Person {
             roleIds = Set.copyOf(roleIds);
         }
     }
 
-    public record Outcome(int schemaVersion, String eventId, String instanceId, String appCode, String flowKey,
-                          int definitionVersion, Business business, Status outcome, Instant finishedAt) {}
+    public record Outcome(
+            int schemaVersion,
+            String eventId,
+            String instanceId,
+            String appCode,
+            String flowKey,
+            int definitionVersion,
+            Business business,
+            Status outcome,
+            Instant finishedAt) {}
 }

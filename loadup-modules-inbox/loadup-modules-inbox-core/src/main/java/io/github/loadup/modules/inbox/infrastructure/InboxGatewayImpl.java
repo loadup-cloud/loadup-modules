@@ -39,12 +39,34 @@ public class InboxGatewayImpl implements InboxGateway {
     private final IdGenerator ids;
     private final Clock clock;
 
-    public InboxGatewayImpl(InboxMessageMapper mapper, PlatformTransactionManager transactions, Clock clock, IdGenerator ids) {
+    public InboxGatewayImpl(
+            InboxMessageMapper mapper, PlatformTransactionManager transactions, Clock clock, IdGenerator ids) {
         this.mapper = mapper;
         this.insertTransaction = new TransactionTemplate(transactions);
         this.insertTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED);
         this.clock = clock;
         this.ids = ids;
+    }
+
+    private static QueryWrapper owned(String recipient) {
+        return QueryWrapper.create().where(INBOX_MESSAGE.RECIPIENT_ID.eq(Objects.requireNonNull(recipient)));
+    }
+
+    private static QueryWrapper visible(String recipient) {
+        return owned(recipient).and(INBOX_MESSAGE.ARCHIVED_AT.isNull());
+    }
+
+    private static InboxMessage message(InboxMessageDO row) {
+        return new InboxMessage(
+                row.getId(),
+                row.getRecipientId(),
+                row.getSenderId(),
+                row.getCategory(),
+                row.getTitle(),
+                row.getBody(),
+                row.getActionUrl(),
+                row.getReadAt(),
+                row.getCreatedAt());
     }
 
     @Override
@@ -68,8 +90,11 @@ public class InboxGatewayImpl implements InboxGateway {
             return insertTransaction.execute(status -> mapper.insert(row));
         } catch (DuplicateKeyException duplicate) {
             var existing = mapper.selectOneByQuery(owned(message.recipientId())
-                    .and(INBOX_MESSAGE.REQUEST_KEY.eq(requestKey)).forUpdate());
-            if (existing == null) throw duplicate;
+                    .and(INBOX_MESSAGE.REQUEST_KEY.eq(requestKey))
+                    .forUpdate());
+            if (existing == null) {
+                throw duplicate;
+            }
             return 0;
         }
     }
@@ -77,11 +102,13 @@ public class InboxGatewayImpl implements InboxGateway {
     @Override
     public PageResult<InboxMessage> list(String recipient, boolean unread, int page, int size) {
         QueryWrapper query = visible(recipient);
-        if (unread) query.and(INBOX_MESSAGE.READ_AT.isNull());
-        var result = mapper.paginate(new Page<>(page, size),
-                query.orderBy(INBOX_MESSAGE.CREATED_AT.desc(), INBOX_MESSAGE.ID.desc()));
-        return new PageResult<>(result.getRecords().stream().map(InboxGatewayImpl::message).toList(),
-                result.getTotalRow(), page, size);
+        if (unread) {
+            query.and(INBOX_MESSAGE.READ_AT.isNull());
+        }
+        var result = mapper.paginate(
+                new Page<>(page, size), query.orderBy(INBOX_MESSAGE.CREATED_AT.desc(), INBOX_MESSAGE.ID.desc()));
+        return new PageResult<>(
+                result.getRecords().stream().map(InboxGatewayImpl::message).toList(), result.getTotalRow(), page, size);
     }
 
     @Override
@@ -96,8 +123,11 @@ public class InboxGatewayImpl implements InboxGateway {
         LocalDateTime now = LocalDateTime.now(clock);
         row.setReadAt(now);
         row.setUpdatedAt(now);
-        int changed = mapper.updateByQuery(row, visible(recipient).and(INBOX_MESSAGE.ID.eq(id)).and(INBOX_MESSAGE.READ_AT.isNull()));
-        if (changed != 0) return changed;
+        int changed = mapper.updateByQuery(
+                row, visible(recipient).and(INBOX_MESSAGE.ID.eq(id)).and(INBOX_MESSAGE.READ_AT.isNull()));
+        if (changed != 0) {
+            return changed;
+        }
         return mapper.selectCountByQuery(owned) != 0 ? 1 : 0;
     }
 
@@ -118,20 +148,9 @@ public class InboxGatewayImpl implements InboxGateway {
         row.setArchivedAt(now);
         row.setUpdatedAt(now);
         int changed = mapper.updateByQuery(row, visible(recipient).and(INBOX_MESSAGE.ID.eq(id)));
-        if (changed != 0) return changed;
+        if (changed != 0) {
+            return changed;
+        }
         return mapper.selectCountByQuery(owned(recipient).and(INBOX_MESSAGE.ID.eq(id))) != 0 ? 1 : 0;
-    }
-
-    private static QueryWrapper owned(String recipient) {
-        return QueryWrapper.create().where(INBOX_MESSAGE.RECIPIENT_ID.eq(Objects.requireNonNull(recipient)));
-    }
-
-    private static QueryWrapper visible(String recipient) {
-        return owned(recipient).and(INBOX_MESSAGE.ARCHIVED_AT.isNull());
-    }
-
-    private static InboxMessage message(InboxMessageDO row) {
-        return new InboxMessage(row.getId(), row.getRecipientId(), row.getSenderId(), row.getCategory(), row.getTitle(),
-                row.getBody(), row.getActionUrl(), row.getReadAt(), row.getCreatedAt());
     }
 }

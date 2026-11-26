@@ -111,5 +111,4 @@ public class GotoneRequestDO extends BaseDO {
     public void setTargetCount(Integer targetCount) {
         this.targetCount = targetCount;
     }
-
 }

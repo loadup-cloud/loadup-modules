@@ -111,5 +111,4 @@ public class GotoneDeliveryDO extends BaseDO {
     public void setExpiresAt(LocalDateTime expiresAt) {
         this.expiresAt = expiresAt;
     }
-
 }

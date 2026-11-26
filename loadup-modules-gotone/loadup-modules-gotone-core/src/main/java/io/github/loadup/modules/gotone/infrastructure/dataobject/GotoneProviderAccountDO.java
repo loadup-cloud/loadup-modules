@@ -110,5 +110,4 @@ public class GotoneProviderAccountDO extends BaseDO {
     public void setSettings(String settings) {
         this.settings = settings;
     }
-
 }

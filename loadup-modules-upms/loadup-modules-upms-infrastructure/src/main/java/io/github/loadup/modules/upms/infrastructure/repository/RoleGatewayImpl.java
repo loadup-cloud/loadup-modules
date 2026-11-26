@@ -80,11 +80,11 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
         }
         row.setUpdatedAt(now);
         jdbc.update("""
-            INSERT INTO upms_role (id, role_name, role_code, parent_role_id, role_level, data_scope,
-                sort_order, status, remark, created_by, updated_by, created_at, updated_at, deleted)
-            VALUES (:id, :roleName, :roleCode, :parentId, COALESCE(:roleLevel, 1), COALESCE(:dataScope, 1),
-                COALESCE(:sortOrder, 0), COALESCE(:status, 1), :remark, :createdBy, :updatedBy, :createdAt, :updatedAt, FALSE)
-            """, new BeanPropertySqlParameterSource(row));
+                INSERT INTO upms_role (id, role_name, role_code, parent_role_id, role_level, data_scope,
+                    sort_order, status, remark, created_by, updated_by, created_at, updated_at, deleted)
+                VALUES (:id, :roleName, :roleCode, :parentId, COALESCE(:roleLevel, 1), COALESCE(:dataScope, 1),
+                    COALESCE(:sortOrder, 0), COALESCE(:status, 1), :remark, :createdBy, :updatedBy, :createdAt, :updatedAt, FALSE)
+                """, new BeanPropertySqlParameterSource(row));
         return converter.toEntity(row);
     }
 
@@ -95,13 +95,13 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
         lockParent(row.getParentId());
         row.setUpdatedAt(LocalDateTime.now(clock));
         int changed = jdbc.update("""
-            UPDATE upms_role SET role_name = COALESCE(:roleName, role_name), role_code = COALESCE(:roleCode, role_code),
-                parent_role_id = COALESCE(:parentId, parent_role_id), role_level = COALESCE(:roleLevel, role_level),
-                data_scope = COALESCE(:dataScope, data_scope), sort_order = COALESCE(:sortOrder, sort_order),
-                status = COALESCE(:status, status), remark = COALESCE(:remark, remark),
-                updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
-            WHERE id = :id AND deleted = FALSE
-            """, new BeanPropertySqlParameterSource(row));
+                UPDATE upms_role SET role_name = COALESCE(:roleName, role_name), role_code = COALESCE(:roleCode, role_code),
+                    parent_role_id = COALESCE(:parentId, parent_role_id), role_level = COALESCE(:roleLevel, role_level),
+                    data_scope = COALESCE(:dataScope, data_scope), sort_order = COALESCE(:sortOrder, sort_order),
+                    status = COALESCE(:status, status), remark = COALESCE(:remark, remark),
+                    updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
+                WHERE id = :id AND deleted = FALSE
+                """, new BeanPropertySqlParameterSource(row));
         if (changed != 1) {
             throw new IncorrectResultSizeDataAccessException(1, changed);
         }

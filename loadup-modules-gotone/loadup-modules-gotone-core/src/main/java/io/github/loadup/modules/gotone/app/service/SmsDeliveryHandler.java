@@ -25,8 +25,13 @@ import java.util.concurrent.ExecutorService;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public final class SmsDeliveryHandler extends ExternalDeliveryHandler {
-    public SmsDeliveryHandler(GotoneDeliveryStore store, GotoneConfigurationStore configuration,
-            GotoneProviders providers, GotoneSecrets secrets, Clock clock, TransactionTemplate tx,
+    public SmsDeliveryHandler(
+            GotoneDeliveryStore store,
+            GotoneConfigurationStore configuration,
+            GotoneProviders providers,
+            GotoneSecrets secrets,
+            Clock clock,
+            TransactionTemplate tx,
             ExecutorService transport) {
         super(Channel.SMS, store, configuration, providers, secrets, clock, tx, transport);
     }

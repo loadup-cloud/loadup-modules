@@ -19,6 +19,33 @@ import io.github.loadup.commons.enums.ResultStatusEnum;
 import io.github.loadup.commons.result.ResultCode;
 
 public final class FormException extends RuntimeException {
+    private final Code code;
+    private final String itemKey;
+    private final String fieldKey;
+
+    public FormException(Code code, String message) {
+        this(code, null, null, message);
+    }
+
+    public FormException(Code code, String itemKey, String fieldKey, String message) {
+        super(message);
+        this.code = code;
+        this.itemKey = itemKey;
+        this.fieldKey = fieldKey;
+    }
+
+    public Code code() {
+        return code;
+    }
+
+    public String itemKey() {
+        return itemKey;
+    }
+
+    public String fieldKey() {
+        return fieldKey;
+    }
+
     public enum Code implements ResultCode {
         INVALID_DEFINITION("Invalid form definition"),
         INVALID_VALUE("Invalid field value"),
@@ -53,23 +80,4 @@ public final class FormException extends RuntimeException {
             return message;
         }
     }
-
-    private final Code code;
-    private final String itemKey;
-    private final String fieldKey;
-
-    public FormException(Code code, String message) {
-        this(code, null, null, message);
-    }
-
-    public FormException(Code code, String itemKey, String fieldKey, String message) {
-        super(message);
-        this.code = code;
-        this.itemKey = itemKey;
-        this.fieldKey = fieldKey;
-    }
-
-    public Code code() { return code; }
-    public String itemKey() { return itemKey; }
-    public String fieldKey() { return fieldKey; }
 }

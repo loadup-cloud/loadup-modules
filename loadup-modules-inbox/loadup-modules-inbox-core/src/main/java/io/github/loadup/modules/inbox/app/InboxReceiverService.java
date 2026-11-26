@@ -33,29 +33,38 @@ final class InboxReceiverService implements InboxReceiver {
         this.clock = clock;
     }
 
+    private static String required(String value, int max) {
+        if (value == null || value.isBlank() || value.trim().length() > max) {
+            throw new CommonException(CommonResultCodeEnum.PARAM_ILLEGAL);
+        }
+        return value.trim();
+    }
+
     @Override
-    public void receive(String requestKey, String recipientId, String senderId, String category,
-                        String title, String body, String actionUrl) {
+    public void receive(
+            String requestKey,
+            String recipientId,
+            String senderId,
+            String category,
+            String title,
+            String body,
+            String actionUrl) {
         String recipient = required(recipientId, 64);
         String sender = senderId == null || senderId.isBlank() ? null : required(senderId, 64);
         String kind = required(category, 64);
         String heading = required(title, 200);
         String text = required(body, 4000);
         String path = actionUrl == null || actionUrl.isBlank() ? null : required(actionUrl, 500);
-        if (path != null && (!path.startsWith("/") || path.startsWith("//") || path.indexOf('\\') >= 0
-                || path.chars().anyMatch(Character::isISOControl))) {
+        if (path != null
+                && (!path.startsWith("/")
+                        || path.startsWith("//")
+                        || path.indexOf('\\') >= 0
+                        || path.chars().anyMatch(Character::isISOControl))) {
             throw new CommonException(InboxResultCode.INVALID_ACTION_URL);
         }
         String key = required(requestKey, 128);
-        var message = new InboxMessage(null, recipient, sender, kind, heading, text, path,
-                null, LocalDateTime.now(clock));
+        var message =
+                new InboxMessage(null, recipient, sender, kind, heading, text, path, null, LocalDateTime.now(clock));
         inbox.insert(message, key);
-    }
-
-    private static String required(String value, int max) {
-        if (value == null || value.isBlank() || value.trim().length() > max) {
-            throw new CommonException(CommonResultCodeEnum.PARAM_ILLEGAL);
-        }
-        return value.trim();
     }
 }

@@ -39,15 +39,12 @@ import org.springframework.transaction.PlatformTransactionManager;
             MyBatisFlexAutoConfiguration.class
         })
 @ConditionalOnSingleCandidate(DataSource.class)
-@ConditionalOnProperty(
-        prefix = "loadup.modules.inbox",
-        name = "enabled",
-        havingValue = "true",
-        matchIfMissing = true)
+@ConditionalOnProperty(prefix = "loadup.modules.inbox", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class InboxPersistenceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(InboxGateway.class)
-    InboxGateway inboxGateway(InboxMessageMapper mapper, PlatformTransactionManager transactions, IdGenerator ids, Clock clock) {
+    InboxGateway inboxGateway(
+            InboxMessageMapper mapper, PlatformTransactionManager transactions, IdGenerator ids, Clock clock) {
         return new InboxGatewayImpl(mapper, transactions, clock, ids);
     }
 }

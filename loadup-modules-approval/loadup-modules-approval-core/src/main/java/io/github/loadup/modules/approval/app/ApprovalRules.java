@@ -15,8 +15,16 @@
  */
 package io.github.loadup.modules.approval.app;
 
-import static io.github.loadup.modules.approval.client.Approval.*;
-import static io.github.loadup.modules.approval.client.ApprovalException.Code.*;
+import static io.github.loadup.modules.approval.client.Approval.Caller;
+import static io.github.loadup.modules.approval.client.Approval.DirectoryType;
+import static io.github.loadup.modules.approval.client.Approval.Person;
+import static io.github.loadup.modules.approval.client.Approval.Rule;
+import static io.github.loadup.modules.approval.client.Approval.Scope;
+import static io.github.loadup.modules.approval.client.Approval.Spec;
+import static io.github.loadup.modules.approval.client.Approval.Status;
+import static io.github.loadup.modules.approval.client.Approval.Step;
+import static io.github.loadup.modules.approval.client.ApprovalException.Code.APPROVAL_FORBIDDEN;
+import static io.github.loadup.modules.approval.client.ApprovalException.Code.APPROVAL_INVALID;
 
 import io.github.loadup.modules.approval.client.ApprovalDirectory;
 import io.github.loadup.modules.approval.client.ApprovalException;
@@ -39,15 +47,21 @@ final class ApprovalRules {
     }
 
     static void require(boolean condition, String message) {
-        if (!condition) throw error(APPROVAL_INVALID, message);
+        if (!condition) {
+            throw error(APPROVAL_INVALID, message);
+        }
     }
 
     static void permit(Caller caller, String app, String permission) {
-        if (!caller.permits(app, permission)) throw error(APPROVAL_FORBIDDEN, "没有此审批操作权限");
+        if (!caller.permits(app, permission)) {
+            throw error(APPROVAL_FORBIDDEN, "没有此审批操作权限");
+        }
     }
 
     static void human(Caller caller) {
-        if (!caller.human()) throw error(APPROVAL_FORBIDDEN, "此操作需要个人身份");
+        if (!caller.human()) {
+            throw error(APPROVAL_FORBIDDEN, "此操作需要个人身份");
+        }
     }
 
     static void key(String value) {
@@ -62,6 +76,10 @@ final class ApprovalRules {
         require(offset >= 0 && limit >= 1 && limit <= 100, "分页参数无效");
     }
 
+    static boolean open(Step step) {
+        return step.status() == Status.WAITING || step.status() == Status.PENDING;
+    }
+
     void validateSpec(String app, Spec spec, boolean publish) {
         require(spec != null, "请填写流程");
         text(spec.name(), 200, "流程名称");
@@ -72,14 +90,22 @@ final class ApprovalRules {
             require(keys.add(rule.key()), "步骤标识重复 " + rule.key());
             text(rule.name(), 200, "步骤名称");
             require(rule.mode() != null && rule.scope() != null, "请设置步骤指派方式和候选范围 " + rule.key());
-            if (publish) validatePrincipals(app, rule);
+            if (publish) {
+                validatePrincipals(app, rule);
+            }
         }
     }
 
     private void validatePrincipals(String app, Rule rule) {
-        for (String id : rule.scope().users()) validateIdentity(app, DirectoryType.USER, id);
-        for (String id : rule.scope().roles()) validateIdentity(app, DirectoryType.ROLE, id);
-        for (String id : rule.scope().departments()) validateIdentity(app, DirectoryType.DEPARTMENT, id);
+        for (String id : rule.scope().users()) {
+            validateIdentity(app, DirectoryType.USER, id);
+        }
+        for (String id : rule.scope().roles()) {
+            validateIdentity(app, DirectoryType.ROLE, id);
+        }
+        for (String id : rule.scope().departments()) {
+            validateIdentity(app, DirectoryType.DEPARTMENT, id);
+        }
         switch (rule.mode()) {
             case ROLE -> {
                 require(rule.defaultUserId() == null && !rule.allowOverride(), "角色待办请设置角色 " + rule.key());
@@ -91,7 +117,9 @@ final class ApprovalRules {
             }
             case SELECT_AT_START -> {
                 require(rule.roleId() == null, "选人步骤请在候选范围设置角色 " + rule.key());
-                if (rule.defaultUserId() != null) validateUser(app, rule, rule.defaultUserId());
+                if (rule.defaultUserId() != null) {
+                    validateUser(app, rule, rule.defaultUserId());
+                }
             }
         }
     }
@@ -103,7 +131,11 @@ final class ApprovalRules {
 
     void validateUser(String app, Rule rule, String id) {
         text(id, 200, "步骤 " + rule.name() + " 的审批人");
-        require(directory.person(app, id).filter(person -> matches(rule, person)).isPresent(),
+        require(
+                directory
+                        .person(app, id)
+                        .filter(person -> matches(rule, person))
+                        .isPresent(),
                 "审批人不符合步骤 " + rule.name() + " 的候选资格");
     }
 
@@ -111,8 +143,8 @@ final class ApprovalRules {
         Scope scope = rule.scope();
         return (scope.users().isEmpty() || scope.users().contains(person.id()))
                 && (scope.roles().isEmpty() || person.roleIds().stream().anyMatch(scope.roles()::contains))
-                && (scope.departments().isEmpty() || (person.departmentId() != null
-                        && scope.departments().contains(person.departmentId())))
+                && (scope.departments().isEmpty()
+                        || (person.departmentId() != null && scope.departments().contains(person.departmentId())))
                 && (rule.roleId() == null || person.roleIds().contains(rule.roleId()));
     }
 
@@ -121,46 +153,61 @@ final class ApprovalRules {
                 && (step.assigneeUserId() == null || step.assigneeUserId().equals(person.id()));
     }
 
-    static boolean open(Step step) {
-        return step.status() == Status.WAITING || step.status() == Status.PENDING;
-    }
-
     boolean viable(String app, Spec spec, String applicant, List<Step> steps, String decidingStep, String actor) {
         Set<String> excluded = new HashSet<>();
-        if (spec.excludeApplicant()) excluded.add(applicant);
+        if (spec.excludeApplicant()) {
+            excluded.add(applicant);
+        }
         if (spec.distinctApprovers()) {
             for (Step step : steps) {
-                if (step.completedBy() != null) excluded.add(step.completedBy());
+                if (step.completedBy() != null) {
+                    excluded.add(step.completedBy());
+                }
             }
-            if (actor != null && !excluded.add(actor)) return false;
+            if (actor != null && !excluded.add(actor)) {
+                return false;
+            }
         } else if (actor != null && excluded.contains(actor)) {
             return false;
         }
-        var remaining = steps.stream().filter(ApprovalRules::open)
-                .filter(step -> !step.id().equals(decidingStep)).toList();
+        var remaining = steps.stream()
+                .filter(ApprovalRules::open)
+                .filter(step -> !step.id().equals(decidingStep))
+                .toList();
         List<Set<String>> candidates = new ArrayList<>();
         List<Person> directoryPeople = remaining.stream().anyMatch(step -> step.assigneeUserId() == null)
-                ? directory.people(app).toList() : List.of();
+                ? directory.people(app).toList()
+                : List.of();
         for (Step step : remaining) {
-            var people = step.assigneeUserId() == null ? directoryPeople.stream()
+            var people = step.assigneeUserId() == null
+                    ? directoryPeople.stream()
                     : directory.person(app, step.assigneeUserId()).stream();
             Set<String> ids = new HashSet<>();
             people.filter(person -> assigned(step, person) && !excluded.contains(person.id()))
                     .forEach(person -> ids.add(person.id()));
-            if (ids.isEmpty()) return false;
+            if (ids.isEmpty()) {
+                return false;
+            }
             candidates.add(ids);
         }
-        if (!spec.distinctApprovers()) return true;
+        if (!spec.distinctApprovers()) {
+            return true;
+        }
         Map<String, Integer> assignments = new HashMap<>();
         for (int index = 0; index < candidates.size(); index++) {
-            if (!assign(index, candidates, assignments, new HashSet<>())) return false;
+            if (!assign(index, candidates, assignments, new HashSet<>())) {
+                return false;
+            }
         }
         return true;
     }
 
-    private boolean assign(int index, List<Set<String>> candidates, Map<String, Integer> assignments, Set<String> seen) {
+    private boolean assign(
+            int index, List<Set<String>> candidates, Map<String, Integer> assignments, Set<String> seen) {
         for (String person : candidates.get(index)) {
-            if (!seen.add(person)) continue;
+            if (!seen.add(person)) {
+                continue;
+            }
             Integer prior = assignments.get(person);
             if (prior == null || assign(prior, candidates, assignments, seen)) {
                 assignments.put(person, index);

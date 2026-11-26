@@ -15,7 +15,11 @@
  */
 package io.github.loadup.modules.form.client;
 
-import static io.github.loadup.modules.form.client.FormInstances.*;
+import static io.github.loadup.modules.form.client.FormInstances.Detail;
+import static io.github.loadup.modules.form.client.FormInstances.SaveDraft;
+import static io.github.loadup.modules.form.client.FormInstances.Start;
+import static io.github.loadup.modules.form.client.FormInstances.Submit;
+import static io.github.loadup.modules.form.client.FormInstances.Value;
 
 import java.util.List;
 import java.util.Map;

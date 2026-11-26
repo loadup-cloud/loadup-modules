@@ -21,7 +21,9 @@
 ## 租户与扩展
 
 客户端不能在请求体中指定隔离范围；一套部署固定使用自己的 schema，Repository 不使用 `tenant_id` 行谓词。入口只校验部署 code，
-schema 路由未实现，因此该模块目前只在默认 schema 中运行，不提供租户间数据库隔离。详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)。模块提供 Flyway 迁移，不声明必需的数据库厂商；数据库连接与驱动由消费应用配置，Pay 消费基线为 PostgreSQL。
+schema 路由未实现，因此该模块目前只在默认 schema
+中运行，不提供租户间数据库隔离。详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)
+。模块提供 Flyway 迁移，不声明必需的数据库厂商；数据库连接与驱动由消费应用配置，Pay 消费基线为 PostgreSQL。
 
 接入方式见 [README.md](README.md)。
 

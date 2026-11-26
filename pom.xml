@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.2.0</version>
-        <relativePath/>
+        <groupId>io.github.loadup-cloud</groupId>
+        <artifactId>loadup-framework</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../loadup-framework/pom.xml</relativePath>
     </parent>
     <groupId>io.github.loadup-cloud</groupId>
     <artifactId>loadup-modules</artifactId>
@@ -32,11 +32,6 @@
             <email>lslvxy@gmail.com</email>
         </developer>
     </developers>
-    <scm>
-        <connection>scm:git:https://github.com/loadup-cloud/loadup-modules.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/loadup-cloud/loadup-modules.git</developerConnection>
-        <url>https://github.com/loadup-cloud/loadup-modules</url>
-    </scm>
     <modules>
         <module>loadup-modules-bom</module>
         <module>loadup-modules-upms</module>
@@ -49,37 +44,15 @@
         <module>loadup-modules-inbox</module>
         <module>loadup-modules-transfer</module>
     </modules>
+    <scm>
+        <connection>scm:git:https://github.com/loadup-cloud/loadup-modules.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/loadup-cloud/loadup-modules.git</developerConnection>
+        <url>https://github.com/loadup-cloud/loadup-modules</url>
+    </scm>
     <properties>
-        <maven.deploy.skip>false</maven.deploy.skip>
-        <java.version>25</java.version>
-        <project.encoding>UTF-8</project.encoding>
-        <project.build.encoding>${project.encoding}</project.build.encoding>
-        <project.build.sourceEncoding>${project.encoding}</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>${project.encoding}</project.reporting.outputEncoding>
-        <maven.compiler.encoding>${project.encoding}</maven.compiler.encoding>
-        <maven.resources.encoding>${project.encoding}</maven.resources.encoding>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <maven.compiler.release>${java.version}</maven.compiler.release>
-
+        <!-- Keep the Framework BOM aligned with the Framework parent and Modules BOM. -->
+        <loadup.framework.version>0.0.1-SNAPSHOT</loadup.framework.version>
         <loadup.testify.version>0.0.1-SNAPSHOT</loadup.testify.version>
-
-        <!-- Manual quality and maintenance tools, aligned with LoadUp Framework. -->
-        <license.useJavaNoReformatCommentStartTag>false</license.useJavaNoReformatCommentStartTag>
-        <license.trimHeaderLine>true</license.trimHeaderLine>
-
-        <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
-        <versions-plugin.version>2.23.0</versions-plugin.version>
-
-        <spotless-plugin.version>3.11.0</spotless-plugin.version>
-
-        <enforcer-plugin.version>3.6.3</enforcer-plugin.version>
-
-        <palantir-java-format.version>2.98.0</palantir-java-format.version>
-
-        <spotless.skip>false</spotless.skip>
-
-        <enforcer.skip>false</enforcer.skip>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -99,17 +72,32 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <repositories>
+        <!-- Resolve the Framework parent when Modules is checked out on its own. -->
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/loadup-cloud/loadup-packages</url>
+        </repository>
+    </repositories>
     <build>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-plugin.version}</version>
                     <configuration>
-                        <systemPropertyVariables>
-                            <!-- Test-only deployment constant; production requires an explicit loadup.deployment.code. -->
-                            <loadup.deployment.code>test</loadup.deployment.code>
-                        </systemPropertyVariables>
+                        <archive>
+                            <manifest>
+                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            </manifest>
+                        </archive>
                     </configuration>
                 </plugin>
             </plugins>
@@ -117,137 +105,19 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>3.2.0</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.16.0</version>
                 <configuration>
-                    <proc>full</proc>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.mapstruct</groupId>
-                            <artifactId>mapstruct-processor</artifactId>
-                        </path>
-                        <path>
-                            <groupId>org.springframework.boot</groupId>
-                            <artifactId>spring-boot-configuration-processor</artifactId>
-                        </path>
+                    <annotationProcessorPaths combine.children="append">
                         <path>
                             <groupId>io.github.loadup-cloud</groupId>
                             <artifactId>loadup-components-database-processor</artifactId>
                         </path>
                     </annotationProcessorPaths>
-                    <annotationProcessors>
-                        <annotationProcessor>org.mapstruct.ap.MappingProcessor</annotationProcessor>
-                        <annotationProcessor>org.springframework.boot.configurationprocessor.ConfigurationMetadataAnnotationProcessor</annotationProcessor>
+                    <annotationProcessors combine.children="append">
                         <annotationProcessor>io.github.loadup.components.database.processor.LoadUpMyBatisFlexProcessor</annotationProcessor>
                     </annotationProcessors>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>github</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <distributionManagement>
-                <repository>
-                    <id>github</id>
-                    <name>LoadUp Apache Maven Packages</name>
-                    <url>https://maven.pkg.github.com/loadup-cloud/loadup-packages</url>
-                </repository>
-                <snapshotRepository>
-                    <id>github</id>
-                    <name>LoadUp Apache Maven Packages</name>
-                    <url>https://maven.pkg.github.com/loadup-cloud/loadup-packages</url>
-                </snapshotRepository>
-            </distributionManagement>
-            <repositories>
-                <repository>
-                    <id>github</id>
-                    <url>https://maven.pkg.github.com/loadup-cloud/loadup-packages</url>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                </repository>
-            </repositories>
-        </profile>
-        <profile>
-            <id>release</id>
-            <properties>
-                <maven.javadoc.skip>false</maven.javadoc.skip>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>3.4.0</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.12.0</version>
-                        <configuration>
-                            <doclint>none</doclint>
-                            <encoding>UTF-8</encoding>
-                            <docencoding>UTF-8</docencoding>
-                            <charset>UTF-8</charset>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.central</groupId>
-                        <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.12.0</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <publishingServerId>central</publishingServerId>
-                            <autoPublish>false</autoPublish>
-                            <skipPublishing>${maven.deploy.skip}</skipPublishing>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.8</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

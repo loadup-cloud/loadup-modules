@@ -24,12 +24,17 @@ import tools.jackson.databind.JsonNode;
 public final class FormInstances {
     private FormInstances() {}
 
-    public enum Status { DRAFT, SUBMITTED }
+    public enum Status {
+        DRAFT,
+        SUBMITTED
+    }
 
     public record Start(String releaseId, String requestKey) {}
 
     public record SaveDraft(
-            String instanceId, long expectedRowVersion, Set<String> selectedItems,
+            String instanceId,
+            long expectedRowVersion,
+            Set<String> selectedItems,
             Map<String, Map<String, JsonNode>> values) {}
 
     public record Submit(String instanceId, long expectedRowVersion, String requestKey) {}
@@ -37,6 +42,10 @@ public final class FormInstances {
     public record Value(JsonNode value, Origin origin) {}
 
     public record Detail(
-            String id, Release release, Status status, long rowVersion,
-            Set<String> selectedItems, Map<String, Map<String, Value>> values) {}
+            String id,
+            Release release,
+            Status status,
+            long rowVersion,
+            Set<String> selectedItems,
+            Map<String, Map<String, Value>> values) {}
 }

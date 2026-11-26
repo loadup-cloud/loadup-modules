@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2026 LoadUp Cloud
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.loadup.modules.upms.infrastructure.autoconfigure;
 
 import io.github.loadup.modules.upms.domain.gateway.DepartmentGateway;
@@ -32,7 +47,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** Registers replaceable persistence adapters independently of application services. */
+/**
+ * Registers replaceable persistence adapters independently of application services.
+ */
 @AutoConfiguration(beforeName = "io.github.loadup.modules.upms.app.autoconfigure.UpmsAutoConfiguration")
 @ComponentScan(basePackageClasses = UserConverter.class)
 public class UpmsPersistenceAutoConfiguration {
@@ -49,20 +66,14 @@ public class UpmsPersistenceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(LoginLogGateway.class)
-    public LoginLogGatewayImpl loginLogGatewayImpl(
-            JdbcClient jdbc,
-            LoginLogConverter converter,
-            Clock clock) {
+    public LoginLogGatewayImpl loginLogGatewayImpl(JdbcClient jdbc, LoginLogConverter converter, Clock clock) {
         return new LoginLogGatewayImpl(jdbc, converter, clock);
     }
 
     @Bean
     @ConditionalOnMissingBean(PermissionGateway.class)
     public PermissionGatewayImpl permissionGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            PermissionMapper mapper,
-            PermissionConverter converter,
-            Clock clock) {
+            NamedParameterJdbcTemplate jdbc, PermissionMapper mapper, PermissionConverter converter, Clock clock) {
         return new PermissionGatewayImpl(jdbc, mapper, converter, clock);
     }
 
@@ -80,10 +91,7 @@ public class UpmsPersistenceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(UserGateway.class)
     public UserGatewayImpl userGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            UserMapper mapper,
-            UserConverter converter,
-            Clock clock) {
+            NamedParameterJdbcTemplate jdbc, UserMapper mapper, UserConverter converter, Clock clock) {
         return new UserGatewayImpl(jdbc, mapper, converter, clock);
     }
 

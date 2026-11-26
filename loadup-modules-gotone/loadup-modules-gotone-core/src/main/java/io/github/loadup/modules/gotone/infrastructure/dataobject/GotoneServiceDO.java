@@ -74,5 +74,4 @@ public class GotoneServiceDO extends BaseDO {
     public void setActiveRevision(Integer activeRevision) {
         this.activeRevision = activeRevision;
     }
-
 }

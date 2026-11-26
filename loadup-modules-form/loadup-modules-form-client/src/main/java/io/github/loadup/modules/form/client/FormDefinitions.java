@@ -25,15 +25,54 @@ public final class FormDefinitions {
 
     private FormDefinitions() {}
 
-    public enum ValueType { TEXT, INTEGER, DECIMAL, BOOLEAN, DATE, ENUM }
-    public enum Widget { TEXT, TEXTAREA, NUMBER, CHECKBOX, DATE, SELECT, MULTI_SELECT }
-    public enum Status { DRAFT, PUBLISHED, RETIRED }
-    public enum Kind { GROUP, TEMPLATE }
-    public enum Origin { GROUP_DEFAULT, TEMPLATE_DEFAULT, GROUP_LOCKED, TEMPLATE_LOCKED, USER }
+    public enum ValueType {
+        TEXT,
+        INTEGER,
+        DECIMAL,
+        BOOLEAN,
+        DATE,
+        ENUM
+    }
+
+    public enum Widget {
+        TEXT,
+        TEXTAREA,
+        NUMBER,
+        CHECKBOX,
+        DATE,
+        SELECT,
+        MULTI_SELECT
+    }
+
+    public enum Status {
+        DRAFT,
+        PUBLISHED,
+        RETIRED
+    }
+
+    public enum Kind {
+        GROUP,
+        TEMPLATE
+    }
+
+    public enum Origin {
+        GROUP_DEFAULT,
+        TEMPLATE_DEFAULT,
+        GROUP_LOCKED,
+        TEMPLATE_LOCKED,
+        USER
+    }
 
     public record Field(
-            String key, ValueType type, boolean multiple, String valueSetCode, String unit,
-            String label, String description, List<Option> options, Constraints constraints) {}
+            String key,
+            ValueType type,
+            boolean multiple,
+            String valueSetCode,
+            String unit,
+            String label,
+            String description,
+            List<Option> options,
+            Constraints constraints) {}
 
     public record Option(String code, String label) {}
 
@@ -42,15 +81,23 @@ public final class FormDefinitions {
     public record FieldVersion(String id, String namespace, int version, boolean systemOwned, Field field) {}
 
     public record Placement(
-            String fieldVersionId, String section, Widget widget, boolean required,
-            boolean locked, boolean templateOverrideAllowed, JsonNode initialValue) {}
+            String fieldVersionId,
+            String section,
+            Widget widget,
+            boolean required,
+            boolean locked,
+            boolean templateOverrideAllowed,
+            JsonNode initialValue) {}
 
     public record Group(List<Placement> fields) {}
 
     public record Rule(boolean required, boolean locked, Set<String> allowedOptions, JsonNode initialValue) {}
 
     public record Item(
-            String itemKey, String groupVersionId, boolean required, boolean defaultSelected,
+            String itemKey,
+            String groupVersionId,
+            boolean required,
+            boolean defaultSelected,
             Map<String, Rule> rules) {}
 
     public record Template(List<Item> items) {}
@@ -60,11 +107,16 @@ public final class FormDefinitions {
     public record Version<T>(String id, String code, int version, long rowVersion, Status status, T definition) {}
 
     public record FieldSchema(
-            Field field, String fieldVersionId, String section, Widget widget,
-            boolean required, boolean locked, JsonNode initialValue, Origin initialOrigin) {}
+            Field field,
+            String fieldVersionId,
+            String section,
+            Widget widget,
+            boolean required,
+            boolean locked,
+            JsonNode initialValue,
+            Origin initialOrigin) {}
 
     public record ItemSchema(String itemKey, boolean required, boolean defaultSelected, List<FieldSchema> fields) {}
 
-    public record Release(
-            String id, String templateVersionId, String code, int version, List<ItemSchema> items) {}
+    public record Release(String id, String templateVersionId, String code, int version, List<ItemSchema> items) {}
 }

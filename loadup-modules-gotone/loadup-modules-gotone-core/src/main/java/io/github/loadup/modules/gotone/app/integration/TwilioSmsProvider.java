@@ -29,11 +29,24 @@ import tools.jackson.databind.json.JsonMapper;
 public final class TwilioSmsProvider implements GotoneProvider {
     private final JsonMapper json;
 
-    public TwilioSmsProvider(JsonMapper json) { this.json = json; }
+    public TwilioSmsProvider(JsonMapper json) {
+        this.json = json;
+    }
 
-    @Override public String code() { return "twilio"; }
-    @Override public Channel channel() { return Channel.SMS; }
-    @Override public Set<String> settings() { return Set.of("accountSid", "from", "authUser"); }
+    @Override
+    public String code() {
+        return "twilio";
+    }
+
+    @Override
+    public Channel channel() {
+        return Channel.SMS;
+    }
+
+    @Override
+    public Set<String> settings() {
+        return Set.of("accountSid", "from", "authUser");
+    }
 
     @Override
     public boolean valid(Account account) {
@@ -46,16 +59,27 @@ public final class TwilioSmsProvider implements GotoneProvider {
     public Outcome send(Account account, String secret, Work work, Binding binding) {
         String sid = account.settings().get("accountSid");
         String user = account.settings().getOrDefault("authUser", "");
-        if (user.isEmpty()) user = sid;
+        if (user.isEmpty()) {
+            user = sid;
+        }
         String auth = Base64.getEncoder().encodeToString((user + ":" + secret).getBytes(StandardCharsets.UTF_8));
         URI endpoint = URI.create("https://api.twilio.com/2010-04-01/Accounts/" + sid + "/Messages.json");
-        String body = GotoneHttp.form(Map.of("To", work.snapshot().target().address(),
-                "From", account.settings().get("from"), "Body", work.snapshot().fields().get("body")));
+        String body = GotoneHttp.form(Map.of(
+                "To",
+                work.snapshot().target().address(),
+                "From",
+                account.settings().get("from"),
+                "Body",
+                work.snapshot().fields().get("body")));
         try {
-            var response = GotoneHttp.send(account, GotoneHttp.post(endpoint, account,
-                    "application/x-www-form-urlencoded", body, work.id())
-                    .header("Authorization", "Basic " + auth).build());
-            if (response.statusCode() == 201) return Outcome.sent(json.readTree(response.body()).path("sid").asText(null));
+            var response = GotoneHttp.send(
+                    account,
+                    GotoneHttp.post(endpoint, account, "application/x-www-form-urlencoded", body, work.id())
+                            .header("Authorization", "Basic " + auth)
+                            .build());
+            if (response.statusCode() == 201) {
+                return Outcome.sent(json.readTree(response.body()).path("sid").asText(null));
+            }
             return GotoneHttp.failure(response.statusCode());
         } catch (java.net.http.HttpConnectTimeoutException exception) {
             return Outcome.retry("CONNECT_TIMEOUT");

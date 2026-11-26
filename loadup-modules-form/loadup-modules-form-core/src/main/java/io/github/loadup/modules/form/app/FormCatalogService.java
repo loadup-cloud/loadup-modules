@@ -15,9 +15,22 @@
  */
 package io.github.loadup.modules.form.app;
 
-import static io.github.loadup.modules.form.client.FormDefinitions.*;
-import static io.github.loadup.modules.form.client.FormException.Code.*;
-import static io.github.loadup.modules.form.domain.FormRules.*;
+import static io.github.loadup.modules.form.client.FormDefinitions.Field;
+import static io.github.loadup.modules.form.client.FormDefinitions.FieldVersion;
+import static io.github.loadup.modules.form.client.FormDefinitions.Group;
+import static io.github.loadup.modules.form.client.FormDefinitions.Kind;
+import static io.github.loadup.modules.form.client.FormDefinitions.Release;
+import static io.github.loadup.modules.form.client.FormDefinitions.Save;
+import static io.github.loadup.modules.form.client.FormDefinitions.Status;
+import static io.github.loadup.modules.form.client.FormDefinitions.Template;
+import static io.github.loadup.modules.form.client.FormDefinitions.Version;
+import static io.github.loadup.modules.form.client.FormException.Code.CONFLICT;
+import static io.github.loadup.modules.form.client.FormException.Code.INVALID_STATE;
+import static io.github.loadup.modules.form.client.FormException.Code.NOT_FOUND;
+import static io.github.loadup.modules.form.domain.FormRules.code;
+import static io.github.loadup.modules.form.domain.FormRules.field;
+import static io.github.loadup.modules.form.domain.FormRules.reference;
+import static io.github.loadup.modules.form.domain.FormRules.require;
 
 import io.github.loadup.modules.form.client.FormCatalog;
 import io.github.loadup.modules.form.client.FormException;
@@ -38,6 +51,23 @@ public class FormCatalogService implements FormCatalog {
         this.store = store;
     }
 
+    private static void expected(Version<?> version, long expected, Status status) {
+        if (version.rowVersion() != expected) {
+            throw new FormException(CONFLICT, "Definition version has changed");
+        }
+        if (version.status() != status) {
+            throw new FormException(INVALID_STATE, "Definition cannot be changed in its current state");
+        }
+    }
+
+    private static void verifyPage(int offset, int limit) {
+        require(offset >= 0 && limit > 0 && limit <= 100, "Invalid pagination");
+    }
+
+    private static String nextId() {
+        return UUID.randomUUID().toString();
+    }
+
     @Override
     public FieldVersion declareField(String namespace, int version, Field definition) {
         return register(namespace, version, definition, true);
@@ -53,11 +83,13 @@ public class FormCatalogService implements FormCatalog {
         require(version > 0, "Version must be positive");
         Field field = field(definition);
         var identity = store.fieldIdentity(nextId(), namespace, field, systemOwned);
-        if (identity.type() != field.type() || identity.multiple() != field.multiple()
+        if (identity.type() != field.type()
+                || identity.multiple() != field.multiple()
                 || identity.systemOwned() != systemOwned
                 || !Objects.equals(identity.valueSetCode(), field.valueSetCode())
                 || !Objects.equals(identity.unit(), field.unit())) {
-            throw new FormException(CONFLICT, null, field.key(), "Field identity is already registered with another contract");
+            throw new FormException(
+                    CONFLICT, null, field.key(), "Field identity is already registered with another contract");
         }
         store.insertField(nextId(), identity.id(), version, field);
         FieldVersion recorded = store.fieldVersion(identity.id(), version);
@@ -96,7 +128,8 @@ public class FormCatalogService implements FormCatalog {
 
     private <T> Version<T> save(String namespace, Kind kind, Save<T> command, Class<T> type) {
         if (command.expectedRowVersion() == null) {
-            var created = new Version<>(nextId(), command.code(), command.version(), 1, Status.DRAFT, command.definition());
+            var created =
+                    new Version<>(nextId(), command.code(), command.version(), 1, Status.DRAFT, command.definition());
             if (!store.insertDefinition(namespace, kind, created)) {
                 throw new FormException(CONFLICT, "Definition version already exists");
             }
@@ -152,7 +185,9 @@ public class FormCatalogService implements FormCatalog {
     @Override
     public Version<Group> publishGroup(String namespace, String id, long expectedRowVersion) {
         var draft = version(namespace, Kind.GROUP, id, Group.class, true);
-        if (draft.status() == Status.PUBLISHED && draft.rowVersion() - 1 == expectedRowVersion) return draft;
+        if (draft.status() == Status.PUBLISHED && draft.rowVersion() - 1 == expectedRowVersion) {
+            return draft;
+        }
         expected(draft, expectedRowVersion, Status.DRAFT);
         compiler.validateGroup(draft.definition(), fieldId -> fieldVersion(namespace, fieldId));
         store.setStatus(id, Status.PUBLISHED);
@@ -190,18 +225,22 @@ public class FormCatalogService implements FormCatalog {
     }
 
     private Release publishedRelease(String id) {
-        return store.releaseForTemplate(id).orElseThrow(() -> new IllegalStateException("Published form release is missing"));
+        return store.releaseForTemplate(id)
+                .orElseThrow(() -> new IllegalStateException("Published form release is missing"));
     }
 
     private Release compile(
             String namespace, String templateId, String code, int version, Template template, String releaseId) {
-        var items = compiler.compile(template, groupId -> {
-            var group = group(namespace, groupId);
-            if (group.status() != Status.PUBLISHED) {
-                throw new FormException(INVALID_STATE, "Templates reference published field group versions");
-            }
-            return group.definition();
-        }, fieldId -> fieldVersion(namespace, fieldId));
+        var items = compiler.compile(
+                template,
+                groupId -> {
+                    var group = group(namespace, groupId);
+                    if (group.status() != Status.PUBLISHED) {
+                        throw new FormException(INVALID_STATE, "Templates reference published field group versions");
+                    }
+                    return group.definition();
+                },
+                fieldId -> fieldVersion(namespace, fieldId));
         return new Release(releaseId, templateId, code, version, items);
     }
 
@@ -212,18 +251,5 @@ public class FormCatalogService implements FormCatalog {
     private <T> Version<T> version(String namespace, Kind kind, String id, Class<T> type, boolean lock) {
         return store.definition(code(namespace), kind, reference(id, 36), type, lock)
                 .orElseThrow(() -> new FormException(NOT_FOUND, "Definition version not found"));
-    }
-
-    private static void expected(Version<?> version, long expected, Status status) {
-        if (version.rowVersion() != expected) throw new FormException(CONFLICT, "Definition version has changed");
-        if (version.status() != status) throw new FormException(INVALID_STATE, "Definition cannot be changed in its current state");
-    }
-
-    private static void verifyPage(int offset, int limit) {
-        require(offset >= 0 && limit > 0 && limit <= 100, "Invalid pagination");
-    }
-
-    private static String nextId() {
-        return UUID.randomUUID().toString();
     }
 }

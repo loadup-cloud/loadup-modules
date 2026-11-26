@@ -29,9 +29,7 @@ public class PermissionCreateCommand {
     @NotBlank() @Size(max = 50) @Schema(description = "Permission name")
     private String permissionName;
 
-    @NotBlank
-    @Size(max = 100)
-    @Pattern(regexp = "^(?:[a-z:]+|approval:[a-z][a-z0-9_.-]{0,63}:(?:design|start|decide|adjust|read|retry))$")
+    @NotBlank @Size(max = 100) @Pattern(regexp = "^(?:[a-z:]+|approval:[a-z][a-z0-9_.-]{0,63}:(?:design|start|decide|adjust|read|retry))$")
     @Schema(description = "Permission code")
     private String permissionCode;
 

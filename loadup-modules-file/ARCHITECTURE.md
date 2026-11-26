@@ -22,7 +22,10 @@ DFS 不承诺原子事务。
 
 ## 安全与部署
 
-Web 入口从受信认证主体取得 owner，不接受请求体覆盖；DFS 对象命名空间由部署配置固定。关系型元数据使用固定 `loadup.database.schema`，不按 `tenant_id` 行过滤，也不存在运行时 schema 路由，详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)。只有所有者和超级管理员可读取或删除文件。Web
+Web 入口从受信认证主体取得 owner，不接受请求体覆盖；DFS 对象命名空间由部署配置固定。关系型元数据使用固定
+`loadup.database.schema`，不按 `tenant_id` 行过滤，也不存在运行时 schema
+路由，详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)
+。只有所有者和超级管理员可读取或删除文件。Web
 下载采用附件模式、`nosniff` 和流式传输；不会生成公开直链。业务引用不自动授予文件读取权限，业务域需要单独决定谁能查看附件。
 
 HTTP 上传受 Spring Multipart 大小限制。对高风险文件类型的病毒扫描、内容审核、下载水印、保留期限和跨租户共享应在消费应用的业务规则中实现；首版不开放公开访问。
@@ -41,7 +44,8 @@ web → app → domain
   MapStruct Spring 模式映射。
 - `FilePersistenceAutoConfiguration` 归 infrastructure，按 DataSource 和 `loadup.modules.file.enabled` 提供默认
   Gateway，消费者可覆盖接口 Bean。
-- app 在持久化装配和 DFS binder 装配之后检查 `FileResourceGateway` 与 `DfsTemplate`，两者可用时创建 `FileResourceService`。
+- app 在持久化装配和 DFS binder 装配之后检查 `FileResourceGateway` 与 `DfsTemplate`，两者可用时创建
+  `FileResourceService`。
   生成的 converter 通过显式 `@Import` 注册。
 - web 只负责路由、可信身份/租户、方法授权和 HTTP 投影；请求契约归 client。全局响应、Jackson 与 `/api` 前缀由 WebMVC 组件处理。
 - 仓储使用 Spring JDBC，保留租户、锁与状态条件更新；无外键场景下，引用创建和删除请求在同一事务锁定并校验父记录。初始 Flyway

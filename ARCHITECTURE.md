@@ -1,6 +1,10 @@
 # 业务模块架构
 
-2026-11-15 的[阶段 0 基线](../loadup-pay/design/PHASE0_BASELINE.md)与[完整声明依赖清单](../loadup-pay/design/PHASE0_DEPENDENCIES.md)区分当前实现和目标规范。阶段 1C 已移除 UPMS app 对 infrastructure 的生产依赖及扫描，由独立 UpmsPersistenceAutoConfiguration 注册默认 Gateway；五个小型 core 的 app 自动配置通过 PersistenceAutoConfiguration 显式约束装配顺序。后者是同 JAR 装配例外，不能写成所有 app 已完全不引用基础设施；UPMS 切片源码和回归源码已同步，构建和测试未运行。其他 core 的装配规则不随之变更。
+2026-11-15 的[阶段 0 基线](../loadup-pay/design/PHASE0_BASELINE.md)
+与[完整声明依赖清单](../loadup-pay/design/PHASE0_DEPENDENCIES.md)区分当前实现和目标规范。阶段 1C 已移除 UPMS app 对
+infrastructure 的生产依赖及扫描，由独立 UpmsPersistenceAutoConfiguration 注册默认 Gateway；五个小型 core 的 app 自动配置通过
+PersistenceAutoConfiguration 显式约束装配顺序。后者是同 JAR 装配例外，不能写成所有 app 已完全不引用基础设施；UPMS
+切片源码和回归源码已同步，构建和测试未运行。其他 core 的装配规则不随之变更。
 
 业务能力位于 `commons → components → modules → 消费工程` 的第三层。modules 只按业务领域组织聚合目录，模块边界按真实消费方式划分，
 不把代码分层直接变成 Maven 模块边界。
@@ -31,14 +35,14 @@ UPMS 因独立 authserver 集成保留完整分层：
 
 ## 包与依赖
 
-| 包 / 模块         | 职责                                    | 依赖边界                                    |
-|-------------------|-----------------------------------------|---------------------------------------------|
-| client            | Facade、Command、Query、DTO、消费方 SPI | 不依赖应用、HTTP 或持久化                   |
-| core.domain       | 纯 Java 领域模型、规则、Gateway         | 不依赖 Spring、ORM、client DTO              |
-| core.infrastructure | 持久化/外部系统适配、迁移             | 实现 domain Gateway                         |
-| core.app          | 用例、事务、应用装配、MapStruct         | 依赖 client/domain，组合默认 infrastructure |
-| web               | Controller、可信请求上下文与授权        | 依赖 core/client，复用全局 WebMVC           |
-| test（可选）      | 独立装配的单测和集成验证源码            | 仅 test scope 使用运行模块                  |
+| 包 / 模块           | 职责                                    | 依赖边界                                    |
+|---------------------|-----------------------------------------|---------------------------------------------|
+| client              | Facade、Command、Query、DTO、消费方 SPI | 不依赖应用、HTTP 或持久化                   |
+| core.domain         | 纯 Java 领域模型、规则、Gateway         | 不依赖 Spring、ORM、client DTO              |
+| core.infrastructure | 持久化/外部系统适配、迁移               | 实现 domain Gateway                         |
+| core.app            | 用例、事务、应用装配、MapStruct         | 依赖 client/domain，组合默认 infrastructure |
+| web                 | Controller、可信请求上下文与授权        | 依赖 core/client，复用全局 WebMVC           |
+| test（可选）        | 独立装配的单测和集成验证源码            | 仅 test scope 使用运行模块                  |
 
 Transfer client 自有公共枚举，domain 保留领域枚举，应用层通过 MapStruct/名称映射转换；domain 不依赖 client。UPMS 保留所属
 authserver 适配。
@@ -56,7 +60,8 @@ app 在其之后按 Gateway 和所需组件条件创建用例服务。消费者�
 
 ## 跨业务边界
 
-Transfer core 显式复用 File core 的权限、业务引用和 DFS 生命周期。UPMS web 通过 AuditFacade 记录敏感查询审计，但当前 Maven 可选依赖是 audit-core，且自动配置引用 AuditAutoConfiguration；不能将实际装配依赖写成只有 audit-client。
+Transfer core 显式复用 File core 的权限、业务引用和 DFS 生命周期。UPMS web 通过 AuditFacade 记录敏感查询审计，但当前 Maven
+可选依赖是 audit-core，且自动配置引用 AuditAutoConfiguration；不能将实际装配依赖写成只有 audit-client。
 商户事实归 Pay 的 merchantcenter，产品目录与合约事实归 Pay 的 productcenter，框架不再提供 merchant/contract 业务模块。
 
 ## 本次调整范围
@@ -70,10 +75,13 @@ Transfer core 显式复用 File core 的权限、业务引用和 DFS 生命周�
 ## 发布版本管理
 
 `loadup-modules-bom` 管理实际发布的业务 JAR，并通过 BOM 内的 `loadup.framework.version` 导入配套 Framework BOM。
-本仓库 parent 导入同版本 Modules BOM，以及由 `loadup.testify.version` 指定的内部测试工具 BOM；公开 Modules BOM 不导入 Testify。
+本仓库 parent 继承 `loadup-framework` 的 Maven 插件配置，导入同版本 Modules BOM，以及由 `loadup.testify.version` 指定的内部测试工具
+BOM。
+公开 Modules BOM 不导入 Testify。
 BOM 为独立无父 POM 模型，避免“父 POM 导入 BOM、BOM 又继承父 POM”的循环。
 
 ## Database 编译期处理器
 
-编译期配置由 database processor 内置维护，模块无需同步配置；处理器路径不单独声明版本，统一通过 Modules BOM → Framework BOM 解析。详见
+编译期配置由 database processor 内置维护，模块无需同步配置；处理器路径不单独声明版本，统一通过 Modules BOM → Framework BOM
+解析。详见
 [framework database processor 文档](../loadup-framework/loadup-components/data/loadup-components-database-processor/README.md)。

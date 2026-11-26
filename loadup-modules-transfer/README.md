@@ -52,11 +52,11 @@ ThreadLocal 传播到任务来绕过校验。
 
 本目录的 Maven 坐标 `loadup-modules-transfer` 为聚合 POM。业务接入选择具体 jar，版本由根 BOM 管理：
 
-| 子模块 | 用途 |
-| --- | --- |
-| [`client`](loadup-modules-transfer-client/README.md) | 对外 DTO、请求契约；不依赖 Spring 或持久化实现 |
-| [`core`](loadup-modules-transfer-core/README.md) | 领域模型、用例服务、DTO 映射、默认 Spring JDBC Gateway 与 Flyway 迁移；程序化接入入口 |
-| [`web`](loadup-modules-transfer-web/README.md) | 可选 Spring MVC 适配；自动引入 core |
+| 子模块                                               | 用途                                                                                  |
+|------------------------------------------------------|---------------------------------------------------------------------------------------|
+| [`client`](loadup-modules-transfer-client/README.md) | 对外 DTO、请求契约；不依赖 Spring 或持久化实现                                        |
+| [`core`](loadup-modules-transfer-core/README.md)     | 领域模型、用例服务、DTO 映射、默认 Spring JDBC Gateway 与 Flyway 迁移；程序化接入入口 |
+| [`web`](loadup-modules-transfer-web/README.md)       | 可选 Spring MVC 适配；自动引入 core                                                   |
 
 `TransferTaskService` 现在位于 `io.github.loadup.modules.transfer.app.service`；公开结果位于
 `io.github.loadup.modules.transfer.client.dto`。领域 Gateway 不引用客户端 DTO，也不引用数据库或 Spring API。HTTP

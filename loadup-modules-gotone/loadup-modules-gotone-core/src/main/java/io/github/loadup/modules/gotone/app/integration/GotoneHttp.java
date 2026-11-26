@@ -31,7 +31,8 @@ final class GotoneHttp {
     private GotoneHttp() {}
 
     static String form(Map<String, String> fields) {
-        return fields.entrySet().stream().map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue()))
+        return fields.entrySet().stream()
+                .map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue()))
                 .collect(Collectors.joining("&"));
     }
 
@@ -40,9 +41,13 @@ final class GotoneHttp {
     }
 
     static HttpRequest.Builder post(URI uri, Account account, String contentType, String body, String deliveryId) {
-        var builder = HttpRequest.newBuilder(uri).timeout(Duration.ofMillis(account.requestTimeoutMs()))
-                .header("Content-Type", contentType).POST(HttpRequest.BodyPublishers.ofString(body));
-        if (deliveryId != null) builder.header("Idempotency-Key", deliveryId);
+        var builder = HttpRequest.newBuilder(uri)
+                .timeout(Duration.ofMillis(account.requestTimeoutMs()))
+                .header("Content-Type", contentType)
+                .POST(HttpRequest.BodyPublishers.ofString(body));
+        if (deliveryId != null) {
+            builder.header("Idempotency-Key", deliveryId);
+        }
         return builder;
     }
 
@@ -53,8 +58,10 @@ final class GotoneHttp {
     static <T> HttpResponse<T> send(Account account, HttpRequest request, HttpResponse.BodyHandler<T> bodyHandler)
             throws IOException, InterruptedException {
         // The caller enforces an outer deadline, including response-body reads.
-        try (var client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(account.connectTimeoutMs()))
-                .followRedirects(HttpClient.Redirect.NEVER).build()) {
+        try (var client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofMillis(account.connectTimeoutMs()))
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build()) {
             return client.send(request, bodyHandler);
         }
     }
@@ -63,7 +70,9 @@ final class GotoneHttp {
         if (status == 429 || status == 401 || status == 403) {
             return GotoneProvider.Outcome.retry("HTTP_" + status);
         }
-        if (status == 408 || status >= 500) return GotoneProvider.Outcome.unknown("HTTP_" + status);
+        if (status == 408 || status >= 500) {
+            return GotoneProvider.Outcome.unknown("HTTP_" + status);
+        }
         return GotoneProvider.Outcome.failed("HTTP_" + status);
     }
 }

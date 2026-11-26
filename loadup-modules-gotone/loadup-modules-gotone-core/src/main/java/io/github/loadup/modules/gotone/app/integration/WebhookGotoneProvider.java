@@ -32,27 +32,45 @@ import javax.crypto.spec.SecretKeySpec;
 public final class WebhookGotoneProvider implements GotoneProvider {
     private final Set<String> allowedHosts;
 
-    public WebhookGotoneProvider(Set<String> allowedHosts) { this.allowedHosts = Set.copyOf(allowedHosts); }
+    public WebhookGotoneProvider(Set<String> allowedHosts) {
+        this.allowedHosts = Set.copyOf(allowedHosts);
+    }
 
-    @Override public String code() { return "https"; }
-    @Override public Channel channel() { return Channel.WEBHOOK; }
-    @Override public Set<String> settings() { return Set.of("url", "destinationRef"); }
+    @Override
+    public String code() {
+        return "https";
+    }
+
+    @Override
+    public Channel channel() {
+        return Channel.WEBHOOK;
+    }
+
+    @Override
+    public Set<String> settings() {
+        return Set.of("url", "destinationRef");
+    }
 
     @Override
     public boolean valid(Account account) {
         String ref = account.settings().get("destinationRef");
         return (ref != null && GotoneSecrets.valid(ref) && !account.settings().containsKey("url"))
-                || (ref == null && endpoint(account.settings().getOrDefault("url", "")) != null
-                    && URI.create(account.settings().get("url")).getRawQuery() == null);
+                || (ref == null
+                        && endpoint(account.settings().getOrDefault("url", "")) != null
+                        && URI.create(account.settings().get("url")).getRawQuery() == null);
     }
 
     private URI endpoint(String value) {
         try {
             URI uri = URI.create(value);
-            if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
+            if (!"https".equalsIgnoreCase(uri.getScheme())
+                    || uri.getHost() == null
                     || !allowedHosts.contains(uri.getHost().toLowerCase(Locale.ROOT))
                     || (uri.getPort() != -1 && uri.getPort() != 443)
-                    || uri.getRawUserInfo() != null || uri.getRawFragment() != null) return null;
+                    || uri.getRawUserInfo() != null
+                    || uri.getRawFragment() != null) {
+                return null;
+            }
             return uri;
         } catch (IllegalArgumentException exception) {
             return null;
@@ -62,12 +80,17 @@ public final class WebhookGotoneProvider implements GotoneProvider {
     @Override
     public Outcome send(Account account, String secret, Work work, Binding binding) {
         URI uri = endpoint(account.settings().getOrDefault("url", ""));
-        if (uri == null) return Outcome.failed("WEBHOOK_ENDPOINT_FORBIDDEN");
+        if (uri == null) {
+            return Outcome.failed("WEBHOOK_ENDPOINT_FORBIDDEN");
+        }
         try {
             for (InetAddress address : InetAddress.getAllByName(uri.getHost())) {
                 byte[] bytes = address.getAddress();
-                if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress()
-                        || address.isSiteLocalAddress() || address.isMulticastAddress()
+                if (address.isAnyLocalAddress()
+                        || address.isLoopbackAddress()
+                        || address.isLinkLocalAddress()
+                        || address.isSiteLocalAddress()
+                        || address.isMulticastAddress()
                         || (bytes.length == 16 && (bytes[0] & 0xfe) == 0xfc)
                         || (bytes.length == 4 && bytes[0] == 100 && (bytes[1] & 0xc0) == 0x40)) {
                     return Outcome.failed("WEBHOOK_ENDPOINT_FORBIDDEN");
@@ -82,14 +105,19 @@ public final class WebhookGotoneProvider implements GotoneProvider {
             try {
                 var mac = Mac.getInstance("HmacSHA256");
                 mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-                request.header("X-Gotone-Signature", HexFormat.of().formatHex(mac.doFinal(body.getBytes(StandardCharsets.UTF_8))));
+                request.header(
+                        "X-Gotone-Signature",
+                        HexFormat.of().formatHex(mac.doFinal(body.getBytes(StandardCharsets.UTF_8))));
             } catch (GeneralSecurityException exception) {
                 return Outcome.failed("WEBHOOK_SIGNING_UNAVAILABLE");
             }
         }
         try {
-            var response = GotoneHttp.send(account, request.build(), java.net.http.HttpResponse.BodyHandlers.discarding());
-            if (response.statusCode() >= 200 && response.statusCode() < 300) return Outcome.sent(null);
+            var response =
+                    GotoneHttp.send(account, request.build(), java.net.http.HttpResponse.BodyHandlers.discarding());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return Outcome.sent(null);
+            }
             // A generic endpoint's error does not prove it has not processed the request.
             return Outcome.unknown("HTTP_" + response.statusCode());
         } catch (java.net.http.HttpConnectTimeoutException exception) {

@@ -28,16 +28,29 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
 public final class SmtpGotoneProvider implements GotoneProvider {
-    @Override public String code() { return "smtp"; }
-    @Override public Channel channel() { return Channel.EMAIL; }
-    @Override public Set<String> settings() { return Set.of("host", "port", "tls", "username", "fromAddress", "fromName"); }
+    @Override
+    public String code() {
+        return "smtp";
+    }
+
+    @Override
+    public Channel channel() {
+        return Channel.EMAIL;
+    }
+
+    @Override
+    public Set<String> settings() {
+        return Set.of("host", "port", "tls", "username", "fromAddress", "fromName");
+    }
 
     @Override
     public boolean valid(Account account) {
         var fields = account.settings();
         String port = fields.getOrDefault("port", "");
         return fields.getOrDefault("host", "").matches("[a-zA-Z0-9.-]{1,253}")
-                && port.matches("[0-9]{1,5}") && Integer.parseInt(port) >= 1 && Integer.parseInt(port) <= 65535
+                && port.matches("[0-9]{1,5}")
+                && Integer.parseInt(port) >= 1
+                && Integer.parseInt(port) <= 65535
                 && Set.of("STARTTLS", "SMTPS").contains(fields.getOrDefault("tls", ""))
                 && !fields.getOrDefault("username", "").isBlank()
                 && fields.getOrDefault("fromAddress", "").matches("[^@,;<>\\s]+@[^@,;<>\\s]+");
@@ -71,12 +84,18 @@ public final class SmtpGotoneProvider implements GotoneProvider {
             String text = content.get("text");
             String html = content.get("html");
             var helper = new MimeMessageHelper(message, text != null && html != null, StandardCharsets.UTF_8.name());
-            if (fields.containsKey("fromName")) helper.setFrom(fields.get("fromAddress"), fields.get("fromName"));
-            else helper.setFrom(fields.get("fromAddress"));
+            if (fields.containsKey("fromName")) {
+                helper.setFrom(fields.get("fromAddress"), fields.get("fromName"));
+            } else {
+                helper.setFrom(fields.get("fromAddress"));
+            }
             helper.setTo(work.snapshot().target().address());
             helper.setSubject(content.get("subject"));
-            if (text != null && html != null) helper.setText(text, html);
-            else helper.setText(Objects.requireNonNullElse(text, html), html != null);
+            if (text != null && html != null) {
+                helper.setText(text, html);
+            } else {
+                helper.setText(Objects.requireNonNullElse(text, html), html != null);
+            }
             message.setHeader("Message-ID", "<" + work.id() + "@gotone>");
         } catch (java.io.UnsupportedEncodingException | MessagingException exception) {
             return Outcome.failed("INVALID_EMAIL");

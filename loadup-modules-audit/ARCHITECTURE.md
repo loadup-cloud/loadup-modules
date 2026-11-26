@@ -15,7 +15,9 @@ AuditQuery → AuditService → AuditGatewayImpl → PageResult<AuditEvent>
 ## 数据契约
 
 每个事件有唯一 ID、操作者 ID、动作、HTTP 方法、路由模板、结果、traceId 和发生时间。数据库表保留 `id`、`created_at`、
-`updated_at`、`deleted` 列，不含 `tenant_id`。一套部署只服务一个租户并使用固定 `loadup.database.schema`，Audit 存储因此天然只属于本部署；详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)。查询按发生时间与 ID 倒序分页，页大小上限 100。
+`updated_at`、`deleted` 列，不含 `tenant_id`。一套部署只服务一个租户并使用固定 `loadup.database.schema`，Audit
+存储因此天然只属于本部署；详见[数据库 README](../../loadup-framework/loadup-components/data/loadup-components-database/README.md)
+。查询按发生时间与 ID 倒序分页，页大小上限 100。
 
 ## 写入与失败
 

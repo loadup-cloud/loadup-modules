@@ -15,8 +15,17 @@
  */
 package io.github.loadup.modules.form.web;
 
-import static io.github.loadup.modules.form.client.FormDefinitions.*;
-import static io.github.loadup.modules.form.client.FormInstances.*;
+import static io.github.loadup.modules.form.client.FormDefinitions.Field;
+import static io.github.loadup.modules.form.client.FormDefinitions.FieldVersion;
+import static io.github.loadup.modules.form.client.FormDefinitions.Group;
+import static io.github.loadup.modules.form.client.FormDefinitions.Release;
+import static io.github.loadup.modules.form.client.FormDefinitions.Save;
+import static io.github.loadup.modules.form.client.FormDefinitions.Template;
+import static io.github.loadup.modules.form.client.FormDefinitions.Version;
+import static io.github.loadup.modules.form.client.FormInstances.Detail;
+import static io.github.loadup.modules.form.client.FormInstances.SaveDraft;
+import static io.github.loadup.modules.form.client.FormInstances.Start;
+import static io.github.loadup.modules.form.client.FormInstances.Submit;
 
 import io.github.loadup.commons.result.FailureResponse;
 import io.github.loadup.commons.result.Result;
@@ -52,10 +61,6 @@ public class FormController {
         this.catalog = catalog;
         this.runtime = runtime;
     }
-
-    public record PublishField(int version, Field field) {}
-    public record Revision(long expectedRowVersion) {}
-    public record ErrorDetail(String itemKey, String fieldKey, String reason) {}
 
     @GetMapping("/fields")
     @PreAuthorize(DESIGN)
@@ -179,7 +184,15 @@ public class FormController {
 
     @ExceptionHandler(FormException.class)
     public FailureResponse<ErrorDetail> formError(FormException exception) {
-        return new FailureResponse<>(Result.buildFailure(exception.code()),
-                new ErrorDetail(exception.itemKey(), exception.fieldKey(), exception.getMessage()), null);
+        return new FailureResponse<>(
+                Result.buildFailure(exception.code()),
+                new ErrorDetail(exception.itemKey(), exception.fieldKey(), exception.getMessage()),
+                null);
     }
+
+    public record PublishField(int version, Field field) {}
+
+    public record Revision(long expectedRowVersion) {}
+
+    public record ErrorDetail(String itemKey, String fieldKey, String reason) {}
 }

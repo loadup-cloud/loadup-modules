@@ -34,11 +34,11 @@ class SchemaIsolationIT {
     @Test
     void businessTablesDoNotDefineTenantColumns() {
         List<String> columns = jdbc.queryForList("""
-            SELECT table_schema || '.' || table_name
-            FROM information_schema.columns
-            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-              AND column_name = 'tenant_id'
-            """, String.class);
+                SELECT table_schema || '.' || table_name
+                FROM information_schema.columns
+                WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+                  AND column_name = 'tenant_id'
+                """, String.class);
         assertThat(columns).isEmpty();
     }
 

@@ -47,5 +47,4 @@ public class GotoneServiceDraftDO extends BaseDO {
     public void setConfig(String config) {
         this.config = config;
     }
-
 }

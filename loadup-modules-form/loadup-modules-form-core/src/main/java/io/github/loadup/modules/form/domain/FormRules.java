@@ -15,16 +15,24 @@
  */
 package io.github.loadup.modules.form.domain;
 
-import static io.github.loadup.modules.form.client.FormDefinitions.*;
-import static io.github.loadup.modules.form.client.FormException.Code.*;
+import static io.github.loadup.modules.form.client.FormDefinitions.Constraints;
+import static io.github.loadup.modules.form.client.FormDefinitions.Field;
+import static io.github.loadup.modules.form.client.FormDefinitions.Option;
+import static io.github.loadup.modules.form.client.FormDefinitions.ValueType;
+import static io.github.loadup.modules.form.client.FormDefinitions.Widget;
+import static io.github.loadup.modules.form.client.FormException.Code.INVALID_DEFINITION;
+import static io.github.loadup.modules.form.client.FormException.Code.INVALID_TYPE;
+import static io.github.loadup.modules.form.client.FormException.Code.INVALID_VALUE;
 
 import io.github.loadup.modules.form.client.FormException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import tools.jackson.databind.JsonNode;
 
@@ -67,7 +75,8 @@ public final class FormRules {
             reference(field.description(), 1000);
         }
         if (field.unit() != null) {
-            require(field.type() == ValueType.INTEGER || field.type() == ValueType.DECIMAL,
+            require(
+                    field.type() == ValueType.INTEGER || field.type() == ValueType.DECIMAL,
                     "Units require a numeric field");
             reference(field.unit(), 64);
         }
@@ -88,17 +97,29 @@ public final class FormRules {
         Constraints constraints = field.constraints();
         if (constraints != null) {
             if (constraints.maxLength() != null) {
-                require(field.type() == ValueType.TEXT && constraints.maxLength() > 0
-                        && constraints.maxLength() <= 4000, "Invalid text length limit");
+                require(
+                        field.type() == ValueType.TEXT
+                                && constraints.maxLength() > 0
+                                && constraints.maxLength() <= 4000,
+                        "Invalid text length limit");
             }
             if (constraints.min() != null || constraints.max() != null) {
-                require(field.type() == ValueType.INTEGER || field.type() == ValueType.DECIMAL,
+                require(
+                        field.type() == ValueType.INTEGER || field.type() == ValueType.DECIMAL,
                         "Bounds require a numeric field");
                 validateBounds(field.type(), constraints);
             }
         }
-        return new Field(field.key(), field.type(), field.multiple(), field.valueSetCode(), field.unit(),
-                field.label(), field.description(), List.copyOf(options), constraints);
+        return new Field(
+                field.key(),
+                field.type(),
+                field.multiple(),
+                field.valueSetCode(),
+                field.unit(),
+                field.label(),
+                field.description(),
+                List.copyOf(options),
+                constraints);
     }
 
     private static void validateBounds(ValueType type, Constraints c) {
@@ -108,9 +129,11 @@ public final class FormRules {
             BigDecimal min = c.min() == null ? null : new BigDecimal(c.min());
             BigDecimal max = c.max() == null ? null : new BigDecimal(c.max());
             if (type == ValueType.INTEGER) {
-                require(min == null || min.toBigIntegerExact().abs().compareTo(MAX_WIRE_INTEGER) <= 0,
+                require(
+                        min == null || min.toBigIntegerExact().abs().compareTo(MAX_WIRE_INTEGER) <= 0,
                         "Integer minimum exceeds the wire range");
-                require(max == null || max.toBigIntegerExact().abs().compareTo(MAX_WIRE_INTEGER) <= 0,
+                require(
+                        max == null || max.toBigIntegerExact().abs().compareTo(MAX_WIRE_INTEGER) <= 0,
                         "Integer maximum exceeds the wire range");
             }
             require(min == null || max == null || min.compareTo(max) <= 0, "Inverted numeric bounds");
@@ -121,17 +144,19 @@ public final class FormRules {
 
     public static void widget(Field field, Widget widget) {
         if (field.multiple()) {
-            require(field.type() == ValueType.ENUM && widget == Widget.MULTI_SELECT,
+            require(
+                    field.type() == ValueType.ENUM && widget == Widget.MULTI_SELECT,
                     "Multiple fields require an enum and a multi-select widget");
             return;
         }
-        boolean valid = switch (field.type()) {
-            case TEXT -> widget == Widget.TEXT || widget == Widget.TEXTAREA;
-            case INTEGER, DECIMAL -> widget == Widget.NUMBER;
-            case BOOLEAN -> widget == Widget.CHECKBOX;
-            case DATE -> widget == Widget.DATE;
-            case ENUM -> widget == Widget.SELECT;
-        };
+        boolean valid =
+                switch (field.type()) {
+                    case TEXT -> widget == Widget.TEXT || widget == Widget.TEXTAREA;
+                    case INTEGER, DECIMAL -> widget == Widget.NUMBER;
+                    case BOOLEAN -> widget == Widget.CHECKBOX;
+                    case DATE -> widget == Widget.DATE;
+                    case ENUM -> widget == Widget.SELECT;
+                };
         require(valid, "Widget is incompatible with the field type");
     }
 
@@ -166,18 +191,27 @@ public final class FormRules {
     private static boolean scalar(Field field, JsonNode value) {
         try {
             return switch (field.type()) {
-                case TEXT -> value.isTextual() && !value.asString().isBlank()
-                        && value.asString().length() <= textLimit(field);
-                case INTEGER -> value.isIntegralNumber()
-                        && value.bigIntegerValue().abs().compareTo(MAX_WIRE_INTEGER) <= 0
-                        && inRange(field, new BigDecimal(value.bigIntegerValue()));
-                case DECIMAL -> value.isTextual() && value.asString().matches(DECIMAL)
-                        && inRange(field, new BigDecimal(value.asString()));
+                case TEXT ->
+                    value.isTextual()
+                            && !value.asString().isBlank()
+                            && value.asString().length() <= textLimit(field);
+                case INTEGER ->
+                    value.isIntegralNumber()
+                            && value.bigIntegerValue().abs().compareTo(MAX_WIRE_INTEGER) <= 0
+                            && inRange(field, new BigDecimal(value.bigIntegerValue()));
+                case DECIMAL ->
+                    value.isTextual()
+                            && value.asString().matches(DECIMAL)
+                            && inRange(field, new BigDecimal(value.asString()));
                 case BOOLEAN -> value.isBoolean();
-                case DATE -> value.isTextual() && value.asString().matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")
-                        && LocalDate.parse(value.asString()).getYear() > 0;
-                case ENUM -> value.isTextual()
-                        && field.options().stream().anyMatch(option -> option.code().equals(value.asString()));
+                case DATE ->
+                    value.isTextual()
+                            && value.asString().matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")
+                            && LocalDate.parse(value.asString()).getYear() > 0;
+                case ENUM ->
+                    value.isTextual()
+                            && field.options().stream()
+                                    .anyMatch(option -> option.code().equals(value.asString()));
             };
         } catch (DateTimeParseException | NumberFormatException ex) {
             return false;
@@ -191,51 +225,64 @@ public final class FormRules {
 
     private static boolean inRange(Field field, BigDecimal value) {
         Constraints c = field.constraints();
-        return value.precision() <= 128 && (c == null
-                || (c.min() == null || value.compareTo(new BigDecimal(c.min())) >= 0)
-                && (c.max() == null || value.compareTo(new BigDecimal(c.max())) <= 0));
+        return value.precision() <= 128
+                && (c == null
+                        || (c.min() == null || value.compareTo(new BigDecimal(c.min())) >= 0)
+                                && (c.max() == null || value.compareTo(new BigDecimal(c.max())) <= 0));
     }
 
     public static void checkReadType(String item, Field field, Class<?> type, boolean multiple) {
         if (type == null) {
             throw new FormException(INVALID_TYPE, item, field.key(), "A Java value type is required");
         }
-        boolean valid = switch (field.type()) {
-            case TEXT -> type == String.class;
-            case INTEGER -> type == BigInteger.class || type == Integer.class || type == Long.class;
-            case DECIMAL -> type == BigDecimal.class;
-            case BOOLEAN -> type == Boolean.class;
-            case DATE -> type == LocalDate.class;
-            case ENUM -> type == String.class || type.isEnum() && type.getName().equals(field.valueSetCode());
-        };
+        boolean valid =
+                switch (field.type()) {
+                    case TEXT -> type == String.class;
+                    case INTEGER -> type == BigInteger.class || type == Integer.class || type == Long.class;
+                    case DECIMAL -> type == BigDecimal.class;
+                    case BOOLEAN -> type == Boolean.class;
+                    case DATE -> type == LocalDate.class;
+                    case ENUM ->
+                        type == String.class || type.isEnum() && type.getName().equals(field.valueSetCode());
+                };
         if (!valid || field.multiple() != multiple) {
-            throw new FormException(INVALID_TYPE, item, field.key(), "Requested type does not match the published field");
+            throw new FormException(
+                    INVALID_TYPE, item, field.key(), "Requested type does not match the published field");
         }
     }
 
     public static <T> T readScalar(String item, Field field, JsonNode value, Class<T> type) {
         try {
-            Object converted = switch (field.type()) {
-                case TEXT -> value.asString();
-                case INTEGER -> {
-                    BigInteger integer = value.bigIntegerValue();
-                    if (type == Integer.class) yield Integer.valueOf(integer.intValueExact());
-                    if (type == Long.class) yield Long.valueOf(integer.longValueExact());
-                    yield integer;
-                }
-                case DECIMAL -> new BigDecimal(value.asString());
-                case BOOLEAN -> value.booleanValue();
-                case DATE -> LocalDate.parse(value.asString());
-                case ENUM -> {
-                    if (type == String.class) yield value.asString();
-                    yield java.util.Arrays.stream(type.getEnumConstants())
-                            .filter(option -> ((Enum<?>) option).name().equals(value.asString()))
-                            .findFirst().orElseThrow();
-                }
-            };
+            Object converted =
+                    switch (field.type()) {
+                        case TEXT -> value.asString();
+                        case INTEGER -> {
+                            BigInteger integer = value.bigIntegerValue();
+                            if (type == Integer.class) {
+                                yield Integer.valueOf(integer.intValueExact());
+                            }
+                            if (type == Long.class) {
+                                yield Long.valueOf(integer.longValueExact());
+                            }
+                            yield integer;
+                        }
+                        case DECIMAL -> new BigDecimal(value.asString());
+                        case BOOLEAN -> value.booleanValue();
+                        case DATE -> LocalDate.parse(value.asString());
+                        case ENUM -> {
+                            if (type == String.class) {
+                                yield value.asString();
+                            }
+                            yield Arrays.stream(type.getEnumConstants())
+                                    .filter(option -> ((Enum<?>) option).name().equals(value.asString()))
+                                    .findFirst()
+                                    .orElseThrow();
+                        }
+                    };
             return type.cast(converted);
-        } catch (ArithmeticException | java.util.NoSuchElementException ex) {
-            throw new FormException(INVALID_TYPE, item, field.key(), "Value cannot be represented by the requested type");
+        } catch (ArithmeticException | NoSuchElementException ex) {
+            throw new FormException(
+                    INVALID_TYPE, item, field.key(), "Value cannot be represented by the requested type");
         }
     }
 }

@@ -1,6 +1,7 @@
 # LoadUp Modules
 
-可按需消费的业务能力，每个业务目录是聚合 POM。通过 `loadup-modules-bom` 管理业务 JAR 版本，消费工程引入具体 `*-core`、`*-app`
+可按需消费的业务能力，每个业务目录是聚合 POM。通过 `loadup-modules-bom` 管理业务 JAR 版本，消费工程引入具体 `*-core`、
+`*-app`
 或 `*-web` jar。
 
 ## BOM 接入
@@ -21,6 +22,20 @@
 Modules BOM 已导入配套的 `loadup-framework-bom`，可同时管理直接使用的框架依赖版本；配套 Framework 版本在 Modules BOM 内维护。
 [Modules BOM](loadup-modules-bom/README.md) 覆盖当前发布的 JAR，不管理聚合目录或内部测试模块。
 
+## 构建与格式检查
+
+Modules 继承 Framework parent 的 Maven 插件配置。并列检出时使用本地 Framework POM，独立检出时从 Maven 本地仓库或 GitHub
+Packages 解析。
+升级 Framework 时同步更新 Modules POM 中的 parent 版本与 `loadup.framework.version`，以及 Modules BOM 中的
+`loadup.framework.version`。
+
+Spotless 格式检查和修复独立于 Maven 构建生命周期，可在脚本后传入 `-pl` 等 Maven 参数。
+
+```bash
+./spotless.sh check
+./spotless.sh apply -pl :loadup-modules-file-core
+```
+
 ## 发布
 
 本仓库的 JAR、parent 与独立 BOM 默认激活 `github`，日常发布到 GitHub Packages；准备好正式版后再手动发布 Central：
@@ -39,21 +54,22 @@ mvnd clean deploy -Prelease
 
 ## 业务目录
 
-| 模块                                                  | 能力                                    |
-|-------------------------------------------------------|-----------------------------------------|
-| [UPMS](loadup-modules-upms/README.md)                 | 用户、RBAC/ABAC、账号安全及可选认证适配 |
-| [Audit](loadup-modules-audit/README.md)               | 审计记录、查询与可选 MVC 采集           |
-| [Dictionary](loadup-modules-dictionary/README.md)     | 字典类型、条目及启用选项                |
-| [File](loadup-modules-file/README.md)                 | 文件元数据、访问控制、引用与清理        |
-| [Form](loadup-modules-form/README.md)                 | 字段目录、表单发布、填写与按 Key 取值   |
-| [Gotone](loadup-modules-gotone/README.md) | 按服务编码配置多渠道异步投递 |
-| [Inbox](loadup-modules-inbox/README.md) | 站内消息的幂等接收、收件箱查询、已读及归档 |
-| [Transfer](loadup-modules-transfer/README.md)         | 导入导出任务、进度、结果与重试          |
+| 模块                                              | 能力                                       |
+|---------------------------------------------------|--------------------------------------------|
+| [UPMS](loadup-modules-upms/README.md)             | 用户、RBAC/ABAC、账号安全及可选认证适配    |
+| [Audit](loadup-modules-audit/README.md)           | 审计记录、查询与可选 MVC 采集              |
+| [Dictionary](loadup-modules-dictionary/README.md) | 字典类型、条目及启用选项                   |
+| [File](loadup-modules-file/README.md)             | 文件元数据、访问控制、引用与清理           |
+| [Form](loadup-modules-form/README.md)             | 字段目录、表单发布、填写与按 Key 取值      |
+| [Gotone](loadup-modules-gotone/README.md)         | 按服务编码配置多渠道异步投递               |
+| [Inbox](loadup-modules-inbox/README.md)           | 站内消息的幂等接收、收件箱查询、已读及归档 |
+| [Transfer](loadup-modules-transfer/README.md)     | 导入导出任务、进度、结果与重试             |
 
 ## 分层选择
 
 小型业务目录默认包含 `client / core / web` 子模块：`core` 内部保留 `domain / app / infrastructure` 包边界。UPMS 因独立
-authserver 集成保留完整 `client / domain / infrastructure / app / web / test` 分层。web 是可选接口适配层，不在 modules 下单列为业务模块。
+authserver 集成保留完整 `client / domain / infrastructure / app / web / test` 分层。web 是可选接口适配层，不在 modules
+下单列为业务模块。
 
 - 仅共享协议：引入 `*-client`。
 - 程序化使用用例：引入 `*-core`（UPMS 为 `*-app`），自动带入默认持久化适配。

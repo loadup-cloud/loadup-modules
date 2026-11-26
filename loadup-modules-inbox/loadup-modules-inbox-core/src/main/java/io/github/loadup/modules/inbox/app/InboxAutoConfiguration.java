@@ -33,11 +33,7 @@ import org.springframework.context.annotation.Import;
 @AutoConfiguration(after = InboxPersistenceAutoConfiguration.class)
 @ConditionalOnSingleCandidate(DataSource.class)
 @ConditionalOnBean(InboxGateway.class)
-@ConditionalOnProperty(
-        prefix = "loadup.modules.inbox",
-        name = "enabled",
-        havingValue = "true",
-        matchIfMissing = true)
+@ConditionalOnProperty(prefix = "loadup.modules.inbox", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class InboxAutoConfiguration {
 
     @Bean

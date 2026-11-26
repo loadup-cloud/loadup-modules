@@ -4,11 +4,14 @@
 
 UPMS 应用服务与业务编排。
 
-当前 GitHubOAuthProvider 也在此层直接创建 RestTemplate 并解析第三方 token/userinfo 响应，是传输适配职责的现有例外（阶段 0 E15）。本轮只登记，不借装配拆分同时改写第三方登录协议。
+当前 GitHubOAuthProvider 也在此层直接创建 RestTemplate 并解析第三方 token/userinfo 响应，是传输适配职责的现有例外（阶段 0
+E15）。本轮只登记，不借装配拆分同时改写第三方登录协议。
 
 ## Maven 依赖边界
 
-以下列核心依赖，完整直接声明见 [POM](pom.xml) 与[阶段 0 清单](../../../loadup-pay/design/PHASE0_DEPENDENCIES.md)。app 不再依赖或扫描 infrastructure。UpmsAutoConfiguration 只注册应用层及既有领域服务，Gateway 由消费者提供；spring-tx 与 spring-security-crypto 改为显式声明。
+以下列核心依赖，完整直接声明见 [POM](pom.xml) 与[阶段 0 清单](../../../loadup-pay/design/PHASE0_DEPENDENCIES.md)。app
+不再依赖或扫描 infrastructure。UpmsAutoConfiguration 只注册应用层及既有领域服务，Gateway 由消费者提供；spring-tx 与
+spring-security-crypto 改为显式声明。
 
 核心内部依赖：
 
@@ -69,4 +72,7 @@ Client Service → 应用服务编排 → 领域服务/Gateway → 基础设施�
 recorder。顺序为参数校验 → 租户范围内目标查询 → 最新角色及资源数据范围判定 → 可靠审计 → MapStruct
 输出映射。任一步失败不返回原值。禁止超级管理员短路或根据请求参数关闭审计。
 
-阶段 1C：仅引入 app 时须提供六类 Gateway（User、Role、Permission、Department、LoginLog、UserOAuthBinding）及 Clock。默认数据库实现须额外引入 loadup-modules-upms-infrastructure；app 不再传递引入 JDBC/ORM 实现。应用服务按各自构造依赖正常装配，缺少必需端口会暴露装配错误，不以粗粒度条件静默禁用整个 UPMS。原 PasswordEncoder 注册规则、Delegating 编码及无前缀 BCrypt 匹配回退、领域服务 ConditionalOnMissingBean 保留。源码及装配回归源码已调整，未构建或测试。
+阶段 1C：仅引入 app 时须提供六类 Gateway（User、Role、Permission、Department、LoginLog、UserOAuthBinding）及 Clock。默认数据库实现须额外引入
+loadup-modules-upms-infrastructure；app 不再传递引入 JDBC/ORM 实现。应用服务按各自构造依赖正常装配，缺少必需端口会暴露装配错误，不以粗粒度条件静默禁用整个
+UPMS。原 PasswordEncoder 注册规则、Delegating 编码及无前缀 BCrypt 匹配回退、领域服务 ConditionalOnMissingBean
+保留。源码及装配回归源码已调整，未构建或测试。

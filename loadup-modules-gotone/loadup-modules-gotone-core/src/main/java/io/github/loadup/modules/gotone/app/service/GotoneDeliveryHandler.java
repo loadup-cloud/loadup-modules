@@ -24,10 +24,10 @@ import java.time.Clock;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public abstract class GotoneDeliveryHandler implements TaskHandler {
-    private final Channel channel;
     protected final GotoneDeliveryStore store;
     protected final Clock clock;
     protected final TransactionTemplate tx;
+    private final Channel channel;
 
     protected GotoneDeliveryHandler(Channel channel, GotoneDeliveryStore store, Clock clock, TransactionTemplate tx) {
         this.channel = channel;
@@ -44,7 +44,9 @@ public abstract class GotoneDeliveryHandler implements TaskHandler {
     @Override
     public final void handle(TaskExecution task) {
         String id = GotoneSubmissionService.id(task.bizId());
-        if (!task.bizId().equals(task.payload())) throw new IllegalArgumentException("Invalid Gotone task");
+        if (!task.bizId().equals(task.payload())) {
+            throw new IllegalArgumentException("Invalid Gotone task");
+        }
         deliver(id, task);
     }
 
@@ -52,15 +54,21 @@ public abstract class GotoneDeliveryHandler implements TaskHandler {
 
     protected final Work readWork(String id) {
         Work work = store.lock(id).orElse(null);
-        if (work == null) return null;
-        if (work.channel() != channel) throw new IllegalArgumentException("Gotone task channel mismatch");
+        if (work == null) {
+            return null;
+        }
+        if (work.channel() != channel) {
+            throw new IllegalArgumentException("Gotone task channel mismatch");
+        }
         switch (work.status()) {
             case "SENDING" -> store.finish(id, work.attemptNo(), "UNKNOWN", "WORKER_LOST", null);
             case "PENDING", "RETRY_WAIT" -> {
-                if (clock.instant().isBefore(work.expiresAt())) return work;
+                if (clock.instant().isBefore(work.expiresAt())) {
+                    return work;
+                }
                 store.expire(id);
             }
-            default -> { }
+            default -> {}
         }
         return null;
     }

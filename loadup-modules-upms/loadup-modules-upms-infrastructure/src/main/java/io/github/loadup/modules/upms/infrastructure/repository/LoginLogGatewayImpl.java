@@ -84,12 +84,12 @@ public class LoginLogGatewayImpl implements LoginLogGateway {
         }
         row.setUpdatedAt(now);
         jdbc.sql("""
-            INSERT INTO upms_login_log (id, user_id, username, login_time, logout_time, ip_address,
-                login_location, browser, os, login_status, login_message, login_type, provider, created_at, updated_at, deleted)
-            VALUES (:id, :userId, :username, :loginTime, :logoutTime, :ipAddress,
-                :loginLocation, :browser, :os, COALESCE(:loginStatus, 1), :loginMessage, :loginType,
-                :provider, :createdAt, :updatedAt, FALSE)
-            """).paramSource(new BeanPropertySqlParameterSource(row)).update();
+                INSERT INTO upms_login_log (id, user_id, username, login_time, logout_time, ip_address,
+                    login_location, browser, os, login_status, login_message, login_type, provider, created_at, updated_at, deleted)
+                VALUES (:id, :userId, :username, :loginTime, :logoutTime, :ipAddress,
+                    :loginLocation, :browser, :os, COALESCE(:loginStatus, 1), :loginMessage, :loginType,
+                    :provider, :createdAt, :updatedAt, FALSE)
+                """).paramSource(new BeanPropertySqlParameterSource(row)).update();
         return converter.toEntity(row);
     }
 

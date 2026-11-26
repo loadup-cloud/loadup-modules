@@ -32,9 +32,11 @@ final class ApprovalDelivery implements TaskHandler {
     private final ApprovalStore store;
     private final ObjectProvider<ApprovalOutcomeHandler> receivers;
     private final ApprovalProperties properties;
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final HttpClient http =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
-    ApprovalDelivery(ApprovalStore store, ObjectProvider<ApprovalOutcomeHandler> receivers, ApprovalProperties properties) {
+    ApprovalDelivery(
+            ApprovalStore store, ObjectProvider<ApprovalOutcomeHandler> receivers, ApprovalProperties properties) {
         this.store = store;
         this.receivers = receivers;
         this.properties = properties;
@@ -55,10 +57,13 @@ final class ApprovalDelivery implements TaskHandler {
         if (!task.id().equals(row.deliveryTaskId()) || row.instance().status() != event.outcome()) {
             throw new IllegalStateException("Unbound approval event");
         }
-        if (row.deliveredAt() != null) return;
+        if (row.deliveredAt() != null) {
+            return;
+        }
 
         List<ApprovalOutcomeHandler> matches = receivers.stream()
-                .filter(handler -> handler.appCode().equals(event.appCode())).toList();
+                .filter(handler -> handler.appCode().equals(event.appCode()))
+                .toList();
         var target = properties.webhooks().get(event.appCode());
         if (matches.size() > 1 || (!matches.isEmpty() && target != null)) {
             throw new IllegalStateException("Approval application has multiple outcome receivers");
@@ -78,16 +83,24 @@ final class ApprovalDelivery implements TaskHandler {
 
     private void send(Outcome event, ApprovalProperties.Webhook target) throws Exception {
         URI endpoint = target.url();
-        if (endpoint == null || !"https".equalsIgnoreCase(endpoint.getScheme()) || endpoint.getHost() == null
-                || endpoint.getUserInfo() != null || target.bearerToken() == null || target.bearerToken().isBlank()) {
+        if (endpoint == null
+                || !"https".equalsIgnoreCase(endpoint.getScheme())
+                || endpoint.getHost() == null
+                || endpoint.getUserInfo() != null
+                || target.bearerToken() == null
+                || target.bearerToken().isBlank()) {
             throw new IllegalStateException("Approval webhook requires HTTPS and a service credential");
         }
-        var request = HttpRequest.newBuilder(endpoint).timeout(Duration.ofSeconds(15))
+        var request = HttpRequest.newBuilder(endpoint)
+                .timeout(Duration.ofSeconds(15))
                 .header("Authorization", "Bearer " + target.bearerToken())
                 .header("Content-Type", "application/json")
                 .header("Idempotency-Key", event.eventId())
-                .POST(HttpRequest.BodyPublishers.ofString(store.json(event))).build();
+                .POST(HttpRequest.BodyPublishers.ofString(store.json(event)))
+                .build();
         int status = http.send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
-        if (status < 200 || status >= 300) throw new IllegalStateException("Approval receiver HTTP " + status);
+        if (status < 200 || status >= 300) {
+            throw new IllegalStateException("Approval receiver HTTP " + status);
+        }
     }
 }

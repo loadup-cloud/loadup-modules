@@ -45,10 +45,32 @@ public final class AliyunSmsGotoneProvider implements GotoneProvider {
         this.clock = clock;
     }
 
-    @Override public String code() { return "aliyun"; }
-    @Override public Channel channel() { return Channel.SMS; }
-    @Override public Set<String> settings() { return Set.of("accessKeyId", "signature"); }
-    @Override public boolean requiresSmsBinding() { return true; }
+    private static String encode(String text) {
+        return URLEncoder.encode(text, StandardCharsets.UTF_8)
+                .replace("+", "%20")
+                .replace("*", "%2A")
+                .replace("%7E", "~");
+    }
+
+    @Override
+    public String code() {
+        return "aliyun";
+    }
+
+    @Override
+    public Channel channel() {
+        return Channel.SMS;
+    }
+
+    @Override
+    public Set<String> settings() {
+        return Set.of("accessKeyId", "signature");
+    }
+
+    @Override
+    public boolean requiresSmsBinding() {
+        return true;
+    }
 
     @Override
     public boolean valid(Account account) {
@@ -58,13 +80,20 @@ public final class AliyunSmsGotoneProvider implements GotoneProvider {
     @Override
     public Outcome send(Account account, String secret, Work work, Binding binding) {
         String phone = work.snapshot().target().address();
-        if (!phone.matches("\\+861[0-9]{10}")) return Outcome.retry("ALIYUN_REGION_UNSUPPORTED");
-        String signature = binding.remoteSignature() == null ? account.settings().get("signature") : binding.remoteSignature();
-        if (signature == null || signature.isBlank()) return Outcome.retry("ALIYUN_SIGNATURE_MISSING");
+        if (!phone.matches("\\+861[0-9]{10}")) {
+            return Outcome.retry("ALIYUN_REGION_UNSUPPORTED");
+        }
+        String signature =
+                binding.remoteSignature() == null ? account.settings().get("signature") : binding.remoteSignature();
+        if (signature == null || signature.isBlank()) {
+            return Outcome.retry("ALIYUN_SIGNATURE_MISSING");
+        }
         Map<String, String> variables = new TreeMap<>();
         for (var entry : binding.variables().entrySet()) {
             String value = work.snapshot().parameters().get(entry.getValue());
-            if (value == null) return Outcome.retry("ALIYUN_TEMPLATE_PARAMETER_MISSING");
+            if (value == null) {
+                return Outcome.retry("ALIYUN_TEMPLATE_PARAMETER_MISSING");
+            }
             variables.put(entry.getKey(), value);
         }
         Map<String, String> fields = new TreeMap<>();
@@ -81,19 +110,31 @@ public final class AliyunSmsGotoneProvider implements GotoneProvider {
         fields.put("TemplateCode", binding.remoteTemplateId());
         fields.put("TemplateParam", json.writeValueAsString(variables));
         fields.put("OutId", work.id());
-        String canonical = fields.entrySet().stream().map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue()))
+        String canonical = fields.entrySet().stream()
+                .map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue()))
                 .collect(Collectors.joining("&"));
         try {
             var mac = Mac.getInstance("HmacSHA1");
             mac.init(new SecretKeySpec((secret + "&").getBytes(StandardCharsets.UTF_8), "HmacSHA1"));
             String toSign = "POST&%2F&" + encode(canonical);
             String signed = Base64.getEncoder().encodeToString(mac.doFinal(toSign.getBytes(StandardCharsets.UTF_8)));
-            var response = GotoneHttp.send(account, GotoneHttp.post(ENDPOINT, account, "application/x-www-form-urlencoded",
-                    canonical + "&Signature=" + encode(signed), work.id()).build());
-            if (response.statusCode() != 200) return GotoneHttp.failure(response.statusCode());
+            var response = GotoneHttp.send(
+                    account,
+                    GotoneHttp.post(
+                                    ENDPOINT,
+                                    account,
+                                    "application/x-www-form-urlencoded",
+                                    canonical + "&Signature=" + encode(signed),
+                                    work.id())
+                            .build());
+            if (response.statusCode() != 200) {
+                return GotoneHttp.failure(response.statusCode());
+            }
             var result = json.readTree(response.body());
             String code = result.path("Code").asText();
-            if (code.equals("OK")) return Outcome.sent(result.path("BizId").asText(null));
+            if (code.equals("OK")) {
+                return Outcome.sent(result.path("BizId").asText(null));
+            }
             if (code.equals("isv.BUSINESS_LIMIT_CONTROL") || code.equals("isv.AMOUNT_NOT_ENOUGH")) {
                 return Outcome.retry("ALIYUN_ACCOUNT_LIMIT");
             }
@@ -108,9 +149,5 @@ public final class AliyunSmsGotoneProvider implements GotoneProvider {
         } catch (java.io.IOException | RuntimeException exception) {
             return Outcome.unknown("NO_PROVIDER_RESULT");
         }
-    }
-
-    private static String encode(String text) {
-        return URLEncoder.encode(text, StandardCharsets.UTF_8).replace("+", "%20").replace("*", "%2A").replace("%7E", "~");
     }
 }

@@ -75,5 +75,4 @@ public class GotoneDeliveryResolutionDO extends BaseDO {
     public void setResolvedAt(LocalDateTime resolvedAt) {
         this.resolvedAt = resolvedAt;
     }
-
 }

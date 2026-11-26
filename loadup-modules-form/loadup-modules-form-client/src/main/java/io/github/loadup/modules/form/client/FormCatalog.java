@@ -15,7 +15,13 @@
  */
 package io.github.loadup.modules.form.client;
 
-import static io.github.loadup.modules.form.client.FormDefinitions.*;
+import static io.github.loadup.modules.form.client.FormDefinitions.Field;
+import static io.github.loadup.modules.form.client.FormDefinitions.FieldVersion;
+import static io.github.loadup.modules.form.client.FormDefinitions.Group;
+import static io.github.loadup.modules.form.client.FormDefinitions.Release;
+import static io.github.loadup.modules.form.client.FormDefinitions.Save;
+import static io.github.loadup.modules.form.client.FormDefinitions.Template;
+import static io.github.loadup.modules.form.client.FormDefinitions.Version;
 
 import java.util.List;
 import java.util.Optional;

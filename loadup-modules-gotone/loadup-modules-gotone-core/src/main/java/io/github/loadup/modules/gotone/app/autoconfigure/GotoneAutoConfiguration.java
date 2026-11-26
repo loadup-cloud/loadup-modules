@@ -19,12 +19,37 @@ import io.github.loadup.components.database.id.IdGenerator;
 import io.github.loadup.components.kms.KmsSecretManager;
 import io.github.loadup.components.task.TaskAutoConfiguration;
 import io.github.loadup.components.task.TaskTemplate;
-import io.github.loadup.modules.gotone.app.integration.*;
-import io.github.loadup.modules.gotone.app.service.*;
-import io.github.loadup.modules.gotone.infrastructure.mapper.*;
-import io.github.loadup.modules.gotone.infrastructure.repository.GotoneRows;
+import io.github.loadup.modules.gotone.app.integration.AliyunSmsGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.FcmGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.GotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.GotoneProviders;
+import io.github.loadup.modules.gotone.app.integration.GotoneSecrets;
+import io.github.loadup.modules.gotone.app.integration.SmtpGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.TwilioSmsProvider;
+import io.github.loadup.modules.gotone.app.integration.WebhookGotoneProvider;
+import io.github.loadup.modules.gotone.app.service.EmailDeliveryHandler;
+import io.github.loadup.modules.gotone.app.service.GotoneAdministration;
+import io.github.loadup.modules.gotone.app.service.GotoneDeliveryReconciliation;
+import io.github.loadup.modules.gotone.app.service.GotoneSubmissionService;
+import io.github.loadup.modules.gotone.app.service.GotoneTemplates;
+import io.github.loadup.modules.gotone.app.service.InboxDeliveryHandler;
+import io.github.loadup.modules.gotone.app.service.PushDeliveryHandler;
+import io.github.loadup.modules.gotone.app.service.SmsDeliveryHandler;
+import io.github.loadup.modules.gotone.app.service.WebhookDeliveryHandler;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryAttemptMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryResolutionMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryRetryMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneProviderAccountMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneRequestMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceChannelMapMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceDraftMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceRevisionMapper;
+import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneSmsTemplateBindingMapper;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigurationStore;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore;
+import io.github.loadup.modules.gotone.infrastructure.repository.GotoneRows;
 import io.github.loadup.modules.inbox.client.facade.InboxReceiver;
 import java.time.Clock;
 import java.util.Arrays;
@@ -60,16 +85,27 @@ public class GotoneAutoConfiguration {
     }
 
     @Bean
-    GotoneConfigurationStore gotoneConfigurationStore(GotoneServiceMapper services, GotoneServiceDraftMapper drafts,
-            GotoneServiceRevisionMapper revisions, GotoneServiceChannelMapMapper channels,
-            GotoneProviderAccountMapper accounts, GotoneSmsTemplateBindingMapper bindings, GotoneRows rows, JsonMapper json) {
+    GotoneConfigurationStore gotoneConfigurationStore(
+            GotoneServiceMapper services,
+            GotoneServiceDraftMapper drafts,
+            GotoneServiceRevisionMapper revisions,
+            GotoneServiceChannelMapMapper channels,
+            GotoneProviderAccountMapper accounts,
+            GotoneSmsTemplateBindingMapper bindings,
+            GotoneRows rows,
+            JsonMapper json) {
         return new GotoneConfigurationStore(services, drafts, revisions, channels, accounts, bindings, rows, json);
     }
 
     @Bean
-    GotoneDeliveryStore gotoneDeliveryStore(GotoneRequestMapper requests, GotoneDeliveryMapper deliveries,
-            GotoneDeliveryAttemptMapper attempts, GotoneDeliveryRetryMapper retries, GotoneDeliveryResolutionMapper resolutions,
-            GotoneRows rows, JsonMapper json) {
+    GotoneDeliveryStore gotoneDeliveryStore(
+            GotoneRequestMapper requests,
+            GotoneDeliveryMapper deliveries,
+            GotoneDeliveryAttemptMapper attempts,
+            GotoneDeliveryRetryMapper retries,
+            GotoneDeliveryResolutionMapper resolutions,
+            GotoneRows rows,
+            JsonMapper json) {
         return new GotoneDeliveryStore(requests, deliveries, attempts, retries, resolutions, rows, json);
     }
 
@@ -100,18 +136,13 @@ public class GotoneAutoConfiguration {
 
     @Bean
     GotoneProvider webhookGotoneProvider(Environment environment) {
-        Set<String> hosts = Arrays.stream(environment.getProperty("loadup.modules.gotone.webhook.allowed-hosts", "").split(","))
-                .map(host -> host.strip().toLowerCase(Locale.ROOT)).filter(host -> !host.isEmpty()).collect(Collectors.toSet());
+        Set<String> hosts = Arrays.stream(environment
+                        .getProperty("loadup.modules.gotone.webhook.allowed-hosts", "")
+                        .split(","))
+                .map(host -> host.strip().toLowerCase(Locale.ROOT))
+                .filter(host -> !host.isEmpty())
+                .collect(Collectors.toSet());
         return new WebhookGotoneProvider(hosts);
-    }
-
-    @Configuration(proxyBeanMethods = false)
-    @ConditionalOnClass(name = {"org.springframework.mail.javamail.JavaMailSenderImpl", "jakarta.mail.Session"})
-    static class SmtpConfiguration {
-        @Bean
-        GotoneProvider smtpGotoneProvider() {
-            return new SmtpGotoneProvider();
-        }
     }
 
     @Bean
@@ -132,61 +163,105 @@ public class GotoneAutoConfiguration {
     }
 
     @Bean
-    GotoneDeliveryReconciliation gotoneDeliveryReconciliation(GotoneDeliveryStore store, TaskTemplate tasks, Clock clock,
+    GotoneDeliveryReconciliation gotoneDeliveryReconciliation(
+            GotoneDeliveryStore store,
+            TaskTemplate tasks,
+            Clock clock,
             @Qualifier("gotoneTransactions") TransactionTemplate tx) {
         return new GotoneDeliveryReconciliation(store, tasks, tx, clock);
     }
 
     @Bean
-    GotoneSubmissionService gotoneSubmissionService(GotoneConfigurationStore configuration, GotoneDeliveryStore store,
-            TaskTemplate tasks, Clock clock, JsonMapper json, GotoneTemplates templates,
-            @Qualifier("gotoneTransactions") TransactionTemplate tx, GotoneDeliveryReconciliation reconciliation) {
+    GotoneSubmissionService gotoneSubmissionService(
+            GotoneConfigurationStore configuration,
+            GotoneDeliveryStore store,
+            TaskTemplate tasks,
+            Clock clock,
+            JsonMapper json,
+            GotoneTemplates templates,
+            @Qualifier("gotoneTransactions") TransactionTemplate tx,
+            GotoneDeliveryReconciliation reconciliation) {
         return new GotoneSubmissionService(configuration, store, tasks, clock, json, templates, tx, reconciliation);
     }
 
     @Bean
-    GotoneAdministration gotoneAdministration(GotoneConfigurationStore configuration, GotoneDeliveryStore store,
-            GotoneSubmissionService submissions, GotoneTemplates templates, GotoneProviders providers,
-            GotoneDeliveryReconciliation reconciliation, @Qualifier("gotoneTransactions") TransactionTemplate tx,
-            TaskTemplate tasks, Clock clock) {
-        return new GotoneAdministration(configuration, store, submissions, templates, providers, reconciliation, tx, tasks, clock);
+    GotoneAdministration gotoneAdministration(
+            GotoneConfigurationStore configuration,
+            GotoneDeliveryStore store,
+            GotoneSubmissionService submissions,
+            GotoneTemplates templates,
+            GotoneProviders providers,
+            GotoneDeliveryReconciliation reconciliation,
+            @Qualifier("gotoneTransactions") TransactionTemplate tx,
+            TaskTemplate tasks,
+            Clock clock) {
+        return new GotoneAdministration(
+                configuration, store, submissions, templates, providers, reconciliation, tx, tasks, clock);
     }
 
     @Bean
-    SmsDeliveryHandler gotoneSmsHandler(GotoneDeliveryStore store, GotoneConfigurationStore configuration,
-            GotoneProviders providers, GotoneSecrets secrets, Clock clock,
+    SmsDeliveryHandler gotoneSmsHandler(
+            GotoneDeliveryStore store,
+            GotoneConfigurationStore configuration,
+            GotoneProviders providers,
+            GotoneSecrets secrets,
+            Clock clock,
             @Qualifier("gotoneTransactions") TransactionTemplate tx,
             @Qualifier("gotoneTransportExecutor") ExecutorService executor) {
         return new SmsDeliveryHandler(store, configuration, providers, secrets, clock, tx, executor);
     }
 
     @Bean
-    EmailDeliveryHandler gotoneEmailHandler(GotoneDeliveryStore store, GotoneConfigurationStore configuration,
-            GotoneProviders providers, GotoneSecrets secrets, Clock clock,
+    EmailDeliveryHandler gotoneEmailHandler(
+            GotoneDeliveryStore store,
+            GotoneConfigurationStore configuration,
+            GotoneProviders providers,
+            GotoneSecrets secrets,
+            Clock clock,
             @Qualifier("gotoneTransactions") TransactionTemplate tx,
             @Qualifier("gotoneTransportExecutor") ExecutorService executor) {
         return new EmailDeliveryHandler(store, configuration, providers, secrets, clock, tx, executor);
     }
 
     @Bean
-    PushDeliveryHandler gotonePushHandler(GotoneDeliveryStore store, GotoneConfigurationStore configuration,
-            GotoneProviders providers, GotoneSecrets secrets, Clock clock,
+    PushDeliveryHandler gotonePushHandler(
+            GotoneDeliveryStore store,
+            GotoneConfigurationStore configuration,
+            GotoneProviders providers,
+            GotoneSecrets secrets,
+            Clock clock,
             @Qualifier("gotoneTransactions") TransactionTemplate tx,
             @Qualifier("gotoneTransportExecutor") ExecutorService executor) {
         return new PushDeliveryHandler(store, configuration, providers, secrets, clock, tx, executor);
     }
 
     @Bean
-    InboxDeliveryHandler gotoneInboxHandler(GotoneDeliveryStore store, InboxReceiver inbox, Clock clock,
+    InboxDeliveryHandler gotoneInboxHandler(
+            GotoneDeliveryStore store,
+            InboxReceiver inbox,
+            Clock clock,
             @Qualifier("gotoneTransactions") TransactionTemplate tx) {
         return new InboxDeliveryHandler(store, inbox, clock, tx);
     }
 
     @Bean
-    WebhookDeliveryHandler gotoneWebhookHandler(GotoneDeliveryStore store, GotoneConfigurationStore configuration,
-            GotoneProviders providers, GotoneSecrets secrets, Clock clock,
+    WebhookDeliveryHandler gotoneWebhookHandler(
+            GotoneDeliveryStore store,
+            GotoneConfigurationStore configuration,
+            GotoneProviders providers,
+            GotoneSecrets secrets,
+            Clock clock,
             @Qualifier("gotoneTransactions") TransactionTemplate tx,
             @Qualifier("gotoneTransportExecutor") ExecutorService executor) {
         return new WebhookDeliveryHandler(store, configuration, providers, secrets, clock, tx, executor);
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = {"org.springframework.mail.javamail.JavaMailSenderImpl", "jakarta.mail.Session"})
+    static class SmtpConfiguration {
+        @Bean
+        GotoneProvider smtpGotoneProvider() {
+            return new SmtpGotoneProvider();
+        }
     }
 }

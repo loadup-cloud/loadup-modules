@@ -29,7 +29,8 @@ public final class GotoneDeliveryReconciliation {
     private final TransactionTemplate tx;
     private final Clock clock;
 
-    public GotoneDeliveryReconciliation(GotoneDeliveryStore store, TaskTemplate tasks, TransactionTemplate tx, Clock clock) {
+    public GotoneDeliveryReconciliation(
+            GotoneDeliveryStore store, TaskTemplate tasks, TransactionTemplate tx, Clock clock) {
         this.store = store;
         this.tasks = tasks;
         this.tx = tx;
@@ -37,16 +38,22 @@ public final class GotoneDeliveryReconciliation {
     }
 
     public boolean sync(Delivery delivery) {
-        if (!delivery.status().equals("SENDING") && !delivery.status().equals("PENDING")
-                && !delivery.status().equals("RETRY_WAIT")) return false;
+        if (!delivery.status().equals("SENDING")
+                && !delivery.status().equals("PENDING")
+                && !delivery.status().equals("RETRY_WAIT")) {
+            return false;
+        }
         return Boolean.TRUE.equals(tx.execute(transaction -> reconcile(delivery.id(), delivery.channel())));
     }
 
     public boolean reconcile(String id, Channel channel) {
         var work = store.lock(id).orElseThrow();
         var queue = tasks.find(GotoneSubmissionService.taskType(channel), id);
-        if (queue.isPresent() && queue.get().status() != TaskStatus.FAILED
-                && queue.get().status() != TaskStatus.CANCELLED) return false;
+        if (queue.isPresent()
+                && queue.get().status() != TaskStatus.FAILED
+                && queue.get().status() != TaskStatus.CANCELLED) {
+            return false;
+        }
         switch (work.status()) {
             case "SENDING" -> store.finish(id, work.attemptNo(), "UNKNOWN", "WORKER_LOST", null);
             case "PENDING", "RETRY_WAIT" -> {
@@ -57,7 +64,9 @@ public final class GotoneDeliveryReconciliation {
                     store.finish(id, attempt, "FAILED", "TASK_EXHAUSTED", null);
                 }
             }
-            default -> { return false; }
+            default -> {
+                return false;
+            }
         }
         return true;
     }

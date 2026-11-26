@@ -25,8 +25,13 @@ import java.util.concurrent.ExecutorService;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public final class EmailDeliveryHandler extends ExternalDeliveryHandler {
-    public EmailDeliveryHandler(GotoneDeliveryStore store, GotoneConfigurationStore configuration,
-            GotoneProviders providers, GotoneSecrets secrets, Clock clock, TransactionTemplate tx,
+    public EmailDeliveryHandler(
+            GotoneDeliveryStore store,
+            GotoneConfigurationStore configuration,
+            GotoneProviders providers,
+            GotoneSecrets secrets,
+            Clock clock,
+            TransactionTemplate tx,
             ExecutorService transport) {
         super(Channel.EMAIL, store, configuration, providers, secrets, clock, tx, transport);
     }

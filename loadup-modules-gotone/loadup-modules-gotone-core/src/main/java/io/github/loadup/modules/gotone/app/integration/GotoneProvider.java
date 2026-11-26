@@ -21,23 +21,46 @@ import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigura
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore.Work;
 import java.util.Set;
 
-/** Core integration seam for a system account backed by a real transport. */
+/**
+ * Core integration seam for a system account backed by a real transport.
+ */
 public interface GotoneProvider {
     String code();
+
     Channel channel();
+
     Set<String> settings();
+
     boolean valid(Account account);
 
-    default boolean requiresSmsBinding() { return false; }
+    default boolean requiresSmsBinding() {
+        return false;
+    }
 
     Outcome send(Account account, String secret, Work work, Binding binding);
 
-    enum Result { SENT, RETRY_WAIT, FAILED, UNKNOWN }
+    enum Result {
+        SENT,
+        RETRY_WAIT,
+        FAILED,
+        UNKNOWN
+    }
 
     record Outcome(Result result, String reason, String remoteId) {
-        public static Outcome sent(String remoteId) { return new Outcome(Result.SENT, null, remoteId); }
-        public static Outcome retry(String reason) { return new Outcome(Result.RETRY_WAIT, reason, null); }
-        public static Outcome failed(String reason) { return new Outcome(Result.FAILED, reason, null); }
-        public static Outcome unknown(String reason) { return new Outcome(Result.UNKNOWN, reason, null); }
+        public static Outcome sent(String remoteId) {
+            return new Outcome(Result.SENT, null, remoteId);
+        }
+
+        public static Outcome retry(String reason) {
+            return new Outcome(Result.RETRY_WAIT, reason, null);
+        }
+
+        public static Outcome failed(String reason) {
+            return new Outcome(Result.FAILED, reason, null);
+        }
+
+        public static Outcome unknown(String reason) {
+            return new Outcome(Result.UNKNOWN, reason, null);
+        }
     }
 }

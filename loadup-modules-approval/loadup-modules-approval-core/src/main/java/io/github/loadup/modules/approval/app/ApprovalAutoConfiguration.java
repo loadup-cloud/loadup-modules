@@ -40,7 +40,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@AutoConfiguration(after = TaskAutoConfiguration.class,
+@AutoConfiguration(
+        after = TaskAutoConfiguration.class,
         afterName = "io.github.loadup.modules.upms.app.autoconfigure.UpmsAutoConfiguration")
 @ConditionalOnSingleCandidate(DataSource.class)
 @ConditionalOnBean(TaskTemplate.class)
@@ -62,20 +63,24 @@ public class ApprovalAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(ApprovalFacade.class)
     @ConditionalOnBean(ApprovalDirectory.class)
-    ApprovalFacade approvalFacade(ApprovalStore store, ApprovalDirectory directory, TaskTemplate tasks,
-                                  PlatformTransactionManager transactionManager, ApprovalReminder reminder) {
+    ApprovalFacade approvalFacade(
+            ApprovalStore store,
+            ApprovalDirectory directory,
+            TaskTemplate tasks,
+            PlatformTransactionManager transactionManager,
+            ApprovalReminder reminder) {
         return new ApprovalService(store, directory, tasks, new TransactionTemplate(transactionManager), reminder);
     }
 
     @Bean
-    ApprovalReminder approvalReminder(ApprovalStore store, ObjectProvider<TaskTemplate> tasks,
-                                      ObjectProvider<GotoneFacade> notifications) {
+    ApprovalReminder approvalReminder(
+            ApprovalStore store, ObjectProvider<TaskTemplate> tasks, ObjectProvider<GotoneFacade> notifications) {
         return new ApprovalReminder(store, tasks, notifications);
     }
 
     @Bean
-    TaskHandler approvalOutcomeTask(ApprovalStore store, ObjectProvider<ApprovalOutcomeHandler> handlers,
-                                    ApprovalProperties properties) {
+    TaskHandler approvalOutcomeTask(
+            ApprovalStore store, ObjectProvider<ApprovalOutcomeHandler> handlers, ApprovalProperties properties) {
         return new ApprovalDelivery(store, handlers, properties);
     }
 }

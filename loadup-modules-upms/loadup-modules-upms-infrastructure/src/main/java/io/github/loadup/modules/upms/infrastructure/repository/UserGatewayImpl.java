@@ -72,17 +72,17 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
         }
         row.setUpdatedAt(now);
         jdbc.update("""
-            INSERT INTO upms_user (id, username, password, nickname, real_name, dept_id, email,
-                email_verified, mobile, mobile_verified, avatar, gender, birthday, status, account_non_expired,
-                account_non_locked, credentials_non_expired, last_login_time, last_login_ip, login_fail_count,
-                locked_time, password_update_time, remark, created_by, updated_by, created_at, updated_at, deleted)
-            VALUES (:id, :username, :password, :nickname, :realName, :deptId, :email,
-                COALESCE(:emailVerified, FALSE), :mobile, COALESCE(:mobileVerified, FALSE), :avatar,
-                COALESCE(:gender, 0), :birthday, COALESCE(:status, 1), COALESCE(:accountNonExpired, TRUE),
-                COALESCE(:accountNonLocked, TRUE), COALESCE(:credentialsNonExpired, TRUE), :lastLoginTime,
-                :lastLoginIp, COALESCE(:loginFailCount, 0), :lockedTime, :passwordUpdateTime, :remark,
-                :createdBy, :updatedBy, :createdAt, :updatedAt, FALSE)
-            """, new BeanPropertySqlParameterSource(row));
+                INSERT INTO upms_user (id, username, password, nickname, real_name, dept_id, email,
+                    email_verified, mobile, mobile_verified, avatar, gender, birthday, status, account_non_expired,
+                    account_non_locked, credentials_non_expired, last_login_time, last_login_ip, login_fail_count,
+                    locked_time, password_update_time, remark, created_by, updated_by, created_at, updated_at, deleted)
+                VALUES (:id, :username, :password, :nickname, :realName, :deptId, :email,
+                    COALESCE(:emailVerified, FALSE), :mobile, COALESCE(:mobileVerified, FALSE), :avatar,
+                    COALESCE(:gender, 0), :birthday, COALESCE(:status, 1), COALESCE(:accountNonExpired, TRUE),
+                    COALESCE(:accountNonLocked, TRUE), COALESCE(:credentialsNonExpired, TRUE), :lastLoginTime,
+                    :lastLoginIp, COALESCE(:loginFailCount, 0), :lockedTime, :passwordUpdateTime, :remark,
+                    :createdBy, :updatedBy, :createdAt, :updatedAt, FALSE)
+                """, new BeanPropertySqlParameterSource(row));
         return converter.toEntity(row);
     }
 
@@ -95,21 +95,21 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
         }
         row.setUpdatedAt(LocalDateTime.now(clock));
         int changed = jdbc.update("""
-            UPDATE upms_user SET username = COALESCE(:username, username), password = COALESCE(:password, password),
-                nickname = COALESCE(:nickname, nickname), real_name = COALESCE(:realName, real_name),
-                dept_id = COALESCE(:deptId, dept_id), email = COALESCE(:email, email),
-                email_verified = COALESCE(:emailVerified, email_verified), mobile = COALESCE(:mobile, mobile),
-                mobile_verified = COALESCE(:mobileVerified, mobile_verified), avatar = COALESCE(:avatar, avatar),
-                gender = COALESCE(:gender, gender), birthday = COALESCE(:birthday, birthday), status = COALESCE(:status, status),
-                account_non_expired = COALESCE(:accountNonExpired, account_non_expired),
-                account_non_locked = COALESCE(:accountNonLocked, account_non_locked),
-                credentials_non_expired = COALESCE(:credentialsNonExpired, credentials_non_expired),
-                last_login_time = COALESCE(:lastLoginTime, last_login_time), last_login_ip = COALESCE(:lastLoginIp, last_login_ip),
-                login_fail_count = COALESCE(:loginFailCount, login_fail_count), locked_time = COALESCE(:lockedTime, locked_time),
-                password_update_time = COALESCE(:passwordUpdateTime, password_update_time), remark = COALESCE(:remark, remark),
-                updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
-            WHERE id = :id AND deleted = FALSE
-            """, new BeanPropertySqlParameterSource(row));
+                UPDATE upms_user SET username = COALESCE(:username, username), password = COALESCE(:password, password),
+                    nickname = COALESCE(:nickname, nickname), real_name = COALESCE(:realName, real_name),
+                    dept_id = COALESCE(:deptId, dept_id), email = COALESCE(:email, email),
+                    email_verified = COALESCE(:emailVerified, email_verified), mobile = COALESCE(:mobile, mobile),
+                    mobile_verified = COALESCE(:mobileVerified, mobile_verified), avatar = COALESCE(:avatar, avatar),
+                    gender = COALESCE(:gender, gender), birthday = COALESCE(:birthday, birthday), status = COALESCE(:status, status),
+                    account_non_expired = COALESCE(:accountNonExpired, account_non_expired),
+                    account_non_locked = COALESCE(:accountNonLocked, account_non_locked),
+                    credentials_non_expired = COALESCE(:credentialsNonExpired, credentials_non_expired),
+                    last_login_time = COALESCE(:lastLoginTime, last_login_time), last_login_ip = COALESCE(:lastLoginIp, last_login_ip),
+                    login_fail_count = COALESCE(:loginFailCount, login_fail_count), locked_time = COALESCE(:lockedTime, locked_time),
+                    password_update_time = COALESCE(:passwordUpdateTime, password_update_time), remark = COALESCE(:remark, remark),
+                    updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
+                WHERE id = :id AND deleted = FALSE
+                """, new BeanPropertySqlParameterSource(row));
         if (changed != 1) {
             throw new IncorrectResultSizeDataAccessException(1, changed);
         }

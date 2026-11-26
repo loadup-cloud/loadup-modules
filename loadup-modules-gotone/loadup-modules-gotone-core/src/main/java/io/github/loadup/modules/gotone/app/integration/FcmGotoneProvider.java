@@ -41,9 +41,20 @@ public final class FcmGotoneProvider implements GotoneProvider {
         this.clock = clock;
     }
 
-    @Override public String code() { return "fcm"; }
-    @Override public Channel channel() { return Channel.PUSH; }
-    @Override public Set<String> settings() { return Set.of("projectId", "platform", "appId"); }
+    @Override
+    public String code() {
+        return "fcm";
+    }
+
+    @Override
+    public Channel channel() {
+        return Channel.PUSH;
+    }
+
+    @Override
+    public Set<String> settings() {
+        return Set.of("projectId", "platform", "appId");
+    }
 
     @Override
     public boolean valid(Account account) {
@@ -63,7 +74,9 @@ public final class FcmGotoneProvider implements GotoneProvider {
         } catch (java.io.IOException | java.security.GeneralSecurityException | RuntimeException exception) {
             return Outcome.retry("FCM_AUTH_UNAVAILABLE");
         }
-        if (token == null || token.isBlank()) return Outcome.retry("FCM_AUTH_UNAVAILABLE");
+        if (token == null || token.isBlank()) {
+            return Outcome.retry("FCM_AUTH_UNAVAILABLE");
+        }
         if (Thread.currentThread().isInterrupted() || !clock.instant().isBefore(work.expiresAt())) {
             return Outcome.retry("FCM_SEND_WINDOW_CLOSED");
         }
@@ -71,21 +84,42 @@ public final class FcmGotoneProvider implements GotoneProvider {
         var message = new LinkedHashMap<String, Object>();
         message.put("token", work.snapshot().target().address());
         message.put("notification", Map.of("title", content.get("title"), "body", content.get("body")));
-        long ttl = Math.max(0, Math.min(Long.parseLong(content.getOrDefault("ttlSeconds", "3600")),
-                work.expiresAt().getEpochSecond() - clock.instant().getEpochSecond()));
+        long ttl = Math.max(
+                0,
+                Math.min(
+                        Long.parseLong(content.getOrDefault("ttlSeconds", "3600")),
+                        work.expiresAt().getEpochSecond() - clock.instant().getEpochSecond()));
         switch (work.snapshot().target().platform()) {
             case "ANDROID" -> message.put("android", Map.of("ttl", ttl + "s"));
-            case "IOS" -> message.put("apns", Map.of("headers",
-                    Map.of("apns-expiration", Long.toString(clock.instant().getEpochSecond() + ttl))));
+            case "IOS" ->
+                message.put(
+                        "apns",
+                        Map.of(
+                                "headers",
+                                Map.of(
+                                        "apns-expiration",
+                                        Long.toString(clock.instant().getEpochSecond() + ttl))));
             case "WEB" -> message.put("webpush", Map.of("headers", Map.of("TTL", Long.toString(ttl))));
-            default -> { return Outcome.failed("UNSUPPORTED_PLATFORM"); }
+            default -> {
+                return Outcome.failed("UNSUPPORTED_PLATFORM");
+            }
         }
-        URI endpoint = URI.create("https://fcm.googleapis.com/v1/projects/" + account.settings().get("projectId") + "/messages:send");
+        URI endpoint = URI.create(
+                "https://fcm.googleapis.com/v1/projects/" + account.settings().get("projectId") + "/messages:send");
         try {
-            var response = GotoneHttp.send(account, GotoneHttp.post(endpoint, account, "application/json",
-                    json.writeValueAsString(Map.of("message", message)), work.id())
-                    .header("Authorization", "Bearer " + token).build());
-            if (response.statusCode() == 200) return Outcome.sent(json.readTree(response.body()).path("name").asText(null));
+            var response = GotoneHttp.send(
+                    account,
+                    GotoneHttp.post(
+                                    endpoint,
+                                    account,
+                                    "application/json",
+                                    json.writeValueAsString(Map.of("message", message)),
+                                    work.id())
+                            .header("Authorization", "Bearer " + token)
+                            .build());
+            if (response.statusCode() == 200) {
+                return Outcome.sent(json.readTree(response.body()).path("name").asText(null));
+            }
             return GotoneHttp.failure(response.statusCode());
         } catch (java.net.http.HttpConnectTimeoutException exception) {
             return Outcome.retry("CONNECT_TIMEOUT");
@@ -103,20 +137,41 @@ public final class FcmGotoneProvider implements GotoneProvider {
         var encoder = Base64.getUrlEncoder().withoutPadding();
         var header = encoder.encodeToString(json.writeValueAsBytes(Map.of("alg", "RS256", "typ", "JWT")));
         long now = clock.instant().getEpochSecond();
-        var claims = encoder.encodeToString(json.writeValueAsBytes(Map.of("iss", credential.path("client_email").asText(),
-                "scope", "https://www.googleapis.com/auth/firebase.messaging", "aud", OAUTH.toString(),
-                "iat", now, "exp", now + 300)));
-        String pem = credential.path("private_key").asText()
-                .replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").replaceAll("\\s", "");
-        var key = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(pem)));
+        var claims = encoder.encodeToString(json.writeValueAsBytes(Map.of(
+                "iss",
+                credential.path("client_email").asText(),
+                "scope",
+                "https://www.googleapis.com/auth/firebase.messaging",
+                "aud",
+                OAUTH.toString(),
+                "iat",
+                now,
+                "exp",
+                now + 300)));
+        String pem = credential
+                .path("private_key")
+                .asText()
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+        var key = KeyFactory.getInstance("RSA")
+                .generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(pem)));
         var signer = Signature.getInstance("SHA256withRSA");
         signer.initSign(key);
         String assertion = header + "." + claims;
         signer.update(assertion.getBytes(StandardCharsets.US_ASCII));
         assertion += "." + encoder.encodeToString(signer.sign());
-        var request = GotoneHttp.post(OAUTH, account, "application/x-www-form-urlencoded", GotoneHttp.form(Map.of(
-                "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer", "assertion", assertion)), null).build();
+        var request = GotoneHttp.post(
+                        OAUTH,
+                        account,
+                        "application/x-www-form-urlencoded",
+                        GotoneHttp.form(Map.of(
+                                "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer", "assertion", assertion)),
+                        null)
+                .build();
         var response = GotoneHttp.send(account, request);
-        return response.statusCode() == 200 ? json.readTree(response.body()).path("access_token").asText(null) : null;
+        return response.statusCode() == 200
+                ? json.readTree(response.body()).path("access_token").asText(null)
+                : null;
     }
 }

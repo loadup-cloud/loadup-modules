@@ -20,6 +20,12 @@ public interface InboxReceiver {
      * Stores a rendered message once per recipient and request key. The write joins the caller's
      * JDBC transaction when present. Use the same key when retrying the same delivery.
      */
-    void receive(String requestKey, String recipientId, String senderId, String category,
-                 String title, String body, String actionUrl);
+    void receive(
+            String requestKey,
+            String recipientId,
+            String senderId,
+            String category,
+            String title,
+            String body,
+            String actionUrl);
 }

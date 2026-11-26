@@ -15,9 +15,28 @@
  */
 package io.github.loadup.modules.form.app;
 
-import static io.github.loadup.modules.form.client.FormException.Code.*;
-import static io.github.loadup.modules.form.client.FormInstances.*;
-import static io.github.loadup.modules.form.domain.FormRules.*;
+import static io.github.loadup.modules.form.client.FormException.Code.AMBIGUOUS_FIELD;
+import static io.github.loadup.modules.form.client.FormException.Code.CONFLICT;
+import static io.github.loadup.modules.form.client.FormException.Code.INVALID_SELECTION;
+import static io.github.loadup.modules.form.client.FormException.Code.INVALID_STATE;
+import static io.github.loadup.modules.form.client.FormException.Code.INVALID_VALUE;
+import static io.github.loadup.modules.form.client.FormException.Code.LOCKED_FIELD;
+import static io.github.loadup.modules.form.client.FormException.Code.NOT_FOUND;
+import static io.github.loadup.modules.form.client.FormException.Code.REQUIRED_FIELD;
+import static io.github.loadup.modules.form.client.FormException.Code.UNKNOWN_FIELD;
+import static io.github.loadup.modules.form.client.FormInstances.Detail;
+import static io.github.loadup.modules.form.client.FormInstances.SaveDraft;
+import static io.github.loadup.modules.form.client.FormInstances.Start;
+import static io.github.loadup.modules.form.client.FormInstances.Status;
+import static io.github.loadup.modules.form.client.FormInstances.Submit;
+import static io.github.loadup.modules.form.client.FormInstances.Value;
+import static io.github.loadup.modules.form.domain.FormRules.absent;
+import static io.github.loadup.modules.form.domain.FormRules.checkReadType;
+import static io.github.loadup.modules.form.domain.FormRules.code;
+import static io.github.loadup.modules.form.domain.FormRules.readScalar;
+import static io.github.loadup.modules.form.domain.FormRules.reference;
+import static io.github.loadup.modules.form.domain.FormRules.require;
+import static io.github.loadup.modules.form.domain.FormRules.value;
 
 import io.github.loadup.modules.form.client.FormDefinitions.FieldSchema;
 import io.github.loadup.modules.form.client.FormDefinitions.ItemSchema;
@@ -47,6 +66,44 @@ public class FormRuntimeService implements FormRuntime {
         this.store = store;
     }
 
+    private static ItemSchema item(Detail detail, String itemKey, String key) {
+        var candidates = detail.release().items().stream()
+                .filter(item -> itemKey == null
+                        ? item.fields().stream()
+                                .anyMatch(field -> field.field().key().equals(key))
+                        : item.itemKey().equals(itemKey))
+                .toList();
+        if (candidates.size() > 1) {
+            throw new FormException(AMBIGUOUS_FIELD, null, key, "Specify the item key");
+        }
+        if (candidates.isEmpty()) {
+            throw new FormException(
+                    itemKey == null ? UNKNOWN_FIELD : INVALID_SELECTION, itemKey, key, "Address not found");
+        }
+        ItemSchema item = candidates.getFirst();
+        if (!detail.selectedItems().contains(item.itemKey())) {
+            throw new FormException(INVALID_SELECTION, item.itemKey(), key, "Item is not selected");
+        }
+        return item;
+    }
+
+    private static FieldSchema field(ItemSchema item, String key) {
+        return item.fields().stream()
+                .filter(field -> field.field().key().equals(key))
+                .findFirst()
+                .orElseThrow(
+                        () -> new FormException(UNKNOWN_FIELD, item.itemKey(), key, "Field is not in the release"));
+    }
+
+    private static void checkDraft(Instance instance, long expected) {
+        if (instance.submitKey() != null) {
+            throw new FormException(INVALID_STATE, "Instance is already submitted");
+        }
+        if (instance.rowVersion() != expected) {
+            throw new FormException(CONFLICT, "Draft version has changed");
+        }
+    }
+
     @Override
     public Detail start(String namespace, String actor, Start command) {
         code(namespace);
@@ -55,18 +112,25 @@ public class FormRuntimeService implements FormRuntime {
         reference(command.releaseId(), 36);
         reference(command.requestKey(), 128);
         var existing = store.byStartKey(namespace, actor, command.requestKey());
-        if (existing.isPresent()) return replayStart(namespace, command, existing.get());
+        if (existing.isPresent()) {
+            return replayStart(namespace, command, existing.get());
+        }
 
         // Hold a shared template lock until the draft is created. Retirement takes an exclusive lock.
         Release release = store.release(namespace, command.releaseId(), true)
                 .orElseThrow(() -> new FormException(NOT_FOUND, "Published release not found"));
         String id = UUID.randomUUID().toString();
         if (!store.insertInstance(namespace, actor, id, release.id(), command.requestKey())) {
-            return replayStart(namespace, command, store.byStartKey(namespace, actor, command.requestKey()).orElseThrow());
+            return replayStart(
+                    namespace,
+                    command,
+                    store.byStartKey(namespace, actor, command.requestKey()).orElseThrow());
         }
         Set<String> selected = new HashSet<>();
         for (ItemSchema item : release.items()) {
-            if (item.defaultSelected()) selected.add(item.itemKey());
+            if (item.defaultSelected()) {
+                selected.add(item.itemKey());
+            }
         }
         store.replaceSelection(id, selected);
         return view(new Instance(id, release.id(), 1, null), release);
@@ -94,14 +158,18 @@ public class FormRuntimeService implements FormRuntime {
         Release release = release(namespace, instance);
         Set<String> selected = command.selectedItems();
         Map<String, Map<String, JsonNode>> values = command.values();
-        if (selected == null || selected.size() > release.items().size() || values == null
+        if (selected == null
+                || selected.size() > release.items().size()
+                || values == null
                 || values.keySet().stream().anyMatch(key -> key == null || !selected.contains(key))) {
             throw new FormException(INVALID_SELECTION, "Only selected items may contain values");
         }
         verifySelection(release, selected, false);
         store.replaceSelection(instance.id(), selected);
         for (ItemSchema item : release.items()) {
-            if (!values.containsKey(item.itemKey())) continue;
+            if (!values.containsKey(item.itemKey())) {
+                continue;
+            }
             var inputs = values.get(item.itemKey());
             if (inputs == null) {
                 throw new FormException(INVALID_VALUE, item.itemKey(), null, "Expected a field value map");
@@ -140,13 +208,16 @@ public class FormRuntimeService implements FormRuntime {
         var resolved = defaults(release, selected, store.values(instance.id()));
         store.replaceSelection(instance.id(), selected);
         for (ItemSchema item : release.items()) {
-            if (!selected.contains(item.itemKey())) continue;
+            if (!selected.contains(item.itemKey())) {
+                continue;
+            }
             Map<String, Value> values = resolved.get(item.itemKey());
             for (FieldSchema field : item.fields()) {
                 Value entry = values.get(field.field().key());
                 if (entry == null) {
                     if (field.required()) {
-                        throw new FormException(REQUIRED_FIELD, item.itemKey(), field.field().key(), "Field is required");
+                        throw new FormException(
+                                REQUIRED_FIELD, item.itemKey(), field.field().key(), "Field is required");
                     }
                     continue;
                 }
@@ -155,7 +226,8 @@ public class FormRuntimeService implements FormRuntime {
             }
         }
         store.advanceInstance(instance.id(), command.requestKey());
-        return view(new Instance(instance.id(), instance.releaseId(), instance.rowVersion() + 1, command.requestKey()),
+        return view(
+                new Instance(instance.id(), instance.releaseId(), instance.rowVersion() + 1, command.requestKey()),
                 release);
     }
 
@@ -173,7 +245,8 @@ public class FormRuntimeService implements FormRuntime {
         ItemSchema item = item(detail, itemKey, key);
         FieldSchema field = field(item, key);
         checkReadType(item.itemKey(), field.field(), type, false);
-        return Optional.ofNullable(detail.values().getOrDefault(item.itemKey(), Map.of()).get(key))
+        return Optional.ofNullable(
+                        detail.values().getOrDefault(item.itemKey(), Map.of()).get(key))
                 .map(value -> readScalar(item.itemKey(), field.field(), value.value(), type));
     }
 
@@ -185,13 +258,15 @@ public class FormRuntimeService implements FormRuntime {
         ItemSchema item = item(detail, itemKey, key);
         FieldSchema field = field(item, key);
         checkReadType(item.itemKey(), field.field(), elementType, true);
-        return Optional.ofNullable(detail.values().getOrDefault(item.itemKey(), Map.of()).get(key)).map(value -> {
-            List<T> result = new ArrayList<>();
-            for (JsonNode node : value.value()) {
-                result.add(readScalar(item.itemKey(), field.field(), node, elementType));
-            }
-            return List.copyOf(result);
-        });
+        return Optional.ofNullable(
+                        detail.values().getOrDefault(item.itemKey(), Map.of()).get(key))
+                .map(value -> {
+                    List<T> result = new ArrayList<>();
+                    for (JsonNode node : value.value()) {
+                        result.add(readScalar(item.itemKey(), field.field(), node, elementType));
+                    }
+                    return List.copyOf(result);
+                });
     }
 
     private Detail submitted(String namespace, String actor, String id) {
@@ -202,31 +277,12 @@ public class FormRuntimeService implements FormRuntime {
         return detail;
     }
 
-    private static ItemSchema item(Detail detail, String itemKey, String key) {
-        var candidates = detail.release().items().stream()
-                .filter(item -> itemKey == null
-                        ? item.fields().stream().anyMatch(field -> field.field().key().equals(key))
-                        : item.itemKey().equals(itemKey))
-                .toList();
-        if (candidates.size() > 1) throw new FormException(AMBIGUOUS_FIELD, null, key, "Specify the item key");
-        if (candidates.isEmpty()) {
-            throw new FormException(itemKey == null ? UNKNOWN_FIELD : INVALID_SELECTION, itemKey, key, "Address not found");
-        }
-        ItemSchema item = candidates.getFirst();
-        if (!detail.selectedItems().contains(item.itemKey())) {
-            throw new FormException(INVALID_SELECTION, item.itemKey(), key, "Item is not selected");
-        }
-        return item;
-    }
-
-    private static FieldSchema field(ItemSchema item, String key) {
-        return item.fields().stream().filter(field -> field.field().key().equals(key)).findFirst()
-                .orElseThrow(() -> new FormException(UNKNOWN_FIELD, item.itemKey(), key, "Field is not in the release"));
-    }
-
     private void verifySelection(Release release, Set<String> selected, boolean submitting) {
         if ((submitting && selected.isEmpty())
-                || release.items().stream().filter(item -> selected.contains(item.itemKey())).count() != selected.size()
+                || release.items().stream()
+                                .filter(item -> selected.contains(item.itemKey()))
+                                .count()
+                        != selected.size()
                 || release.items().stream().anyMatch(item -> item.required() && !selected.contains(item.itemKey()))) {
             throw new FormException(INVALID_SELECTION, "Selection does not match the release");
         }
@@ -236,15 +292,22 @@ public class FormRuntimeService implements FormRuntime {
         var selected = store.selectedItems(instance.id());
         var stored = store.values(instance.id());
         boolean submitted = instance.submitKey() != null;
-        return new Detail(instance.id(), release, submitted ? Status.SUBMITTED : Status.DRAFT, instance.rowVersion(),
-                selected, submitted ? stored : defaults(release, selected, stored));
+        return new Detail(
+                instance.id(),
+                release,
+                submitted ? Status.SUBMITTED : Status.DRAFT,
+                instance.rowVersion(),
+                selected,
+                submitted ? stored : defaults(release, selected, stored));
     }
 
     private Map<String, Map<String, Value>> defaults(
             Release release, Set<String> selected, Map<String, Map<String, Value>> stored) {
         Map<String, Map<String, Value>> resolved = new LinkedHashMap<>();
         for (ItemSchema item : release.items()) {
-            if (!selected.contains(item.itemKey())) continue;
+            if (!selected.contains(item.itemKey())) {
+                continue;
+            }
             Map<String, Value> values = new LinkedHashMap<>(stored.getOrDefault(item.itemKey(), Map.of()));
             for (FieldSchema field : item.fields()) {
                 if (!absent(field.initialValue())) {
@@ -264,10 +327,5 @@ public class FormRuntimeService implements FormRuntime {
     private Instance instance(String namespace, String actor, String id, boolean lock) {
         return store.instance(code(namespace), reference(actor, 256), reference(id, 36), lock)
                 .orElseThrow(() -> new FormException(NOT_FOUND, "Instance not found"));
-    }
-
-    private static void checkDraft(Instance instance, long expected) {
-        if (instance.submitKey() != null) throw new FormException(INVALID_STATE, "Instance is already submitted");
-        if (instance.rowVersion() != expected) throw new FormException(CONFLICT, "Draft version has changed");
     }
 }

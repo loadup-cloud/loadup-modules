@@ -15,12 +15,23 @@
  */
 package io.github.loadup.modules.approval.app;
 
-import static io.github.loadup.modules.approval.app.ApprovalRules.*;
-import static io.github.loadup.modules.approval.client.Approval.*;
-import static io.github.loadup.modules.approval.client.ApprovalException.Code.*;
+import static io.github.loadup.modules.approval.app.ApprovalRules.error;
+import static io.github.loadup.modules.approval.app.ApprovalRules.human;
+import static io.github.loadup.modules.approval.app.ApprovalRules.key;
+import static io.github.loadup.modules.approval.app.ApprovalRules.page;
+import static io.github.loadup.modules.approval.app.ApprovalRules.permit;
+import static io.github.loadup.modules.approval.app.ApprovalRules.require;
+import static io.github.loadup.modules.approval.client.Approval.Caller;
+import static io.github.loadup.modules.approval.client.Approval.Definition;
+import static io.github.loadup.modules.approval.client.Approval.Spec;
+import static io.github.loadup.modules.approval.client.Approval.Status;
+import static io.github.loadup.modules.approval.client.ApprovalException.Code.APPROVAL_CONFLICT;
+import static io.github.loadup.modules.approval.client.ApprovalException.Code.APPROVAL_NOT_FOUND;
+import static io.github.loadup.modules.approval.client.ApprovalException.Code.APPROVAL_STALE;
 
 import io.github.loadup.modules.approval.infrastructure.ApprovalStore;
 import java.util.List;
+import java.util.function.Consumer;
 import org.springframework.transaction.support.TransactionTemplate;
 
 final class ApprovalDefinitions {
@@ -63,14 +74,26 @@ final class ApprovalDefinitions {
             }
             rules.validateSpec(app, input, false);
             String id = ApprovalStore.id();
-            int changed = store.sql("""
-                    INSERT INTO approval_definition
-                      (id, app_code, flow_key, version, name, status, spec_jsonb, spec_hash, revision, created_by, updated_by)
-                    VALUES (?, ?, ?, ?, ?, 'DRAFT', CAST(? AS jsonb), ?, 1, ?, ?)
-                    ON CONFLICT DO NOTHING
-                    """, id, app, flow, store.nextDefinitionVersion(app, flow), input.name(), store.json(input),
-                    store.hash(input), caller.subject(), caller.subject()).update();
-            if (changed == 0) throw error(APPROVAL_CONFLICT, "该流程已有待编辑草稿");
+            int changed = store.sql(
+                            """
+                            INSERT INTO approval_definition
+                              (id, app_code, flow_key, version, name, status, spec_jsonb, spec_hash, revision, created_by, updated_by)
+                            VALUES (?, ?, ?, ?, ?, 'DRAFT', CAST(? AS jsonb), ?, 1, ?, ?)
+                            ON CONFLICT DO NOTHING
+                            """,
+                            id,
+                            app,
+                            flow,
+                            store.nextDefinitionVersion(app, flow),
+                            input.name(),
+                            store.json(input),
+                            store.hash(input),
+                            caller.subject(),
+                            caller.subject())
+                    .update();
+            if (changed == 0) {
+                throw error(APPROVAL_CONFLICT, "该流程已有待编辑草稿");
+            }
             return get(app, id);
         });
     }
@@ -81,7 +104,8 @@ final class ApprovalDefinitions {
             store.sql("""
                     UPDATE approval_definition SET name = ?, spec_jsonb = CAST(? AS jsonb), spec_hash = ?,
                       revision = revision + 1, updated_by = ? WHERE id = ?
-                    """, spec.name(), store.json(spec), store.hash(spec), caller.subject(), id).update();
+                    """, spec.name(), store.json(spec), store.hash(spec), caller.subject(), id)
+                    .update();
         });
     }
 
@@ -92,7 +116,8 @@ final class ApprovalDefinitions {
                     UPDATE approval_definition SET status = 'RETIRED', retired_by = ?, retired_at = now(),
                       revision = revision + 1, updated_by = ?
                     WHERE app_code = ? AND flow_key = ? AND status = 'ACTIVE'
-                    """, caller.subject(), caller.subject(), app, current.flowKey()).update();
+                    """, caller.subject(), caller.subject(), app, current.flowKey())
+                    .update();
             store.sql("""
                     UPDATE approval_definition SET status = 'ACTIVE', published_at = now(), published_by = ?,
                       revision = revision + 1, updated_by = ? WHERE id = ?
@@ -101,21 +126,32 @@ final class ApprovalDefinitions {
     }
 
     Definition retire(Caller caller, String app, String id, long revision) {
-        return edit(caller, app, id, revision, Status.ACTIVE, current -> store.sql("""
+        return edit(
+                caller,
+                app,
+                id,
+                revision,
+                Status.ACTIVE,
+                current ->
+                        store.sql("""
                 UPDATE approval_definition SET status = 'RETIRED', retired_by = ?, retired_at = now(),
                   revision = revision + 1, updated_by = ? WHERE id = ?
                 """, caller.subject(), caller.subject(), id).update());
     }
 
-    private Definition edit(Caller caller, String app, String id, long revision, Status expected,
-                            java.util.function.Consumer<Definition> operation) {
+    private Definition edit(
+            Caller caller, String app, String id, long revision, Status expected, Consumer<Definition> operation) {
         permit(caller, app, "design");
         human(caller);
         return tx.execute(status -> {
             store.lockFlow(app, get(app, id).flowKey());
             Definition current = get(app, id);
-            if (current.revision() != revision) throw error(APPROVAL_STALE, "流程版本已更新，请刷新");
-            if (current.status() != expected) throw error(APPROVAL_CONFLICT, "当前流程状态无法执行此操作");
+            if (current.revision() != revision) {
+                throw error(APPROVAL_STALE, "流程版本已更新，请刷新");
+            }
+            if (current.status() != expected) {
+                throw error(APPROVAL_CONFLICT, "当前流程状态无法执行此操作");
+            }
             operation.accept(current);
             return get(app, id);
         });

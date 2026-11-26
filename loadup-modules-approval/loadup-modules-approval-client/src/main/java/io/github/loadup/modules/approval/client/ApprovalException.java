@@ -18,6 +18,17 @@ package io.github.loadup.modules.approval.client;
 import io.github.loadup.commons.result.ResultCode;
 
 public final class ApprovalException extends RuntimeException {
+    private final Code code;
+
+    public ApprovalException(Code code, String message) {
+        super(message);
+        this.code = code;
+    }
+
+    public Code code() {
+        return code;
+    }
+
     public enum Code implements ResultCode {
         APPROVAL_INVALID(422, "审批数据无效"),
         APPROVAL_FORBIDDEN(403, "没有此审批操作权限"),
@@ -33,17 +44,16 @@ public final class ApprovalException extends RuntimeException {
             this.message = message;
         }
 
-        public String getCode() { return name(); }
-        public String getStatus() { return "F"; }
-        public String getMessage() { return message; }
+        public String getCode() {
+            return name();
+        }
+
+        public String getStatus() {
+            return "F";
+        }
+
+        public String getMessage() {
+            return message;
+        }
     }
-
-    private final Code code;
-
-    public ApprovalException(Code code, String message) {
-        super(message);
-        this.code = code;
-    }
-
-    public Code code() { return code; }
 }

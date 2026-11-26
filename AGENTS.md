@@ -1,24 +1,33 @@
 # LoadUp Modules 协作指南
 
-本指南补充模块仓库约定；模块自身的 `README.md`、`ARCHITECTURE.md` 定义具体契约。代码定位遵循根仓库 `AGENTS.md` 的 CodeGraph 规则：存在 `.codegraph/` 时先用 CodeGraph。
+本指南补充模块仓库约定；模块自身的 `README.md`、`ARCHITECTURE.md` 定义具体契约。代码定位遵循根仓库 `AGENTS.md` 的 CodeGraph
+规则：存在 `.codegraph/` 时先用 CodeGraph。
 
 ## 协作与验证
 
-- 架构、跨模块语义、安全、生产操作、数据库写入、部署和最终验收由 lead 负责。同时最多使用两名 Worker。仅将边界清晰的代码搜索、证据收集、局部机械修改或指定测试交给 `luna_worker`；派发前明确范围、文件、验收条件、非目标和命令/证据。Worker 不得扩大范围，完成后由 lead 审查并验收。
+- 架构、跨模块语义、安全、生产操作、数据库写入、部署和最终验收由 lead 负责。同时最多使用两名
+  Worker。仅将边界清晰的代码搜索、证据收集、局部机械修改或指定测试交给 `luna_worker`；派发前明确范围、文件、验收条件、非目标和命令/证据。Worker
+  不得扩大范围，完成后由 lead 审查并验收。
 - 构建和 Maven 插件统一使用 `mvnd`，命令带 `clean` 并限定受影响模块；`mvnd` 不可用时报告，不回退到 `mvn`。不主动运行全仓构建或测试。
 
 ## 模块边界与分层
 
-- 默认采用 `client + core + web`：`client` 放公开 Facade、DTO、Command、Query 和消费方 SPI；`core` 放领域、应用用例与基础设施；可选 `web` 只放 Spring MVC 入口，调用服务，不把 HTTP 映射放进业务服务。
-- `core` 保留 `domain / app / infrastructure` 包边界。`domain` 不使用 Spring 或 ORM 注解；DO 放在 `infrastructure.dataobject`，并继承 `BaseDO`。
+- 默认采用 `client + core + web`：`client` 放公开 Facade、DTO、Command、Query 和消费方 SPI；`core` 放领域、应用用例与基础设施；可选
+  `web` 只放 Spring MVC 入口，调用服务，不把 HTTP 映射放进业务服务。
+- `core` 保留 `domain / app / infrastructure` 包边界。`domain` 不使用 Spring 或 ORM 注解；DO 放在
+  `infrastructure.dataobject`，并继承 `BaseDO`。
 - 仅在需要独立发布/消费各层或独立应用集成时保留完整 COLA Maven 分层。依赖方向保持单向，避免不必要的业务模块横向依赖。
 
 ## 数据库与持久化
 
-- 每张业务表包含 `id VARCHAR(64)` 主键、`created_at TIMESTAMP(6)`、`updated_at TIMESTAMP(6)` 和 `deleted BOOLEAN NOT NULL DEFAULT FALSE`。DO 继承 `BaseDO`，主键使用 Database 的 `IdGenerator`。Mapper 和 TableDef 使用 Database 注解处理器生成。
-- 当前部署模型为每套部署一个固定租户和 schema；业务表不加 `tenant_id`。不建外键，也不写跨表 JOIN；通过应用层组合查询，并用事务、约束和显式校验维护关系。
+- 每张业务表包含 `id VARCHAR(64)` 主键、`created_at TIMESTAMP(6)`、`updated_at TIMESTAMP(6)` 和
+  `deleted BOOLEAN NOT NULL DEFAULT FALSE`。DO 继承 `BaseDO`，主键使用 Database 的 `IdGenerator`。Mapper 和 TableDef 使用
+  Database 注解处理器生成。
+- 当前部署模型为每套部署一个固定租户和 schema；业务表不加 `tenant_id`。不建外键，也不写跨表
+  JOIN；通过应用层组合查询，并用事务、约束和显式校验维护关系。
 - 持久化 SQL 与迁移应保持数据库可移植，使用参数化 SQL，避免依赖单一数据库方言。新增持久化实现与迁移前，核对模块架构和数据库组件规范。
-- Flyway 迁移放在 `src/main/resources/db/migration/` 下，版本使用 14 位时间戳（`VyyyyMMddHHmmss__desc.sql`）。生产迁移只管理结构，不插入测试或演示数据。测试夹具放在独立测试资源中。
+- Flyway 迁移放在 `src/main/resources/db/migration/` 下，版本使用 14 位时间戳（`VyyyyMMddHHmmss__desc.sql`
+  ）。生产迁移只管理结构，不插入测试或演示数据。测试夹具放在独立测试资源中。
 
 ## 可变配置与模板
 

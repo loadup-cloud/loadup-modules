@@ -83,9 +83,9 @@ public class DictionaryGatewayImpl extends ServiceImpl<DictionaryTypeMapper, Dic
         row.setCreatedAt(now);
         row.setUpdatedAt(now);
         jdbc.update("""
-            INSERT INTO dictionary_type (id, type_code, type_name, description, enabled, created_at, updated_at, deleted)
-            VALUES (:id, :code, :name, :description, :enabled, :createdAt, :updatedAt, FALSE)
-            """, new BeanPropertySqlParameterSource(row));
+                INSERT INTO dictionary_type (id, type_code, type_name, description, enabled, created_at, updated_at, deleted)
+                VALUES (:id, :code, :name, :description, :enabled, :createdAt, :updatedAt, FALSE)
+                """, new BeanPropertySqlParameterSource(row));
     }
 
     @Override
@@ -135,9 +135,9 @@ public class DictionaryGatewayImpl extends ServiceImpl<DictionaryTypeMapper, Dic
         row.setCreatedAt(now);
         row.setUpdatedAt(now);
         jdbc.update("""
-            INSERT INTO dictionary_item (id, type_id, item_value, item_label, description, sort_order, enabled, created_at, updated_at, deleted)
-            VALUES (:id, :typeId, :value, :label, :description, :sortOrder, :enabled, :createdAt, :updatedAt, FALSE)
-            """, new BeanPropertySqlParameterSource(row));
+                INSERT INTO dictionary_item (id, type_id, item_value, item_label, description, sort_order, enabled, created_at, updated_at, deleted)
+                VALUES (:id, :typeId, :value, :label, :description, :sortOrder, :enabled, :createdAt, :updatedAt, FALSE)
+                """, new BeanPropertySqlParameterSource(row));
     }
 
     @Override

@@ -54,7 +54,9 @@ class FileAutoConfigurationTest {
             .withBean(FileReferenceRowMapper.class, () -> mock(FileReferenceRowMapper.class))
             .withBean("databaseClock", Clock.class, Clock::systemDefaultZone)
             .withConfiguration(AutoConfigurations.of(
-                    FilePersistenceAutoConfiguration.class, FileResourceAutoConfiguration.class, DfsAutoConfiguration.class));
+                    FilePersistenceAutoConfiguration.class,
+                    FileResourceAutoConfiguration.class,
+                    DfsAutoConfiguration.class));
 
     @Test
     void wiresDomainPortAndApplicationMapper() {
@@ -85,9 +87,8 @@ class FileAutoConfigurationTest {
     void assemblesAfterAThirdPartyDfsBinder() {
         runner.withConfiguration(AutoConfigurations.of(TestDfsBinder.class))
                 .withPropertyValues("loadup.dfs.binder-type=external")
-                .run(context -> assertThat(context)
-                        .hasSingleBean(DfsTemplate.class)
-                        .hasSingleBean(FileResourceService.class));
+                .run(context ->
+                        assertThat(context).hasSingleBean(DfsTemplate.class).hasSingleBean(FileResourceService.class));
     }
 
     @Test

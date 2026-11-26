@@ -29,13 +29,18 @@ public final class GotoneSecrets {
     }
 
     public static boolean valid(String reference) {
-        return reference != null && reference.matches("(?:env:GOTONE_SECRET_[A-Z0-9_]{1,100}|kms:[A-Za-z0-9_-]{1,128})");
+        return reference != null
+                && reference.matches("(?:env:GOTONE_SECRET_[A-Z0-9_]{1,100}|kms:[A-Za-z0-9_-]{1,128})");
     }
 
     public String resolve(String reference) {
-        if (!valid(reference)) return null;
+        if (!valid(reference)) {
+            return null;
+        }
         String name = reference.substring(4);
-        if (reference.startsWith("env:")) return environment.getProperty(name);
+        if (reference.startsWith("env:")) {
+            return environment.getProperty(name);
+        }
         KmsSecretManager manager = kms.getIfAvailable();
         return manager == null ? null : manager.get(name);
     }

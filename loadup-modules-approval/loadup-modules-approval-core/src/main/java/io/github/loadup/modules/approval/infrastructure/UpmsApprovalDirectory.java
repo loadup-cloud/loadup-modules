@@ -15,7 +15,9 @@
  */
 package io.github.loadup.modules.approval.infrastructure;
 
-import static io.github.loadup.modules.approval.client.Approval.*;
+import static io.github.loadup.modules.approval.client.Approval.DirectoryType;
+import static io.github.loadup.modules.approval.client.Approval.Option;
+import static io.github.loadup.modules.approval.client.Approval.Person;
 
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.modules.approval.client.ApprovalDirectory;
@@ -53,11 +55,17 @@ public final class UpmsApprovalDirectory implements ApprovalDirectory {
 
     @Override
     public Optional<Person> person(String app, String id) {
-        if (id == null) return Optional.empty();
+        if (id == null) {
+            return Optional.empty();
+        }
         try {
-            return Optional.ofNullable(users.getUserById(id)).filter(this::eligibleAccount).map(this::person);
+            return Optional.ofNullable(users.getUserById(id))
+                    .filter(this::eligibleAccount)
+                    .map(this::person);
         } catch (CommonException e) {
-            if (missing(e)) return Optional.empty();
+            if (missing(e)) {
+                return Optional.empty();
+            }
             throw e;
         }
     }
@@ -73,7 +81,12 @@ public final class UpmsApprovalDirectory implements ApprovalDirectory {
             public boolean hasNext() {
                 if (!batch.hasNext() && more) {
                     Collection<UserDetailDTO> items = users.queryUsers(UserPageQuery.builder()
-                            .page(page++).size(100).sortBy("id").sortOrder("ASC").build()).getData();
+                                    .page(page++)
+                                    .size(100)
+                                    .sortBy("id")
+                                    .sortOrder("ASC")
+                                    .build())
+                            .getData();
                     more = items.size() == 100;
                     batch = items.iterator();
                 }
@@ -87,19 +100,26 @@ public final class UpmsApprovalDirectory implements ApprovalDirectory {
             }
         };
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(rows, 0), false)
-                .filter(this::eligibleAccount).map(this::person);
+                .filter(this::eligibleAccount)
+                .map(this::person);
     }
 
     @Override
     public List<Option> search(String app, DirectoryType type, String input, int offset, int limit) {
         String query = input == null ? "" : input.toLowerCase(Locale.ROOT);
-        return options(app, type).filter(option -> option.id().toLowerCase(Locale.ROOT).contains(query)
-                || option.label().toLowerCase(Locale.ROOT).contains(query)).skip(offset).limit(limit).toList();
+        return options(app, type)
+                .filter(option -> option.id().toLowerCase(Locale.ROOT).contains(query)
+                        || option.label().toLowerCase(Locale.ROOT).contains(query))
+                .skip(offset)
+                .limit(limit)
+                .toList();
     }
 
     @Override
     public boolean exists(String app, DirectoryType type, String id) {
-        if (type == DirectoryType.USER) return person(app, id).isPresent();
+        if (type == DirectoryType.USER) {
+            return person(app, id).isPresent();
+        }
         return options(app, type).anyMatch(option -> option.id().equals(id));
     }
 
@@ -107,41 +127,64 @@ public final class UpmsApprovalDirectory implements ApprovalDirectory {
     public Optional<String> label(String app, DirectoryType type, String id) {
         if (type == DirectoryType.USER) {
             try {
-                return Optional.ofNullable(users.getUserById(id)).map(user -> person(user).label());
+                return Optional.ofNullable(users.getUserById(id))
+                        .map(user -> person(user).label());
             } catch (CommonException e) {
-                if (missing(e)) return Optional.empty();
+                if (missing(e)) {
+                    return Optional.empty();
+                }
                 throw e;
             }
         }
-        return options(app, type).filter(option -> option.id().equals(id)).findFirst().map(Option::label);
+        return options(app, type)
+                .filter(option -> option.id().equals(id))
+                .findFirst()
+                .map(Option::label);
     }
 
     private Stream<Option> options(String app, DirectoryType type) {
         return switch (type) {
             case USER -> people(app).map(person -> new Option(person.id(), person.label()));
-            case ROLE -> roleTree(roles.getRoleTree()).filter(role -> active(role.getStatus()))
-                    .map(role -> new Option(role.getId(), role.getRoleName()));
-            case DEPARTMENT -> departmentTree(departments.getDepartmentTree()).filter(dept -> active(dept.getStatus()))
-                    .map(dept -> new Option(dept.getId(), dept.getDeptName()));
+            case ROLE ->
+                roleTree(roles.getRoleTree())
+                        .filter(role -> active(role.getStatus()))
+                        .map(role -> new Option(role.getId(), role.getRoleName()));
+            case DEPARTMENT ->
+                departmentTree(departments.getDepartmentTree())
+                        .filter(dept -> active(dept.getStatus()))
+                        .map(dept -> new Option(dept.getId(), dept.getDeptName()));
         };
     }
 
     private Person person(UserDetailDTO user) {
         String label = user.getUsername();
-        if (user.getNickname() != null && !user.getNickname().equals(label)) label += " · " + user.getNickname();
-        if (user.getDeptName() != null) label += " · " + user.getDeptName();
+        if (user.getNickname() != null && !user.getNickname().equals(label)) {
+            label += " · " + user.getNickname();
+        }
+        if (user.getDeptName() != null) {
+            label += " · " + user.getDeptName();
+        }
         var roleIds = user.getRoles() == null ? Stream.<RoleDTO>empty() : user.getRoles().stream();
-        return new Person(user.getId(), label, user.getDeptId(), roleIds.filter(role -> active(role.getStatus()))
-                .map(RoleDTO::getId).collect(Collectors.toSet()));
+        return new Person(
+                user.getId(),
+                label,
+                user.getDeptId(),
+                roleIds.filter(role -> active(role.getStatus()))
+                        .map(RoleDTO::getId)
+                        .collect(Collectors.toSet()));
     }
 
     private boolean eligibleAccount(UserDetailDTO user) {
-        if (!active(user.getStatus())) return false;
+        if (!active(user.getStatus())) {
+            return false;
+        }
         try {
             var account = accounts.overview(user.getId());
             return account.active() && account.accountNonLocked();
         } catch (CommonException e) {
-            if (missing(e)) return false;
+            if (missing(e)) {
+                return false;
+            }
             throw e;
         }
     }
@@ -158,12 +201,14 @@ public final class UpmsApprovalDirectory implements ApprovalDirectory {
     }
 
     private Stream<RoleDTO> roleTree(List<RoleDTO> items) {
-        return items == null ? Stream.empty() : items.stream()
-                .flatMap(role -> Stream.concat(Stream.of(role), roleTree(role.getChildren())));
+        return items == null
+                ? Stream.empty()
+                : items.stream().flatMap(role -> Stream.concat(Stream.of(role), roleTree(role.getChildren())));
     }
 
     private Stream<DepartmentDTO> departmentTree(List<DepartmentDTO> items) {
-        return items == null ? Stream.empty() : items.stream()
-                .flatMap(dept -> Stream.concat(Stream.of(dept), departmentTree(dept.getChildren())));
+        return items == null
+                ? Stream.empty()
+                : items.stream().flatMap(dept -> Stream.concat(Stream.of(dept), departmentTree(dept.getChildren())));
     }
 }

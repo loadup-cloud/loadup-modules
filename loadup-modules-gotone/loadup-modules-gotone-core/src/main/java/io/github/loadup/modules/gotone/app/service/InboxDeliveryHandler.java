@@ -38,11 +38,19 @@ public final class InboxDeliveryHandler extends GotoneDeliveryHandler {
 
     private void sendInbox(String id) {
         Work work = readWork(id);
-        if (work == null) return;
+        if (work == null) {
+            return;
+        }
         int attempt = store.start(work, null, null);
         var fields = work.snapshot().fields();
-        inbox.receive(id, work.snapshot().target().address(), work.senderId(), fields.get("category"),
-                fields.get("title"), fields.get("body"), fields.get("actionPath"));
+        inbox.receive(
+                id,
+                work.snapshot().target().address(),
+                work.senderId(),
+                fields.get("category"),
+                fields.get("title"),
+                fields.get("body"),
+                fields.get("actionPath"));
         store.finish(id, attempt, "SENT", null, null);
     }
 }

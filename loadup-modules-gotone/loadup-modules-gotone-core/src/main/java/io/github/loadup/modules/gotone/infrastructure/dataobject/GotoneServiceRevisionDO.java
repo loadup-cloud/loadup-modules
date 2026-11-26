@@ -66,5 +66,4 @@ public class GotoneServiceRevisionDO extends BaseDO {
     public void setPublishedAt(LocalDateTime publishedAt) {
         this.publishedAt = publishedAt;
     }
-
 }

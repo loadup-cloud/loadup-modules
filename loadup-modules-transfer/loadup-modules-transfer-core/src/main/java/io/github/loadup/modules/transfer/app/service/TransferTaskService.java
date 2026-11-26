@@ -158,8 +158,11 @@ public class TransferTaskService implements TransferTaskFacade {
     public PageDTO<TransferTaskDTO> list(String actorId, boolean admin, TransferTaskPageQuery query) {
         String ownerId = query.ownerId();
         String owner = admin && ownerId != null && !ownerId.isBlank() ? required(ownerId, 64) : required(actorId, 64);
-        TransferKind kind = query.kind() == null ? null : TransferKind.valueOf(query.kind().name());
-        TransferStatus status = query.status() == null ? null : TransferStatus.valueOf(query.status().name());
+        TransferKind kind =
+                query.kind() == null ? null : TransferKind.valueOf(query.kind().name());
+        TransferStatus status = query.status() == null
+                ? null
+                : TransferStatus.valueOf(query.status().name());
         return converter.toPageDTO(repository.list(owner, kind, status, query.page(), query.size()));
     }
 
