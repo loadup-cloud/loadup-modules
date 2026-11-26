@@ -92,7 +92,7 @@
             </dependency>
             <dependency>
                 <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-client</artifactId>
+                <artifactId>loadup-modules-gotone-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -127,12 +127,27 @@
             </dependency>
             <dependency>
                 <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-core</artifactId>
+                <artifactId>loadup-modules-gotone-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-web</artifactId>
+                <artifactId>loadup-modules-gotone-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-inbox-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-inbox-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.loadup-cloud</groupId>
+                <artifactId>loadup-modules-inbox-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -178,41 +193,6 @@
             <dependency>
                 <groupId>io.github.loadup-cloud</groupId>
                 <artifactId>loadup-modules-upms-web</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-gotone-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-gotone-binder-email</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-gotone-binder-push</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-gotone-binder-sms</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-gotone-binder-webhook</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-gotone-engine</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.loadup-cloud</groupId>
-                <artifactId>loadup-modules-notification-gotone-store-jdbc</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

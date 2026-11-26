@@ -23,7 +23,7 @@ import io.github.loadup.modules.approval.client.ApprovalFacade;
 import io.github.loadup.modules.approval.client.ApprovalOutcomeHandler;
 import io.github.loadup.modules.approval.infrastructure.ApprovalStore;
 import io.github.loadup.modules.approval.infrastructure.UpmsApprovalDirectory;
-import io.github.loadup.modules.notification.client.facade.NotificationFacade;
+import io.github.loadup.modules.gotone.client.facade.GotoneFacade;
 import io.github.loadup.modules.upms.client.facade.AccountSecurityFacade;
 import io.github.loadup.modules.upms.client.facade.DepartmentFacade;
 import io.github.loadup.modules.upms.client.facade.RoleFacade;
@@ -69,7 +69,7 @@ public class ApprovalAutoConfiguration {
 
     @Bean
     ApprovalReminder approvalReminder(ApprovalStore store, ObjectProvider<TaskTemplate> tasks,
-                                      ObjectProvider<NotificationFacade> notifications) {
+                                      ObjectProvider<GotoneFacade> notifications) {
         return new ApprovalReminder(store, tasks, notifications);
     }
 

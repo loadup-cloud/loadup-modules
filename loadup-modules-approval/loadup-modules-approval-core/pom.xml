@@ -45,7 +45,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.loadup-cloud</groupId>
-            <artifactId>loadup-modules-notification-client</artifactId>
+            <artifactId>loadup-modules-gotone-client</artifactId>
         </dependency>
 
         <dependency>

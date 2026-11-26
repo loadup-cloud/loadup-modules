@@ -5,7 +5,7 @@
 业务能力位于 `commons → components → modules → 消费工程` 的第三层。modules 只按业务领域组织聚合目录，模块边界按真实消费方式划分，
 不把代码分层直接变成 Maven 模块边界。
 
-默认小型业务（audit、dictionary、file、notification、transfer）：
+默认小型业务（audit、dictionary、file、gotone、transfer）：
 
 ```text
 loadup-modules/
@@ -15,8 +15,7 @@ loadup-modules/
     loadup-modules-{business}-web
 ```
 
-Notification 在上述结构下聚合 [Gotone](loadup-modules-notification/loadup-modules-notification-gotone/README.md)，独立发布
-投递 API、引擎、可选 JDBC 存储和渠道适配器。
+Gotone 使用 client、core、web 三层，覆盖服务编码、系统账号、异步投递和站内收件箱。
 
 UPMS 因独立 authserver 集成保留完整分层：
 
@@ -62,7 +61,7 @@ Transfer core 显式复用 File core 的权限、业务引用和 DFS 生命周�
 
 ## 本次调整范围
 
-原顶层 audit/dictionary/file/notification/transfer 与各自 sibling web 已归入业务聚合目录。小型业务把 domain/app/infrastructure
+原顶层 audit/dictionary/file/gotone/transfer 与各自 sibling web 已归入业务聚合目录。小型业务把 domain/app/infrastructure
 合并为可复用的 `core` JAR，同时保留包边界；UPMS 保留完整分层。保留路由、JSON 字段、数据库历史脚本与事务语义。各模块 README
 说明其定向验证范围；未执行的回归仍须单独记录，不能视作通过。
 

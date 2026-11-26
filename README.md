@@ -46,7 +46,8 @@ mvnd clean deploy -Prelease
 | [Dictionary](loadup-modules-dictionary/README.md)     | 字典类型、条目及启用选项                |
 | [File](loadup-modules-file/README.md)                 | 文件元数据、访问控制、引用与清理        |
 | [Form](loadup-modules-form/README.md)                 | 字段目录、表单发布、填写与按 Key 取值   |
-| [Notification](loadup-modules-notification/README.md) | 站内收件箱与 Gotone 多渠道投递       |
+| [Gotone](loadup-modules-gotone/README.md) | 按服务编码配置多渠道异步投递 |
+| [Inbox](loadup-modules-inbox/README.md) | 站内消息的幂等接收、收件箱查询、已读及归档 |
 | [Transfer](loadup-modules-transfer/README.md)         | 导入导出任务、进度、结果与重试          |
 
 ## 分层选择

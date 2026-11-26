@@ -22,18 +22,21 @@ import io.github.loadup.components.task.TaskHandler;
 import io.github.loadup.components.task.TaskSubmission;
 import io.github.loadup.components.task.TaskTemplate;
 import io.github.loadup.modules.approval.infrastructure.ApprovalStore;
-import io.github.loadup.modules.notification.client.command.NotificationSubmitCommand;
-import io.github.loadup.modules.notification.client.facade.NotificationFacade;
+import io.github.loadup.modules.gotone.client.Gotone.Channel;
+import io.github.loadup.modules.gotone.client.Gotone.Submit;
+import io.github.loadup.modules.gotone.client.Gotone.Target;
+import io.github.loadup.modules.gotone.client.facade.GotoneFacade;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 
 final class ApprovalReminder implements TaskHandler {
     private final ApprovalStore store;
     private final ObjectProvider<TaskTemplate> tasks;
-    private final ObjectProvider<NotificationFacade> notifications;
+    private final ObjectProvider<GotoneFacade> notifications;
 
     ApprovalReminder(ApprovalStore store, ObjectProvider<TaskTemplate> tasks,
-                     ObjectProvider<NotificationFacade> notifications) {
+                     ObjectProvider<GotoneFacade> notifications) {
         this.store = store;
         this.tasks = tasks;
         this.notifications = notifications;
@@ -63,9 +66,9 @@ final class ApprovalReminder implements TaskHandler {
                 step.id().equals(pending.stepId()) && step.status() == Status.PENDING
                         && pending.userId().equals(step.assigneeUserId()));
         if (!stillAssigned) return;
-        sender.submit("approval", new NotificationSubmitCommand(
-                "pending:" + task.bizId(), "approval.pending", List.of(pending.userId()), "IN_APP",
-                "有新的审批待办", "请在审批管理中查看待办并办理。",
-                "/approval?app=" + pending.app() + "&instance=" + pending.instanceId(), null));
+        sender.submit("approval", null, new Submit(
+                "approval.pending", "pending:" + task.bizId(),
+                Map.of("actionUrl", "/approval?app=" + pending.app() + "&instance=" + pending.instanceId()),
+                Map.of(Channel.IN_APP, List.of(Target.address(pending.userId()))), null));
     }
 }

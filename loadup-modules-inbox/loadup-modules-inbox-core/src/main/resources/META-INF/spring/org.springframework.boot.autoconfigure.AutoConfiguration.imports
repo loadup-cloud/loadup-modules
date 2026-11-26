@@ -1,0 +1,2 @@
+io.github.loadup.modules.inbox.app.InboxAutoConfiguration
+io.github.loadup.modules.inbox.infrastructure.InboxPersistenceAutoConfiguration

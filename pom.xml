@@ -45,7 +45,8 @@
         <module>loadup-modules-file</module>
         <module>loadup-modules-form</module>
         <module>loadup-modules-approval</module>
-        <module>loadup-modules-notification</module>
+        <module>loadup-modules-gotone</module>
+        <module>loadup-modules-inbox</module>
         <module>loadup-modules-transfer</module>
     </modules>
     <properties>
