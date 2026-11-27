@@ -1,0 +1,95 @@
+name: Modules CI
+
+on:
+  push:
+    branches: [main, develop, dev]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Build, test and package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: ci
+      DOCKER_HOST: unix:///var/run/docker.sock
+      TESTCONTAINERS_REUSE_ENABLE: 'false'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: '**/pom.xml'
+          server-id: github
+          server-username-env-var: MAVEN_USERNAME
+          server-password-env-var: MAVEN_TOKEN
+          # Maven also needs the repository while resolving the standalone BOM.
+          mvn-repositories: github:https://maven.pkg.github.com/loadup-cloud/loadup-packages:true
+
+      - name: Install Maven Daemon
+        run: |
+          archive=maven-mvnd-1.0.6-linux-amd64
+          cd "$RUNNER_TEMP"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/apache/maven-mvnd/releases/download/1.0.6/${archive}.tar.gz" \
+            --output "${archive}.tar.gz"
+          echo "88fd474fd3f21b33ec1e6a75950f6abbe493d63a5e2b429475f5230b3ee6cb24  ${archive}.tar.gz" | sha256sum --check
+          tar -xzf "${archive}.tar.gz"
+          echo "$RUNNER_TEMP/$archive/bin" >> "$GITHUB_PATH"
+
+      - name: Check Docker for integration tests
+        run: docker info
+
+      - name: Build, test and package
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        env:
+          MAVEN_USERNAME: ${{ secrets.LOADUP_PACKAGES_USERNAME || github.actor }}
+          MAVEN_TOKEN: ${{ secrets.LOADUP_PACKAGES_TOKEN || github.token }}
+        run: |
+          mvnd -B -ntp -U -T 1 -Pgithub clean verify \
+            -Djacoco.skip=true -Dtestcontainers.reuse.enable=false
+
+      - name: Build, test and publish Maven packages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+        run: |
+          : "${MAVEN_USERNAME:?Configure the OSSRH_USERNAME Actions secret}"
+          : "${MAVEN_TOKEN:?Configure the OSSRH_TOKEN Actions secret with write access to LoadUp Packages}"
+          mvnd -B -ntp -U -T 1 -Pgithub clean deploy \
+            -Djacoco.skip=true -Dtestcontainers.reuse.enable=false -DdeployAtEnd=true
+
+      - name: Upload module JARs
+        uses: actions/upload-artifact@v7
+        with:
+          name: loadup-modules-jars
+          if-no-files-found: error
+          path: |
+            **/target/*.jar
+            !**/loadup-modules-upms-test/target/*.jar
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: loadup-modules-test-reports
+          if-no-files-found: ignore
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**

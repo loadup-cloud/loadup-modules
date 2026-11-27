@@ -46,6 +46,16 @@ Spotless 格式检查和修复独立于 Maven 构建生命周期，可在脚本�
 同一文件有未暂存改动时，hook 会中止提交，请先处理这些改动再重试。
 使用 `git commit -- <文件>` 时，若 hook 修改了格式，按提示重试提交。
 
+## GitHub Actions
+
+[Modules CI](.github/workflows/ci.yml) 在 PR、`main`、`develop`、`dev` 的推送和手动运行时触发。工作流使用 JDK 25、
+Maven Daemon 和 Docker，执行单元测试与 Testcontainers 集成测试并打包。JaCoCo 在 CI 中关闭。
+运行详情可下载 `loadup-modules-jars` 和测试报告。
+
+`main` 推送通过测试后，将同一轮构建的 Maven 制品发布到 `loadup-cloud/loadup-packages`。发布步骤使用
+`OSSRH_USERNAME` 和 `OSSRH_TOKEN`。普通验证使用 `LOADUP_PACKAGES_USERNAME` 和 `LOADUP_PACKAGES_TOKEN` 读取依赖，
+缺少这些凭证时使用工作流的只读令牌。
+
 ## 发布
 
 本仓库的 JAR、parent 与独立 BOM 默认激活 `github`，日常发布到 GitHub Packages；准备好正式版后再手动发布 Central：
