@@ -139,12 +139,12 @@ public final class TencentSmsGotoneProvider implements GotoneProvider {
     static Outcome outcome(JsonNode body) {
         var response = body.path("Response");
         var status = response.path("SendStatusSet").path(0);
-        String code = status.path("Code").asText("");
+        String code = status.path("Code").asString("");
         if ("Ok".equals(code)) {
-            return Outcome.sent(status.path("SerialNo").asText(null));
+            return Outcome.sent(status.path("SerialNo").asString(null));
         }
         if (code.isBlank()) {
-            code = response.path("Error").path("Code").asText("");
+            code = response.path("Error").path("Code").asString("");
         }
         if (code.isBlank() || code.startsWith("InternalError") || code.equals("RequestTimeout")) {
             return Outcome.unknown("NO_TENCENT_RESULT");

@@ -120,7 +120,7 @@ public final class FcmGotoneProvider implements GotoneProvider {
                             .header("Authorization", "Bearer " + token)
                             .build());
             if (response.statusCode() == 200) {
-                return Outcome.sent(json.readTree(response.body()).path("name").asText(null));
+                return Outcome.sent(json.readTree(response.body()).path("name").asString(null));
             }
             return GotoneHttp.failure(response.statusCode());
         } catch (java.net.http.HttpConnectTimeoutException exception) {
@@ -141,7 +141,7 @@ public final class FcmGotoneProvider implements GotoneProvider {
         long now = clock.instant().getEpochSecond();
         var claims = encoder.encodeToString(json.writeValueAsBytes(Map.of(
                 "iss",
-                credential.path("client_email").asText(),
+                credential.path("client_email").asString(),
                 "scope",
                 "https://www.googleapis.com/auth/firebase.messaging",
                 "aud",
@@ -152,7 +152,7 @@ public final class FcmGotoneProvider implements GotoneProvider {
                 now + 300)));
         String pem = credential
                 .path("private_key")
-                .asText()
+                .asString()
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
                 .replaceAll("\\s", "");
@@ -173,7 +173,7 @@ public final class FcmGotoneProvider implements GotoneProvider {
                 .build();
         var response = GotoneHttp.send(account, request);
         return response.statusCode() == 200
-                ? json.readTree(response.body()).path("access_token").asText(null)
+                ? json.readTree(response.body()).path("access_token").asString(null)
                 : null;
     }
 }

@@ -94,7 +94,7 @@ public final class JpushGotoneProvider implements GotoneProvider {
     }
 
     static Outcome outcome(JsonNode body) {
-        String messageId = body.path("msg_id").asText("");
+        String messageId = body.path("msg_id").asString("");
         return messageId.isBlank() ? Outcome.unknown("NO_JPUSH_RESULT") : Outcome.sent(messageId);
     }
 }

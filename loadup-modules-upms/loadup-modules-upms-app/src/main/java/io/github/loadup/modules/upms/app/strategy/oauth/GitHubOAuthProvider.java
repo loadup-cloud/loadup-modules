@@ -23,15 +23,12 @@ import io.github.loadup.modules.upms.client.error.UpmsResultCodeEnum;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -43,7 +40,9 @@ public class GitHubOAuthProvider implements OAuthProvider {
     private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
     private static final String USER_INFO_URL = "https://api.github.com/user";
     private final UpmsSecurityProperties securityProperties;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestClient restClient = RestClient.builder()
+            .requestFactory(new SimpleClientHttpRequestFactory())
+            .build();
     private final JsonMapper objectMapper;
 
     public GitHubOAuthProvider(UpmsSecurityProperties securityProperties, JsonMapper objectMapper) {
@@ -83,15 +82,15 @@ public class GitHubOAuthProvider implements OAuthProvider {
             params.add("code", code);
             params.add("redirect_uri", redirectUri);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-            headers.set("Accept", "application/json");
-
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-            ResponseEntity<String> response = restTemplate.postForEntity(TOKEN_URL, request, String.class);
-
-            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            String response = restClient
+                    .post()
+                    .uri(TOKEN_URL)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(params)
+                    .retrieve()
+                    .body(String.class);
+            JsonNode jsonNode = objectMapper.readTree(response);
 
             return OAuthToken.builder()
                     .accessToken(jsonNode.get("access_token").asString())
@@ -108,16 +107,14 @@ public class GitHubOAuthProvider implements OAuthProvider {
     public OAuthUserInfo getUserInfo(String accessToken) {
         try {
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + accessToken);
-            headers.set("Accept", "application/json");
-
-            HttpEntity<String> request = new HttpEntity<>(headers);
-
-            ResponseEntity<String> response =
-                    restTemplate.exchange(USER_INFO_URL, HttpMethod.GET, request, String.class);
-
-            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            String response = restClient
+                    .get()
+                    .uri(USER_INFO_URL)
+                    .headers(headers -> headers.setBearerAuth(accessToken))
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .body(String.class);
+            JsonNode jsonNode = objectMapper.readTree(response);
 
             return OAuthUserInfo.builder()
                     .openId(jsonNode.get("id").asString())

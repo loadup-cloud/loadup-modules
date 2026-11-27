@@ -89,13 +89,13 @@ public final class XiaomiPushGotoneProvider implements GotoneProvider {
 
     static Outcome outcome(JsonNode body) {
         int code = body.path("code").asInt(-1);
-        if (code == 0 && "ok".equals(body.path("result").asText(""))) {
-            return Outcome.sent(body.path("data").path("id").asText(null));
+        if (code == 0 && "ok".equals(body.path("result").asString(""))) {
+            return Outcome.sent(body.path("data").path("id").asString(null));
         }
         if (code == 200002) {
             return Outcome.retry("XIAOMI_THROTTLED");
         }
-        return "error".equals(body.path("result").asText(""))
+        return "error".equals(body.path("result").asString(""))
                 ? Outcome.failed("XIAOMI_REJECTED")
                 : Outcome.unknown("NO_XIAOMI_RESULT");
     }

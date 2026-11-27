@@ -80,7 +80,7 @@ public final class TwilioSmsProvider implements GotoneProvider {
                             .header("Authorization", "Basic " + auth)
                             .build());
             if (response.statusCode() == 201) {
-                return Outcome.sent(json.readTree(response.body()).path("sid").asText(null));
+                return Outcome.sent(json.readTree(response.body()).path("sid").asString(null));
             }
             return GotoneHttp.failure(response.statusCode());
         } catch (java.net.http.HttpConnectTimeoutException exception) {

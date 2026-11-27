@@ -149,14 +149,13 @@ public final class FormRules {
                     "Multiple fields require an enum and a multi-select widget");
             return;
         }
-        boolean valid =
-                switch (field.type()) {
-                    case TEXT -> widget == Widget.TEXT || widget == Widget.TEXTAREA;
-                    case INTEGER, DECIMAL -> widget == Widget.NUMBER;
-                    case BOOLEAN -> widget == Widget.CHECKBOX;
-                    case DATE -> widget == Widget.DATE;
-                    case ENUM -> widget == Widget.SELECT;
-                };
+        boolean valid = switch (field.type()) {
+            case TEXT -> widget == Widget.TEXT || widget == Widget.TEXTAREA;
+            case INTEGER, DECIMAL -> widget == Widget.NUMBER;
+            case BOOLEAN -> widget == Widget.CHECKBOX;
+            case DATE -> widget == Widget.DATE;
+            case ENUM -> widget == Widget.SELECT;
+        };
         require(valid, "Widget is incompatible with the field type");
     }
 
@@ -192,7 +191,7 @@ public final class FormRules {
         try {
             return switch (field.type()) {
                 case TEXT ->
-                    value.isTextual()
+                    value.isString()
                             && !value.asString().isBlank()
                             && value.asString().length() <= textLimit(field);
                 case INTEGER ->
@@ -200,16 +199,16 @@ public final class FormRules {
                             && value.bigIntegerValue().abs().compareTo(MAX_WIRE_INTEGER) <= 0
                             && inRange(field, new BigDecimal(value.bigIntegerValue()));
                 case DECIMAL ->
-                    value.isTextual()
+                    value.isString()
                             && value.asString().matches(DECIMAL)
                             && inRange(field, new BigDecimal(value.asString()));
                 case BOOLEAN -> value.isBoolean();
                 case DATE ->
-                    value.isTextual()
+                    value.isString()
                             && value.asString().matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")
                             && LocalDate.parse(value.asString()).getYear() > 0;
                 case ENUM ->
-                    value.isTextual()
+                    value.isString()
                             && field.options().stream()
                                     .anyMatch(option -> option.code().equals(value.asString()));
             };
@@ -235,16 +234,14 @@ public final class FormRules {
         if (type == null) {
             throw new FormException(INVALID_TYPE, item, field.key(), "A Java value type is required");
         }
-        boolean valid =
-                switch (field.type()) {
-                    case TEXT -> type == String.class;
-                    case INTEGER -> type == BigInteger.class || type == Integer.class || type == Long.class;
-                    case DECIMAL -> type == BigDecimal.class;
-                    case BOOLEAN -> type == Boolean.class;
-                    case DATE -> type == LocalDate.class;
-                    case ENUM ->
-                        type == String.class || type.isEnum() && type.getName().equals(field.valueSetCode());
-                };
+        boolean valid = switch (field.type()) {
+            case TEXT -> type == String.class;
+            case INTEGER -> type == BigInteger.class || type == Integer.class || type == Long.class;
+            case DECIMAL -> type == BigDecimal.class;
+            case BOOLEAN -> type == Boolean.class;
+            case DATE -> type == LocalDate.class;
+            case ENUM -> type == String.class || type.isEnum() && type.getName().equals(field.valueSetCode());
+        };
         if (!valid || field.multiple() != multiple) {
             throw new FormException(
                     INVALID_TYPE, item, field.key(), "Requested type does not match the published field");
@@ -253,32 +250,31 @@ public final class FormRules {
 
     public static <T> T readScalar(String item, Field field, JsonNode value, Class<T> type) {
         try {
-            Object converted =
-                    switch (field.type()) {
-                        case TEXT -> value.asString();
-                        case INTEGER -> {
-                            BigInteger integer = value.bigIntegerValue();
-                            if (type == Integer.class) {
-                                yield Integer.valueOf(integer.intValueExact());
-                            }
-                            if (type == Long.class) {
-                                yield Long.valueOf(integer.longValueExact());
-                            }
-                            yield integer;
-                        }
-                        case DECIMAL -> new BigDecimal(value.asString());
-                        case BOOLEAN -> value.booleanValue();
-                        case DATE -> LocalDate.parse(value.asString());
-                        case ENUM -> {
-                            if (type == String.class) {
-                                yield value.asString();
-                            }
-                            yield Arrays.stream(type.getEnumConstants())
-                                    .filter(option -> ((Enum<?>) option).name().equals(value.asString()))
-                                    .findFirst()
-                                    .orElseThrow();
-                        }
-                    };
+            Object converted = switch (field.type()) {
+                case TEXT -> value.asString();
+                case INTEGER -> {
+                    BigInteger integer = value.bigIntegerValue();
+                    if (type == Integer.class) {
+                        yield Integer.valueOf(integer.intValueExact());
+                    }
+                    if (type == Long.class) {
+                        yield Long.valueOf(integer.longValueExact());
+                    }
+                    yield integer;
+                }
+                case DECIMAL -> new BigDecimal(value.asString());
+                case BOOLEAN -> value.booleanValue();
+                case DATE -> LocalDate.parse(value.asString());
+                case ENUM -> {
+                    if (type == String.class) {
+                        yield value.asString();
+                    }
+                    yield Arrays.stream(type.getEnumConstants())
+                            .filter(option -> ((Enum<?>) option).name().equals(value.asString()))
+                            .findFirst()
+                            .orElseThrow();
+                }
+            };
             return type.cast(converted);
         } catch (ArithmeticException | NoSuchElementException ex) {
             throw new FormException(

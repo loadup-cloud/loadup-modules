@@ -4,8 +4,7 @@
 
 UPMS 应用服务与业务编排。
 
-当前 GitHubOAuthProvider 也在此层直接创建 RestTemplate 并解析第三方 token/userinfo 响应，是传输适配职责的现有例外（阶段 0
-E15）。本轮只登记，不借装配拆分同时改写第三方登录协议。
+`GitHubOAuthProvider` 在此层通过 Spring `RestClient` 调用 GitHub 的 token 和 userinfo 接口并解析响应，是已登记的传输适配例外（阶段 0 E15）。
 
 ## Maven 依赖边界
 

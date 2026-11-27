@@ -133,9 +133,9 @@ public final class AliyunSmsGotoneProvider implements GotoneProvider {
                 return GotoneHttp.failure(response.statusCode());
             }
             var result = json.readTree(response.body());
-            String code = result.path("Code").asText();
+            String code = result.path("Code").asString();
             if (code.equals("OK")) {
-                return Outcome.sent(result.path("BizId").asText(null));
+                return Outcome.sent(result.path("BizId").asString(null));
             }
             if (code.equals("isv.BUSINESS_LIMIT_CONTROL") || code.equals("isv.AMOUNT_NOT_ENOUGH")) {
                 return Outcome.retry("ALIYUN_ACCOUNT_LIMIT");

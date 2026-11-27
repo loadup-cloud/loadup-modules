@@ -78,7 +78,7 @@ public final class HuaweiPushGotoneProvider implements GotoneProvider {
             if (status != 200) {
                 return Outcome.retry("HUAWEI_AUTH_UNAVAILABLE");
             }
-            token = json.readTree(response.body()).path("access_token").asText("");
+            token = json.readTree(response.body()).path("access_token").asString("");
             if (token.isBlank()) {
                 return Outcome.retry("HUAWEI_AUTH_UNAVAILABLE");
             }
@@ -109,9 +109,9 @@ public final class HuaweiPushGotoneProvider implements GotoneProvider {
     }
 
     static Outcome outcome(JsonNode body) {
-        String code = body.path("code").asText("");
+        String code = body.path("code").asString("");
         return switch (code) {
-            case "80000000" -> Outcome.sent(body.path("requestId").asText(null));
+            case "80000000" -> Outcome.sent(body.path("requestId").asString(null));
             case "80200001", "80200003" -> Outcome.retry("HUAWEI_AUTH_REJECTED");
             case "", "80100000", "81000001" -> Outcome.unknown("NO_HUAWEI_RESULT");
             default -> Outcome.failed("HUAWEI_REJECTED");
