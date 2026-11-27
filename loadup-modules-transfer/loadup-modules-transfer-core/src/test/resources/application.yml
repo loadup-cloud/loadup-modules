@@ -1,6 +1,9 @@
 spring:
   profiles:
     active: test
+loadup:
+  database:
+    schema: transfer_it
 powerjob:
   worker:
     enabled: false
