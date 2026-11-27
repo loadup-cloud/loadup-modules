@@ -15,6 +15,7 @@
  */
 package io.github.loadup.modules.gotone.client;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -37,7 +38,17 @@ public final class Gotone {
             String address,
 
             String platform,
-            String appId) {
+            String appId,
+
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Schema(
+                    description = "Push account that issued the registration token. Optional if platform and app ID"
+                            + " match a single enabled account.")
+            String accountCode) {
+        public Target(String address, String platform, String appId) {
+            this(address, platform, appId, null);
+        }
+
         public static Target address(String address) {
             return new Target(address, null, null);
         }

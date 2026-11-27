@@ -19,6 +19,7 @@ import io.github.loadup.modules.gotone.app.integration.GotoneProviders;
 import io.github.loadup.modules.gotone.app.integration.GotoneSecrets;
 import io.github.loadup.modules.gotone.client.Gotone.Account;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
+import io.github.loadup.modules.gotone.client.Gotone.Target;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigurationStore;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore.Work;
@@ -39,9 +40,18 @@ public final class PushDeliveryHandler extends ExternalDeliveryHandler {
     }
 
     @Override
+    public boolean supportsConcurrentExecution() {
+        return true;
+    }
+
+    @Override
     protected boolean acceptsAccount(Work work, Account account) {
-        var target = work.snapshot().target();
+        return matchesTarget(work.snapshot().target(), account);
+    }
+
+    static boolean matchesTarget(Target target, Account account) {
         return target.platform().equals(account.settings().get("platform"))
-                && target.appId().equals(account.settings().get("appId"));
+                && target.appId().equals(account.settings().get("appId"))
+                && (target.accountCode() == null || target.accountCode().equals(account.accountCode()));
     }
 }

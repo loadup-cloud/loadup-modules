@@ -20,9 +20,14 @@ Task。Inbox 写入和结果在同一事务，外部尝试在调用前登记，�
 
 Framework Task 按任务类型注册五个适配器。`SmsDeliveryHandler`、`EmailDeliveryHandler`、`PushDeliveryHandler` 和
 `WebhookDeliveryHandler` 复用外部投递流程，包括供应商调用、限流、超时、重试和尝试记录。Push 和 Webhook 各自处理账号匹配，Webhook
-也负责解析目的地凭证。`InboxDeliveryHandler` 负责本地事务投递。
+也负责解析目的地凭证。`InboxDeliveryHandler` 负责本地事务投递。外部供应商实现在
+`app.integration.sms`、`app.integration.email`、`app.integration.push` 和 `app.integration.webhook` 下。
 
-发布配置固定修订和渠道模板，受理时保存每个目标的渲染快照。账号凭证和启用状态按执行时解析。确认未受理的暂时失败可重试并重新选择账号。响应不明时记录
+Push 按设备令牌及其账号拆成独立 Task，Webhook 按已发布的端点拆成独立 Task。Framework Task Dispatcher 每批最多同时处理
+四笔投递，Push 和 Webhook Handler 可以并行执行。单笔失败、超时或重试只影响对应目标。SMS 和 Email 每个收件人使用一条 Task，
+确认未受理后可以顺序尝试其他账号，任一账号受理即停止。
+
+发布配置固定修订和渠道模板，受理时保存每个目标的渲染快照。账号凭证和启用状态按执行时解析。确认未受理的暂时失败可重试。Push 和 Webhook 限定在原目标账号，SMS 和 Email 可以重新选择账号。响应不明时记录
 `UNKNOWN`。管理员可登记核对结果，只有确认失败且仍在有效期内的投递可以重试。工作者的尝试序号保护结果更新。请求查询时对账 Task
 已耗尽的记录。状态明细只展示脱敏目标、失败码与供应商回执。
 

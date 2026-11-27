@@ -31,7 +31,6 @@ import io.github.loadup.modules.gotone.app.service.GotoneDeliveryHandler;
 import io.github.loadup.modules.gotone.app.service.InboxDeliveryHandler;
 import io.github.loadup.modules.gotone.client.Gotone.Account;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
-import io.github.loadup.modules.gotone.client.Gotone.Delivery;
 import io.github.loadup.modules.gotone.client.Gotone.Receipt;
 import io.github.loadup.modules.gotone.client.Gotone.Route;
 import io.github.loadup.modules.gotone.client.Gotone.SmsBinding;
@@ -46,11 +45,13 @@ import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryS
 import io.github.loadup.modules.inbox.client.facade.InboxFacade;
 import io.github.loadup.modules.inbox.client.facade.InboxReceiver;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -192,7 +193,7 @@ class GotoneDeliveryIT {
     }
 
     @Test
-    void publishesFourIndependentTargetsAndFreezesTheRenderedTemplates() throws Exception {
+    void dispatchesFanOutConcurrentlyAndStopsFallbackWhenTheResultIsUncertain() throws Exception {
         assertThat(handlers)
                 .extracting(GotoneDeliveryHandler::taskType)
                 .containsExactlyInAnyOrder(
@@ -216,11 +217,38 @@ class GotoneDeliveryIT {
                 0,
                 Map.of()));
         operations.saveAccount(account(Channel.EMAIL, Map.of(), 100));
-        operations.saveAccount(account(Channel.PUSH, Map.of("platform", "ANDROID", "appId", "buyer-app"), 100));
+        var pushSettings = Map.of("platform", "ANDROID", "appId", "buyer-app");
+        operations.saveAccount(account(Channel.PUSH, pushSettings, 100));
+        for (var entry : Map.of(
+                        "backup-email",
+                        Channel.EMAIL,
+                        "unused-sms",
+                        Channel.SMS,
+                        "second-push",
+                        Channel.PUSH,
+                        "first-webhook",
+                        Channel.WEBHOOK,
+                        "second-webhook",
+                        Channel.WEBHOOK)
+                .entrySet()) {
+            Channel channel = entry.getValue();
+            operations.saveAccount(new Account(
+                    entry.getKey(),
+                    channel,
+                    "fixture",
+                    true,
+                    200,
+                    "env:GOTONE_SECRET_TEST",
+                    1000,
+                    2000,
+                    0,
+                    channel == Channel.PUSH ? pushSettings : Map.of()));
+        }
         var routes = List.of(
                 new Template(Channel.SMS, Map.of("body", "Order ${orderNo}")),
                 new Template(Channel.EMAIL, Map.of("subject", "Order ${orderNo}", "text", "Successful")),
                 new Template(Channel.PUSH, Map.of("title", "Order", "body", "Successful")),
+                new Template(Channel.WEBHOOK, Map.of("endpointCodes", "first-webhook,second-webhook", "payload", "{}")),
                 new Template(
                         Channel.IN_APP,
                         Map.of("category", "ORDER", "title", "Order ${orderNo}", "body", "Successful")));
@@ -235,10 +263,19 @@ class GotoneDeliveryIT {
                 Channel.EMAIL,
                 List.of(Target.address("buyer@example.org")),
                 Channel.PUSH,
-                List.of(new Target("token-42", "ANDROID", "buyer-app")),
+                List.of(
+                        new Target("token-42", "ANDROID", "buyer-app", "fixture-PUSH"),
+                        new Target("token-42", "ANDROID", "buyer-app", "second-push")),
                 Channel.IN_APP,
                 List.of(Target.address("user-42")));
         var command = new Submit("servicecodeA", "order-42", Map.of("orderNo", "42"), targets, null);
+        var ambiguous = new HashMap<>(targets);
+        ambiguous.put(Channel.PUSH, List.of(new Target("token-42", "ANDROID", "buyer-app")));
+        assertThatThrownBy(() -> gotone.submit(
+                        "orders",
+                        null,
+                        new Submit("servicecodeA", "ambiguous", Map.of("orderNo", "42"), ambiguous, null)))
+                .isInstanceOf(CommonException.class);
         Receipt receipt;
         var start = new CyclicBarrier(2);
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -251,9 +288,9 @@ class GotoneDeliveryIT {
             receipt = first.get(20, TimeUnit.SECONDS);
             assertThat(second.get(20, TimeUnit.SECONDS)).isEqualTo(receipt);
         }
-        assertThat(receipt.targetCount()).isEqualTo(4);
+        assertThat(receipt.targetCount()).isEqualTo(7);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM loadup_task", Integer.class))
-                .isEqualTo(4);
+                .isEqualTo(7);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM inbox_message", Integer.class))
                 .isZero();
 
@@ -289,21 +326,34 @@ class GotoneDeliveryIT {
         dispatcher.execute();
 
         var delivery = gotone.status("orders", receipt.requestId());
-        assertThat(delivery.deliveries()).hasSize(4);
-        assertThat(delivery.deliveries().stream()
-                        .filter(row -> row.channel() == Channel.EMAIL)
-                        .findFirst()
-                        .orElseThrow()
-                        .status())
-                .isEqualTo("UNKNOWN");
-        assertThat(delivery.deliveries().stream()
-                        .filter(row -> row.channel() != Channel.EMAIL)
-                        .map(Delivery::status))
-                .containsExactly("SENT", "SENT", "SENT");
-        assertThat(log.values)
-                .containsEntry(Channel.SMS, "preferred-sms:+8613800000000")
-                .containsEntry(Channel.EMAIL, "fixture-EMAIL:buyer@example.org")
-                .containsEntry(Channel.PUSH, "fixture-PUSH:token-42");
+        assertThat(delivery.deliveries()).hasSize(7);
+        assertThat(delivery.deliveries().stream().filter(row -> row.channel() == Channel.EMAIL))
+                .singleElement()
+                .satisfies(row -> {
+                    assertThat(row.status()).isEqualTo("UNKNOWN");
+                    assertThat(row.attempts())
+                            .singleElement()
+                            .satisfies(
+                                    attempt -> assertThat(attempt.accountCode()).isEqualTo("fixture-EMAIL"));
+                });
+        assertThat(delivery.deliveries().stream().filter(row -> row.channel() == Channel.SMS))
+                .singleElement()
+                .satisfies(row -> {
+                    assertThat(row.status()).isEqualTo("SENT");
+                    assertThat(row.attempts())
+                            .extracting(attempt -> attempt.accountCode() + ":" + attempt.status())
+                            .containsExactly("preferred-sms:FAILED", "fixture-SMS:SENT");
+                });
+        assertThat(delivery.deliveries().stream().filter(row -> row.channel() == Channel.PUSH))
+                .extracting(row -> row.attempts().getFirst().accountCode() + ":" + row.status())
+                .containsExactlyInAnyOrder("fixture-PUSH:SENT", "second-push:SENT");
+        assertThat(delivery.deliveries().stream().filter(row -> row.channel() == Channel.WEBHOOK))
+                .extracting(row -> row.attempts().getFirst().accountCode() + ":" + row.status())
+                .containsExactlyInAnyOrder("first-webhook:SENT", "second-webhook:FAILED");
+        assertThat(log.calls)
+                .containsEntry("fixture-SMS", "+8613800000000")
+                .containsEntry("fixture-EMAIL", "buyer@example.org")
+                .doesNotContainKeys("backup-email", "unused-sms");
         assertThat(jdbc.queryForObject("SELECT title FROM inbox_message WHERE recipient_id = 'user-42'", String.class))
                 .isEqualTo("Order 42");
         dispatcher.execute();
@@ -335,6 +385,11 @@ class GotoneDeliveryIT {
             return provider(Channel.PUSH, log);
         }
 
+        @Bean
+        GotoneProvider webhookFixture(SendLog log) {
+            return provider(Channel.WEBHOOK, log);
+        }
+
         private GotoneProvider provider(Channel channel, SendLog log) {
             return new GotoneProvider() {
                 @Override
@@ -359,12 +414,25 @@ class GotoneDeliveryIT {
 
                 @Override
                 public Outcome send(Account account, String secret, Work work, Binding binding) {
-                    log.values.put(
-                            channel,
-                            account.accountCode() + ":"
-                                    + work.snapshot().target().address());
+                    String code = account.accountCode();
+                    log.calls.put(code, work.snapshot().target().address());
+                    var barrier = log.fanOut.get(channel);
+                    if (barrier != null) {
+                        barrier.countDown();
+                        try {
+                            if (!barrier.await(5, TimeUnit.SECONDS)) {
+                                return Outcome.failed("FIXTURE_FAN_OUT_SERIALIZED");
+                            }
+                        } catch (InterruptedException exception) {
+                            Thread.currentThread().interrupt();
+                            return Outcome.unknown("FIXTURE_INTERRUPTED");
+                        }
+                    }
                     if (channel == Channel.EMAIL) {
                         return Outcome.unknown("FIXTURE_TIMEOUT");
+                    }
+                    if (code.equals("preferred-sms") || code.equals("second-webhook")) {
+                        return Outcome.failed("FIXTURE_REJECTED");
                     }
                     return Outcome.sent("fixture-id");
                 }
@@ -373,6 +441,8 @@ class GotoneDeliveryIT {
     }
 
     static final class SendLog {
-        final Map<Channel, String> values = new ConcurrentHashMap<>();
+        final Map<String, String> calls = new ConcurrentHashMap<>();
+        final Map<Channel, CountDownLatch> fanOut =
+                Map.of(Channel.PUSH, new CountDownLatch(2), Channel.WEBHOOK, new CountDownLatch(2));
     }
 }

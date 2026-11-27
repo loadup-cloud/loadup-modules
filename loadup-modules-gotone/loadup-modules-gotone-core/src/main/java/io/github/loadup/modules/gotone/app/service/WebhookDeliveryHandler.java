@@ -40,6 +40,11 @@ public final class WebhookDeliveryHandler extends ExternalDeliveryHandler {
     }
 
     @Override
+    public boolean supportsConcurrentExecution() {
+        return true;
+    }
+
+    @Override
     protected boolean acceptsAccount(Work work, Account account) {
         return work.snapshot().target().address().equals(account.accountCode());
     }

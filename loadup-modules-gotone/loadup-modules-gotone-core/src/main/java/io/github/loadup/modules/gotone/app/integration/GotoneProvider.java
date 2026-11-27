@@ -37,6 +37,14 @@ public interface GotoneProvider {
         return false;
     }
 
+    default boolean validSmsBinding(String templateId, Set<String> variables) {
+        return true;
+    }
+
+    default String webhookBodyField() {
+        return "payload";
+    }
+
     Outcome send(Account account, String secret, Work work, Binding binding);
 
     enum Result {

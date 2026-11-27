@@ -20,17 +20,21 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
-final class GotoneHttp {
+public final class GotoneHttp {
     private GotoneHttp() {}
 
-    static String form(Map<String, String> fields) {
+    public static String form(Map<String, String> fields) {
         return fields.entrySet().stream()
                 .map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue()))
                 .collect(Collectors.joining("&"));
@@ -40,7 +44,8 @@ final class GotoneHttp {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
-    static HttpRequest.Builder post(URI uri, Account account, String contentType, String body, String deliveryId) {
+    public static HttpRequest.Builder post(
+            URI uri, Account account, String contentType, String body, String deliveryId) {
         var builder = HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofMillis(account.requestTimeoutMs()))
                 .header("Content-Type", contentType)
@@ -51,11 +56,13 @@ final class GotoneHttp {
         return builder;
     }
 
-    static HttpResponse<String> send(Account account, HttpRequest request) throws IOException, InterruptedException {
+    public static HttpResponse<String> send(Account account, HttpRequest request)
+            throws IOException, InterruptedException {
         return send(account, request, HttpResponse.BodyHandlers.ofString());
     }
 
-    static <T> HttpResponse<T> send(Account account, HttpRequest request, HttpResponse.BodyHandler<T> bodyHandler)
+    public static <T> HttpResponse<T> send(
+            Account account, HttpRequest request, HttpResponse.BodyHandler<T> bodyHandler)
             throws IOException, InterruptedException {
         // The caller enforces an outer deadline, including response-body reads.
         try (var client = HttpClient.newBuilder()
@@ -66,7 +73,25 @@ final class GotoneHttp {
         }
     }
 
-    static GotoneProvider.Outcome failure(int status) {
+    public static GotoneProvider.Outcome sendJson(
+            Account account, HttpRequest request, JsonMapper json, Function<JsonNode, GotoneProvider.Outcome> outcome) {
+        try {
+            var response = send(account, request);
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return failure(response.statusCode());
+            }
+            return outcome.apply(json.readTree(response.body()));
+        } catch (HttpConnectTimeoutException exception) {
+            return GotoneProvider.Outcome.retry("CONNECT_TIMEOUT");
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return GotoneProvider.Outcome.unknown("INTERRUPTED");
+        } catch (IOException | RuntimeException exception) {
+            return GotoneProvider.Outcome.unknown("NO_PROVIDER_RESULT");
+        }
+    }
+
+    public static GotoneProvider.Outcome failure(int status) {
         if (status == 429 || status == 401 || status == 403) {
             return GotoneProvider.Outcome.retry("HTTP_" + status);
         }

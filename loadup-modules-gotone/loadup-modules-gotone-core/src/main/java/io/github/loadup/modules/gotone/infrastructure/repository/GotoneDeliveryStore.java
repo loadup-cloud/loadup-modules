@@ -271,12 +271,17 @@ public final class GotoneDeliveryStore {
     }
 
     public void finish(String id, int attempt, String status, String reason, String remoteId) {
+        finish(id, attempt, status, status, reason, remoteId);
+    }
+
+    public void finish(
+            String id, int attempt, String deliveryStatus, String attemptStatus, String reason, String remoteId) {
         var query = byId(id).and(GOTONE_DELIVERY.ATTEMPT_NO.eq(attempt)).and(GOTONE_DELIVERY.STATUS.eq("SENDING"));
-        if (updateStatus(query, status) == 0) {
+        if (updateStatus(query, deliveryStatus) == 0) {
             return;
         }
         var patch = rows.touch(new GotoneDeliveryAttemptDO());
-        patch.setStatus(status);
+        patch.setStatus(attemptStatus);
         patch.setReason(reason);
         patch.setRemoteId(remoteId);
         patch.setFinishedAt(utc(rows.clock().instant()));
@@ -288,6 +293,12 @@ public final class GotoneDeliveryStore {
                 != 1) {
             throw new CommonException(REQUEST_CONFLICT);
         }
+    }
+
+    public void failWaiting(String id, int attempt) {
+        updateStatus(
+                byId(id).and(GOTONE_DELIVERY.ATTEMPT_NO.eq(attempt)).and(GOTONE_DELIVERY.STATUS.eq("RETRY_WAIT")),
+                "FAILED");
     }
 
     public void expire(String id) {

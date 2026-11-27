@@ -38,6 +38,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import org.springframework.transaction.support.TransactionTemplate;
 
 abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
@@ -119,6 +120,13 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
 
     private boolean sendExternal(Work original, TaskExecution task) {
         List<Candidate> candidates = candidates(original);
+        boolean fallback = original.channel() == Channel.SMS || original.channel() == Channel.EMAIL;
+        if (original.channel() == Channel.PUSH && candidates.size() > 1) {
+            return recordDeferred(original, task, "PUSH_ACCOUNT_AMBIGUOUS");
+        }
+        int attemptNo = original.attemptNo();
+        String expectedStatus = original.status();
+        boolean retryable = false;
         for (Candidate candidate : candidates) {
             if (Thread.currentThread().isInterrupted()) {
                 return true;
@@ -141,11 +149,13 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
                 return true;
             }
             Account selected = account;
+            int expectedAttempt = attemptNo;
+            String expectedState = expectedStatus;
             Pending pending = tx.execute(status -> {
                 Work latest = store.lock(original.id()).orElseThrow();
                 if (Thread.currentThread().isInterrupted()
-                        || latest.attemptNo() != original.attemptNo()
-                        || !latest.status().equals(original.status())) {
+                        || latest.attemptNo() != expectedAttempt
+                        || !latest.status().equals(expectedState)) {
                     return null;
                 }
                 if (!clock.instant().isBefore(latest.expiresAt())) {
@@ -163,9 +173,25 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
             } catch (RuntimeException exception) {
                 outcome = Outcome.unknown("ADAPTER_FAILED_WITHOUT_RESULT");
             }
-            return finish(pending.work().id(), pending.attempt(), outcome, task);
+            if (!fallback || outcome.result() == Result.SENT || outcome.result() == Result.UNKNOWN) {
+                return finish(original.id(), pending.attempt(), outcome, task);
+            }
+            // Keep each provider's outcome and leave the delivery open for the next account.
+            Outcome rejection = outcome;
+            tx.executeWithoutResult(status -> recordOutcome(original.id(), pending.attempt(), "RETRY_WAIT", rejection));
+            attemptNo = pending.attempt();
+            expectedStatus = "RETRY_WAIT";
+            retryable |= outcome.result() == Result.RETRY_WAIT;
         }
-        return recordDeferred(original, task, "NO_AVAILABLE_ACCOUNT");
+        if (attemptNo == original.attemptNo()) {
+            return recordDeferred(original, task, "NO_AVAILABLE_ACCOUNT");
+        }
+        if (retryable && task.attempts() < task.maxAttempts()) {
+            return true;
+        }
+        int lastAttempt = attemptNo;
+        tx.executeWithoutResult(status -> store.failWaiting(original.id(), lastAttempt));
+        return false;
     }
 
     private List<Candidate> candidates(Work work) {
@@ -177,9 +203,12 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
                         .filter(provider -> provider.valid(account))
                         .flatMap(provider -> {
                             if (!provider.requiresSmsBinding()) {
-                                return java.util.stream.Stream.of(new Candidate(account, provider, null));
+                                return Stream.of(new Candidate(account, provider, null));
                             }
                             return configuration.binding(work.mapId(), account.accountCode()).stream()
+                                    .filter(binding -> provider.validSmsBinding(
+                                            binding.remoteTemplateId(),
+                                            binding.variables().keySet()))
                                     .map(binding -> new Candidate(account, provider, binding));
                         }))
                 .sorted(Comparator.comparingInt(
@@ -236,6 +265,11 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
         String status = !retry && outcome.result() == Result.RETRY_WAIT
                 ? "FAILED"
                 : outcome.result().name();
+        recordOutcome(id, attempt, status, outcome);
+        return retry;
+    }
+
+    private void recordOutcome(String id, int attempt, String status, Outcome outcome) {
         String remote = outcome.remoteId();
         if (remote != null && remote.length() > 256) {
             remote = remote.substring(0, 256);
@@ -244,8 +278,11 @@ abstract class ExternalDeliveryHandler extends GotoneDeliveryHandler {
         if (reason != null && !reason.matches("[A-Z0-9_]{1,64}")) {
             reason = "ADAPTER_RESULT";
         }
-        store.finish(id, attempt, status, reason, remote);
-        return retry;
+        if (status.equals("RETRY_WAIT") && outcome.result() == Result.FAILED) {
+            store.finish(id, attempt, status, outcome.result().name(), reason, remote);
+        } else {
+            store.finish(id, attempt, status, reason, remote);
+        }
     }
 
     private record Candidate(Account account, GotoneProvider provider, Binding binding) {}

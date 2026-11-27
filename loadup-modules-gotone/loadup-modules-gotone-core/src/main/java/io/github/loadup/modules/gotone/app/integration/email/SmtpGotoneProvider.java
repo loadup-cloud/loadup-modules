@@ -13,17 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.loadup.modules.gotone.app.integration;
+package io.github.loadup.modules.gotone.app.integration.email;
 
+import io.github.loadup.modules.gotone.app.integration.GotoneProvider;
 import io.github.loadup.modules.gotone.client.Gotone.Account;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigurationStore.Binding;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore.Work;
 import jakarta.mail.MessagingException;
+import jakarta.mail.SendFailedException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Set;
 import org.springframework.mail.MailAuthenticationException;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
@@ -105,6 +110,21 @@ public final class SmtpGotoneProvider implements GotoneProvider {
             return Outcome.sent("<" + work.id() + "@gotone>");
         } catch (MailAuthenticationException exception) {
             return Outcome.retry("SMTP_AUTHENTICATION");
+        } catch (MailSendException exception) {
+            for (Exception failure : exception.getMessageExceptions()) {
+                // Single-recipient messages may be routed elsewhere after an explicit rejection.
+                if (failure instanceof SendFailedException rejected
+                        && (rejected.getValidSentAddresses() == null || rejected.getValidSentAddresses().length == 0)
+                        && rejected.getInvalidAddresses() != null
+                        && rejected.getInvalidAddresses().length > 0) {
+                    return Outcome.failed("SMTP_RECIPIENT_REJECTED");
+                }
+                if (failure.getCause() instanceof UnknownHostException
+                        || failure.getCause() instanceof ConnectException) {
+                    return Outcome.retry("SMTP_CONNECT_FAILED");
+                }
+            }
+            return Outcome.unknown("NO_SMTP_RESULT");
         } catch (RuntimeException exception) {
             return Outcome.unknown("NO_SMTP_RESULT");
         }

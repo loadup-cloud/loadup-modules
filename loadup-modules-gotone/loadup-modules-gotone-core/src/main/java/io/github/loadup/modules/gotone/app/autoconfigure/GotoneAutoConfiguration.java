@@ -19,14 +19,21 @@ import io.github.loadup.components.database.id.IdGenerator;
 import io.github.loadup.components.kms.KmsSecretManager;
 import io.github.loadup.components.task.TaskAutoConfiguration;
 import io.github.loadup.components.task.TaskTemplate;
-import io.github.loadup.modules.gotone.app.integration.AliyunSmsGotoneProvider;
-import io.github.loadup.modules.gotone.app.integration.FcmGotoneProvider;
 import io.github.loadup.modules.gotone.app.integration.GotoneProvider;
 import io.github.loadup.modules.gotone.app.integration.GotoneProviders;
 import io.github.loadup.modules.gotone.app.integration.GotoneSecrets;
-import io.github.loadup.modules.gotone.app.integration.SmtpGotoneProvider;
-import io.github.loadup.modules.gotone.app.integration.TwilioSmsProvider;
-import io.github.loadup.modules.gotone.app.integration.WebhookGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.email.SmtpGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.push.FcmGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.push.HuaweiPushGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.push.JpushGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.push.XiaomiPushGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.sms.AliyunSmsGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.sms.TencentSmsGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.sms.TwilioSmsProvider;
+import io.github.loadup.modules.gotone.app.integration.webhook.DingtalkWebhookGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.webhook.FeishuWebhookGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.webhook.WebhookGotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.webhook.WecomWebhookGotoneProvider;
 import io.github.loadup.modules.gotone.app.service.EmailDeliveryHandler;
 import io.github.loadup.modules.gotone.app.service.GotoneAdministration;
 import io.github.loadup.modules.gotone.app.service.GotoneDeliveryReconciliation;
@@ -132,6 +139,41 @@ public class GotoneAutoConfiguration {
     @Bean
     GotoneProvider fcmGotoneProvider(JsonMapper json, Clock clock) {
         return new FcmGotoneProvider(json, clock);
+    }
+
+    @Bean
+    GotoneProvider tencentSmsGotoneProvider(JsonMapper json, Clock clock) {
+        return new TencentSmsGotoneProvider(json, clock);
+    }
+
+    @Bean
+    GotoneProvider jpushGotoneProvider(JsonMapper json) {
+        return new JpushGotoneProvider(json);
+    }
+
+    @Bean
+    GotoneProvider xiaomiPushGotoneProvider(JsonMapper json) {
+        return new XiaomiPushGotoneProvider(json);
+    }
+
+    @Bean
+    GotoneProvider huaweiPushGotoneProvider(JsonMapper json) {
+        return new HuaweiPushGotoneProvider(json);
+    }
+
+    @Bean
+    GotoneProvider dingtalkWebhookGotoneProvider(JsonMapper json, Clock clock) {
+        return new DingtalkWebhookGotoneProvider(json, clock);
+    }
+
+    @Bean
+    GotoneProvider wecomWebhookGotoneProvider(JsonMapper json) {
+        return new WecomWebhookGotoneProvider(json);
+    }
+
+    @Bean
+    GotoneProvider feishuWebhookGotoneProvider(JsonMapper json, Clock clock) {
+        return new FeishuWebhookGotoneProvider(json, clock);
     }
 
     @Bean

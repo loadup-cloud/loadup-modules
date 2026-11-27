@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.loadup.modules.gotone.app.integration;
+package io.github.loadup.modules.gotone.app.integration.sms;
 
+import io.github.loadup.modules.gotone.app.integration.GotoneHttp;
+import io.github.loadup.modules.gotone.app.integration.GotoneProvider;
 import io.github.loadup.modules.gotone.client.Gotone.Account;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigurationStore.Binding;
@@ -138,7 +140,9 @@ public final class AliyunSmsGotoneProvider implements GotoneProvider {
             if (code.equals("isv.BUSINESS_LIMIT_CONTROL") || code.equals("isv.AMOUNT_NOT_ENOUGH")) {
                 return Outcome.retry("ALIYUN_ACCOUNT_LIMIT");
             }
-            return code.isBlank() ? Outcome.unknown("NO_ALIYUN_RESULT") : Outcome.failed("ALIYUN_REJECTED");
+            return code.isBlank() || code.equals("isp.SYSTEM_ERROR") || code.equals("isp.GATEWAY_ERROR")
+                    ? Outcome.unknown("NO_ALIYUN_RESULT")
+                    : Outcome.failed("ALIYUN_REJECTED");
         } catch (GeneralSecurityException exception) {
             return Outcome.failed("ALIYUN_SIGNING_UNAVAILABLE");
         } catch (java.net.http.HttpConnectTimeoutException exception) {

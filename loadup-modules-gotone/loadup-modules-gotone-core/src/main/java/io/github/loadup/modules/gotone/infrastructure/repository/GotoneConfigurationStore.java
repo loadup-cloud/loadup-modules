@@ -198,12 +198,6 @@ public final class GotoneConfigurationStore {
         revision.setRequiredParameters(json.writeValueAsString(route.requiredParameters()));
         revisions.insert(revision);
         for (Template template : route.channels()) {
-            if (template.channel() == Channel.WEBHOOK
-                    && account(template.fields().get("endpointCode"))
-                            .filter(a -> a.channel() == Channel.WEBHOOK)
-                            .isEmpty()) {
-                throw new CommonException(INVALID_SUBMISSION);
-            }
             var mapping = rows.create(new GotoneServiceChannelMapDO());
             mapping.setServiceCode(code);
             mapping.setRevision(version);

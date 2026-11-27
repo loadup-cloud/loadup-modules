@@ -26,6 +26,7 @@ import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.REQU
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.components.task.TaskSubmission;
 import io.github.loadup.components.task.TaskTemplate;
+import io.github.loadup.modules.gotone.client.Gotone.Account;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
 import io.github.loadup.modules.gotone.client.Gotone.Delivery;
 import io.github.loadup.modules.gotone.client.Gotone.Receipt;
@@ -160,7 +161,8 @@ public final class GotoneSubmissionService implements GotoneFacade {
                             .distinct()
                             .sorted(Comparator.comparing((Target target) -> target.address())
                                     .thenComparing(target -> target.platform() == null ? "" : target.platform())
-                                    .thenComparing(target -> target.appId() == null ? "" : target.appId()))
+                                    .thenComparing(target -> target.appId() == null ? "" : target.appId())
+                                    .thenComparing(target -> target.accountCode() == null ? "" : target.accountCode()))
                             .toList());
         });
         return normalized;
@@ -187,13 +189,17 @@ public final class GotoneSubmissionService implements GotoneFacade {
                                 && target.platform() != null
                                 && Set.of("ANDROID", "IOS", "WEB").contains(target.platform())
                                 && target.appId() != null
-                                && target.appId().matches("[A-Za-z0-9_.:-]{1,128}");
+                                && target.appId().matches("[A-Za-z0-9_.:-]{1,128}")
+                                && (target.accountCode() == null
+                                        || target.accountCode().matches("[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}"));
                     case WEBHOOK -> false;
                 };
         if (!valid) {
             throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
         }
-        return channel == Channel.PUSH ? new Target(value, target.platform(), target.appId()) : Target.address(value);
+        return channel == Channel.PUSH
+                ? new Target(value, target.platform(), target.appId(), target.accountCode())
+                : Target.address(value);
     }
 
     private static String digest(String content) {
@@ -276,12 +282,19 @@ public final class GotoneSubmissionService implements GotoneFacade {
         if (!expected.equals(input.recipients().keySet())) {
             throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
         }
+        List<Account> pushAccounts = expected.contains(Channel.PUSH)
+                ? configuration.accounts().stream()
+                        .filter(account -> account.channel() == Channel.PUSH)
+                        .toList()
+                : List.of();
         List<Planned> planned = new ArrayList<>();
         for (var item : revision.templates()) {
             Channel channel = item.template().channel();
             var fields = templates.render(item.template(), input.parameters());
             var targets = channel == Channel.WEBHOOK
-                    ? List.of(Target.address(fields.get("endpointCode")))
+                    ? GotoneTemplates.webhookEndpoints(fields).stream()
+                            .map(Target::address)
+                            .toList()
                     : input.recipients().get(channel);
             for (Target target : targets) {
                 if (channel == Channel.PUSH
@@ -289,14 +302,33 @@ public final class GotoneSubmissionService implements GotoneFacade {
                         && !fields.get("platform").equals(target.platform())) {
                     throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
                 }
-                var snapshot = new Snapshot(target, fields, channel == Channel.SMS ? input.parameters() : Map.of());
+                Target destination = channel == Channel.PUSH ? pushTarget(target, pushAccounts) : target;
+                var snapshot =
+                        new Snapshot(destination, fields, channel == Channel.SMS ? input.parameters() : Map.of());
                 planned.add(new Planned(item.id(), channel, snapshot));
             }
         }
         if (planned.isEmpty()) {
             throw new CommonException(NO_CHANNEL_ROUTES);
         }
-        return planned;
+        return planned.stream().distinct().toList();
+    }
+
+    private static Target pushTarget(Target target, List<Account> accounts) {
+        var matching = accounts.stream()
+                .filter(account -> PushDeliveryHandler.matchesTarget(target, account))
+                .filter(account -> target.accountCode() != null || account.enabled())
+                .toList();
+        if (matching.size() > 1 || (target.accountCode() != null && matching.isEmpty())) {
+            throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
+        }
+        return matching.isEmpty()
+                ? target
+                : new Target(
+                        target.address(),
+                        target.platform(),
+                        target.appId(),
+                        matching.getFirst().accountCode());
     }
 
     @Override

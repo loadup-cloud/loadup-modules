@@ -178,7 +178,21 @@ public final class GotoneAdministration implements GotoneOperations {
         if (binding.remoteSignature() != null) {
             GotoneSubmissionService.required(binding.remoteSignature(), 200);
         }
-        var variables = GotoneSubmissionService.parameters(binding.variableMapping());
+        var account = configuration
+                .account(binding.accountCode())
+                .filter(item -> item.channel() == Channel.SMS)
+                .orElseThrow(() -> new CommonException(GOTONE_NOT_FOUND));
+        var adapter = providers.find(account).orElseThrow(() -> new CommonException(INVALID_SUBMISSION));
+        Map<String, String> variables = binding.variableMapping() == null ? Map.of() : binding.variableMapping();
+        if (variables.size() > 50
+                || variables.entrySet().stream()
+                        .anyMatch(entry -> entry.getKey() == null
+                                || !entry.getKey().matches("[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
+                                || entry.getValue() == null
+                                || !entry.getValue().matches("[A-Za-z][A-Za-z0-9_.-]{0,63}"))
+                || !adapter.validSmsBinding(binding.remoteTemplateId(), variables.keySet())) {
+            throw new CommonException(INVALID_TEMPLATE);
+        }
         tx.executeWithoutResult(status -> configuration.saveSmsBinding(new SmsBinding(
                 binding.serviceCode(),
                 binding.revision(),
@@ -280,7 +294,16 @@ public final class GotoneAdministration implements GotoneOperations {
                 throw new CommonException(INVALID_TEMPLATE);
             }
             if (template.channel() == Channel.WEBHOOK) {
-                GotoneSubmissionService.serviceCode(template.fields().get("endpointCode"));
+                for (String endpoint : GotoneTemplates.webhookEndpoints(template.fields())) {
+                    var account = configuration
+                            .account(endpoint)
+                            .filter(item -> item.channel() == Channel.WEBHOOK)
+                            .orElseThrow(() -> new CommonException(INVALID_SUBMISSION));
+                    var adapter = providers.find(account).orElseThrow(() -> new CommonException(INVALID_SUBMISSION));
+                    if (!template.fields().containsKey(adapter.webhookBodyField())) {
+                        throw new CommonException(INVALID_TEMPLATE);
+                    }
+                }
             }
             templates.validate(template, parameters);
         }

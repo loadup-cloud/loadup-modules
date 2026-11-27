@@ -59,15 +59,16 @@ core 内部包。投递处理器通过 `loadup-modules-inbox-client` 的 `InboxR
 Worker 解析，模板快照和 Task 载荷不含账号秘密。
 
 每笔外部投递先按渠道、模板能力、目标平台及应用过滤已启用账号，再校验适配器已安装且凭证可读。首次按 `priority`、`account_code`
-升序稳定选取。明确可重试的失败后优先使用尚未尝试的账号，之后使用最久未尝试的账号。投递明细显示实际账号、版本和缺少可用账号等原因。供应商选择只在执行阶段发生，一条服务编码可复用全系统的账号池。
+升序稳定选取。SMS 和 Email 在一次任务内按顺序尝试，确认未受理才会切换，首次受理即停止。退避重试时优先尝试尚未使用的账号。
+Push 使用设备令牌所属账号，Webhook 使用已发布的端点账号。投递明细显示实际账号、版本和缺少可用账号等原因。
 
 ## 4. 受理、异步投递与失败隔离
 
 **调用契约。** 主入口为 `GotoneFacade.submit(source, senderId, command)`，返回
 `requestId、serviceCode、revision、acceptedAt、targetCount`。来源由认证入口或受信应用上下文确定。调用方传入
 `requestKey、serviceCode、parameters、recipientsByChannel` 和可选 `expiresAt`。收件信息按渠道提供，Inbox 用用户 ID，SMS
-用手机号，Email 用邮箱，Push 用设备令牌以及匹配账号所需的平台、应用标识。Webhook 的目标来自已发布配置，业务请求无需传入
-URL。地址字段只表达目标，已发布的服务配置决定渠道集合。
+用手机号，Email 用邮箱，Push 用设备令牌、平台、应用标识和归属账号，平台和应用唯一匹配时可省略账号。Webhook
+目标来自发布配置中的端点列表，业务请求无需传入 URL。已发布的服务配置决定渠道集合。
 
 ```json
 {
@@ -77,7 +78,7 @@ URL。地址字段只表达目标，已发布的服务配置决定渠道集合�
   "recipientsByChannel": {
     "SMS": [{ "address": "+8613800000000" }],
     "EMAIL": [{ "address": "buyer@example.org" }],
-    "PUSH": [{ "address": "device-token", "platform": "ANDROID", "appId": "buyer-app" }],
+    "PUSH": [{ "address": "device-token", "platform": "ANDROID", "appId": "buyer-app", "accountCode": "buyer-jpush" }],
     "IN_APP": [{ "address": "user-42" }]
   }
 }
@@ -92,10 +93,10 @@ URL。地址字段只表达目标，已发布的服务配置决定渠道集合�
    查重，相同规范化摘要返回原受理结果，不同摘要返回冲突。首次提交读取一个已发布修订，校验参数与目标，规范化并按渠道去重。启用的个人渠道缺少目标时整笔拒绝，后台生产者可记录配置错误；临时缺少可用发送账号只影响该渠道后续投递。受理在一个本地事务中写请求、全部投递与对应
    Task，然后返回。并发相同键由数据库唯一约束裁决。受理响应丢失时原键重试即可。
 3. Task 载荷仅携带 `deliveryId`。按渠道注册 `gotone.deliver.sms/email/push/inbox/webhook`
-   五种任务类型。租约和重试预算按任务类型配置，请求超时按账号配置，高延迟渠道可配独立 Worker。租约覆盖调用超时与确认余量，外部
+   五种任务类型。Push 和 Webhook 启用并发消费，每个目标可单独重试。租约和重试预算按任务类型配置，请求超时按账号配置，高延迟渠道可配独立 Worker。租约覆盖调用超时与确认余量，外部
    I/O 在数据库事务外执行。实际接收方仅收到属于本渠道的内容和目标。
 4. Gotone 在同一数据库事务内调用 Inbox 按投递键入箱并更新投递状态，Worker 崩溃重领可安全去重。外部 Worker
-   先持久化尝试标识和账号，再发送，使用稳定的 `deliveryId` 作为下游幂等键。收到明确结果后以尝试标识作条件更新，防止旧 Worker
+   先持久化尝试标识和账号，再发送。通用 HTTPS 适配器发送稳定的 `deliveryId` 幂等键，其他供应商按各自协议传递可用的关联标识。收到明确结果后以尝试标识作条件更新，防止旧 Worker
    覆盖新状态。主体业务只观察其自身的提交结果。
 
 | 外部执行结果                                     | 投递记录与后续动作                                                                                                                                             |

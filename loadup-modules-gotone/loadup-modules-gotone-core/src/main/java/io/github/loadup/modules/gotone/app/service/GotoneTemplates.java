@@ -20,6 +20,8 @@ import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.INVA
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
 import io.github.loadup.modules.gotone.client.Gotone.Template;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -43,8 +45,25 @@ public final class GotoneTemplates {
             case EMAIL -> Set.of("subject", "text", "html");
             case IN_APP -> Set.of("category", "title", "body", "actionPath");
             case PUSH -> Set.of("title", "body", "platform", "ttlSeconds");
-            case WEBHOOK -> Set.of("endpointCode", "payload");
+            case WEBHOOK -> Set.of("endpointCode", "endpointCodes", "payload", "text");
         };
+    }
+
+    static List<String> webhookEndpoints(Map<String, String> fields) {
+        String code = fields.get("endpointCode");
+        String codes = fields.get("endpointCodes");
+        if ((code == null) == (codes == null)) {
+            throw invalid();
+        }
+        var endpoints = code == null
+                ? Arrays.stream(codes.split(",", -1)).map(String::strip).toList()
+                : List.of(code);
+        if (endpoints.size() > 20
+                || Set.copyOf(endpoints).size() != endpoints.size()
+                || endpoints.stream().anyMatch(endpoint -> !endpoint.matches("[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}"))) {
+            throw invalid();
+        }
+        return endpoints;
     }
 
     private static String required(Map<String, String> fields, String key, int max) {
@@ -139,13 +158,17 @@ public final class GotoneTemplates {
                 }
             }
             case WEBHOOK -> {
-                required(rendered, "endpointCode", 64);
-                try {
-                    if (!json.readTree(required(rendered, "payload", 32000)).isObject()) {
+                if (rendered.containsKey("text")) {
+                    required(rendered, "text", 16000);
+                }
+                if (rendered.containsKey("payload")) {
+                    try {
+                        if (!json.readTree(required(rendered, "payload", 32000)).isObject()) {
+                            throw invalid();
+                        }
+                    } catch (RuntimeException exception) {
                         throw invalid();
                     }
-                } catch (RuntimeException exception) {
-                    throw invalid();
                 }
             }
         }

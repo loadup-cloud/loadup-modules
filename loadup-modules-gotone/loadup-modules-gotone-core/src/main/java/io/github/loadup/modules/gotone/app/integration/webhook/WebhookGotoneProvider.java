@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.loadup.modules.gotone.app.integration;
+package io.github.loadup.modules.gotone.app.integration.webhook;
 
+import io.github.loadup.modules.gotone.app.integration.GotoneHttp;
+import io.github.loadup.modules.gotone.app.integration.GotoneProvider;
+import io.github.loadup.modules.gotone.app.integration.GotoneSecrets;
 import io.github.loadup.modules.gotone.client.Gotone.Account;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigurationStore.Binding;
