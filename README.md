@@ -50,11 +50,12 @@ Spotless 格式检查和修复独立于 Maven 构建生命周期，可在脚本�
 
 [Modules CI](.github/workflows/ci.yml) 在 PR、`main`、`develop`、`dev` 的推送和手动运行时触发。工作流使用 JDK 25、
 Maven Daemon 和 Docker，执行单元测试与 Testcontainers 集成测试并打包。JaCoCo 在 CI 中关闭。
-运行详情可下载 `loadup-modules-jars` 和测试报告。
+运行详情可下载测试报告。
 
-`main` 推送通过测试后，将同一轮构建的 Maven 制品发布到 `loadup-cloud/loadup-packages`。发布步骤使用
-`OSSRH_USERNAME` 和 `OSSRH_TOKEN`。普通验证使用 `LOADUP_PACKAGES_USERNAME` 和 `LOADUP_PACKAGES_TOKEN` 读取依赖，
-缺少这些凭证时使用工作流的只读令牌。
+向 `main`、`develop` 或 `dev` 推送且验证通过后，发布作业将业务 JAR、BOM 和 POM 上传到
+`loadup-cloud/loadup-packages`。在这些分支手动运行时，可勾选 `publish-packages` 发布。
+发布复用组织级 `OSSRH_USERNAME` 和 `OSSRH_TOKEN`。验证用组织级 `LOADUP_PACKAGES_USERNAME` 和
+`LOADUP_PACKAGES_TOKEN` 读取依赖，缺少这些凭证时使用工作流的只读令牌。
 
 ## 发布
 

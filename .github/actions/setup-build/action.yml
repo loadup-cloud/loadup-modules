@@ -1,0 +1,28 @@
+name: Set up Modules build
+description: Install Temurin 25 and Maven Daemon, and configure Maven Packages access.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: '25'
+        cache: maven
+        cache-dependency-path: '**/pom.xml'
+        server-id: github
+        server-username-env-var: MAVEN_USERNAME
+        server-password-env-var: MAVEN_TOKEN
+        # Maven also needs the repository while resolving the standalone BOM.
+        mvn-repositories: github:https://maven.pkg.github.com/loadup-cloud/loadup-packages:true
+
+    - name: Install Maven Daemon
+      shell: bash
+      run: |
+        archive=maven-mvnd-1.0.6-linux-amd64
+        cd "$RUNNER_TEMP"
+        curl --fail --silent --show-error --location --retry 3 \
+          "https://github.com/apache/maven-mvnd/releases/download/1.0.6/${archive}.tar.gz" \
+          --output "${archive}.tar.gz"
+        echo "88fd474fd3f21b33ec1e6a75950f6abbe493d63a5e2b429475f5230b3ee6cb24  ${archive}.tar.gz" | sha256sum --check
+        tar -xzf "${archive}.tar.gz"
+        echo "$RUNNER_TEMP/$archive/bin" >> "$GITHUB_PATH"
