@@ -17,11 +17,7 @@ package io.github.loadup.modules.gotone.infrastructure.repository;
 
 import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.GOTONE_NOT_FOUND;
 import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.REQUEST_CONFLICT;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_DELIVERY;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_DELIVERY_ATTEMPT;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_REQUEST;
 
-import com.mybatisflex.core.query.QueryWrapper;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.modules.gotone.client.Gotone.Attempt;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
@@ -35,11 +31,7 @@ import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneDeliveryD
 import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneDeliveryResolutionDO;
 import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneDeliveryRetryDO;
 import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneRequestDO;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryAttemptMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryResolutionMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryRetryMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneRequestMapper;
+import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -49,48 +41,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.json.JsonMapper;
 
 public final class GotoneDeliveryStore {
-    private final GotoneRequestMapper requests;
-    private final GotoneDeliveryMapper deliveries;
-    private final GotoneDeliveryAttemptMapper attempts;
-    private final GotoneDeliveryRetryMapper retries;
-    private final GotoneDeliveryResolutionMapper resolutions;
+    private final JdbcClient jdbc;
+    private final JdbcAggregateTemplate aggregates;
     private final GotoneRows rows;
     private final JsonMapper json;
 
-    public GotoneDeliveryStore(
-            GotoneRequestMapper requests,
-            GotoneDeliveryMapper deliveries,
-            GotoneDeliveryAttemptMapper attempts,
-            GotoneDeliveryRetryMapper retries,
-            GotoneDeliveryResolutionMapper resolutions,
-            GotoneRows rows,
-            JsonMapper json) {
-        this.requests = requests;
-        this.deliveries = deliveries;
-        this.attempts = attempts;
-        this.retries = retries;
-        this.resolutions = resolutions;
+    public GotoneDeliveryStore(JdbcClient jdbc, JdbcAggregateTemplate aggregates, GotoneRows rows, JsonMapper json) {
+        this.jdbc = jdbc;
+        this.aggregates = aggregates;
         this.rows = rows;
         this.json = json;
     }
 
-    private static QueryWrapper requestSummary() {
-        return QueryWrapper.create()
-                .select(
-                        GOTONE_REQUEST.ID,
-                        GOTONE_REQUEST.SERVICE_CODE,
-                        GOTONE_REQUEST.REVISION,
-                        GOTONE_REQUEST.ACCEPTED_AT,
-                        GOTONE_REQUEST.TARGET_COUNT,
-                        GOTONE_REQUEST.CONTENT_DIGEST);
-    }
-
-    private static QueryWrapper byId(String id) {
-        return QueryWrapper.create().where(GOTONE_DELIVERY.ID.eq(Objects.requireNonNull(id)));
-    }
+    private static final String REQUEST_SUMMARY =
+            "SELECT id, service_code, revision, accepted_at, target_count, content_digest FROM gotone_request";
 
     private static Receipt receipt(GotoneRequestDO row) {
         return new Receipt(
@@ -122,8 +91,11 @@ public final class GotoneDeliveryStore {
     }
 
     public Optional<StoredRequest> existing(String source, String key) {
-        var query = requestSummary().where(GOTONE_REQUEST.SOURCE.eq(source)).and(GOTONE_REQUEST.REQUEST_KEY.eq(key));
-        return Optional.ofNullable(requests.selectOneByQuery(query))
+        return jdbc.sql(REQUEST_SUMMARY + " WHERE source = :source AND request_key = :key")
+                .param("source", source)
+                .param("key", key)
+                .query(GotoneRequestDO.class)
+                .optional()
                 .map(row -> new StoredRequest(receipt(row), row.getContentDigest()));
     }
 
@@ -149,7 +121,7 @@ public final class GotoneDeliveryStore {
         row.setAcceptedAt(utc(accepted));
         row.setExpiresAt(utc(expires));
         row.setTargetCount(targetCount);
-        requests.insert(row);
+        aggregates.insert(row);
         return receipt(row);
     }
 
@@ -173,47 +145,44 @@ public final class GotoneDeliveryStore {
         row.setAttemptNo(0);
         row.setSenderId(sender);
         row.setExpiresAt(utc(expires));
-        deliveries.insert(row);
+        aggregates.insert(row);
         return row.getId();
     }
 
     public Receipt receipt(String id, String source) {
-        var query = requestSummary().where(GOTONE_REQUEST.ID.eq(id));
-        if (source != null) {
-            query.and(GOTONE_REQUEST.SOURCE.eq(source));
-        }
-        return Optional.ofNullable(requests.selectOneByQuery(query))
+        return jdbc.sql(REQUEST_SUMMARY + " WHERE id = :id AND (:source IS NULL OR source = :source)")
+                .param("id", id)
+                .param("source", source, Types.VARCHAR)
+                .query(GotoneRequestDO.class)
+                .optional()
                 .map(GotoneDeliveryStore::receipt)
                 .orElseThrow(() -> new CommonException(GOTONE_NOT_FOUND));
     }
 
     public List<Receipt> recent() {
-        return requests
-                .selectListByQuery(requestSummary()
-                        .orderBy(GOTONE_REQUEST.ACCEPTED_AT.desc(), GOTONE_REQUEST.ID.desc())
-                        .limit(100))
+        return jdbc
+                .sql(REQUEST_SUMMARY + " ORDER BY accepted_at DESC, id DESC LIMIT 100")
+                .query(GotoneRequestDO.class)
+                .list()
                 .stream()
                 .map(GotoneDeliveryStore::receipt)
                 .toList();
     }
 
     public List<Delivery> deliveries(String request) {
-        var targets = deliveries.selectListByQuery(QueryWrapper.create()
-                .select(
-                        GOTONE_DELIVERY.ID,
-                        GOTONE_DELIVERY.CHANNEL,
-                        GOTONE_DELIVERY.MASKED_TARGET,
-                        GOTONE_DELIVERY.STATUS)
-                .where(GOTONE_DELIVERY.REQUEST_ID.eq(request))
-                .orderBy(GOTONE_DELIVERY.CHANNEL.asc(), GOTONE_DELIVERY.ID.asc()));
+        var targets = jdbc.sql(
+                        "SELECT id, channel, masked_target, status FROM gotone_delivery WHERE request_id = :id ORDER BY channel, id")
+                .param("id", request)
+                .query(GotoneDeliveryDO.class)
+                .list();
         if (targets.isEmpty()) {
             return List.of();
         }
-        var history = attempts
-                .selectListByQuery(QueryWrapper.create()
-                        .where(GOTONE_DELIVERY_ATTEMPT.DELIVERY_ID.in(
-                                targets.stream().map(GotoneDeliveryDO::getId).toList()))
-                        .orderBy(GOTONE_DELIVERY_ATTEMPT.NUMBER.asc()))
+        var history = jdbc
+                .sql("SELECT * FROM gotone_delivery_attempt WHERE delivery_id IN (:ids) ORDER BY number")
+                .param("ids", targets.stream().map(GotoneDeliveryDO::getId).toList())
+                .query(GotoneDeliveryAttemptDO.class)
+                .list()
                 .stream()
                 .collect(Collectors.groupingBy(
                         GotoneDeliveryAttemptDO::getDeliveryId,
@@ -229,10 +198,11 @@ public final class GotoneDeliveryStore {
     }
 
     public Map<String, Integer> triedAccounts(String delivery) {
-        var entries = attempts.selectListByQuery(QueryWrapper.create()
-                .select(GOTONE_DELIVERY_ATTEMPT.ACCOUNT_CODE, GOTONE_DELIVERY_ATTEMPT.NUMBER)
-                .where(GOTONE_DELIVERY_ATTEMPT.DELIVERY_ID.eq(delivery))
-                .and(GOTONE_DELIVERY_ATTEMPT.ACCOUNT_CODE.isNotNull()));
+        var entries = jdbc.sql(
+                        "SELECT account_code, number FROM gotone_delivery_attempt WHERE delivery_id = :id AND account_code IS NOT NULL")
+                .param("id", delivery)
+                .query(GotoneDeliveryAttemptDO.class)
+                .list();
         var tried = new HashMap<String, Integer>();
         for (var entry : entries) {
             tried.merge(entry.getAccountCode(), entry.getNumber(), Math::max);
@@ -241,7 +211,10 @@ public final class GotoneDeliveryStore {
     }
 
     public Optional<Work> lock(String id) {
-        return Optional.ofNullable(deliveries.selectOneByQuery(byId(id).forUpdate()))
+        return jdbc.sql("SELECT * FROM gotone_delivery WHERE id = :id FOR UPDATE")
+                .param("id", Objects.requireNonNull(id))
+                .query(GotoneDeliveryDO.class)
+                .optional()
                 .map(row -> new Work(
                         id,
                         row.getMapId(),
@@ -255,10 +228,14 @@ public final class GotoneDeliveryStore {
 
     public int start(Work work, String account, Integer version) {
         int number = work.attemptNo() + 1;
-        var patch = rows.touch(new GotoneDeliveryDO());
-        patch.setAttemptNo(number);
-        patch.setStatus("SENDING");
-        deliveries.updateByQuery(patch, byId(work.id()));
+        jdbc.sql("""
+                    UPDATE gotone_delivery SET attempt_no = :number, status = 'SENDING', updated_at = :now
+                    WHERE id = :id
+                    """)
+                .param("number", number)
+                .param("now", now())
+                .param("id", work.id())
+                .update();
         var attempt = rows.create(new GotoneDeliveryAttemptDO());
         attempt.setDeliveryId(work.id());
         attempt.setNumber(number);
@@ -266,7 +243,7 @@ public final class GotoneDeliveryStore {
         attempt.setConfigVersion(version);
         attempt.setStatus("SENDING");
         attempt.setStartedAt(utc(rows.clock().instant()));
-        attempts.insert(attempt);
+        aggregates.insert(attempt);
         return number;
     }
 
@@ -276,33 +253,36 @@ public final class GotoneDeliveryStore {
 
     public void finish(
             String id, int attempt, String deliveryStatus, String attemptStatus, String reason, String remoteId) {
-        var query = byId(id).and(GOTONE_DELIVERY.ATTEMPT_NO.eq(attempt)).and(GOTONE_DELIVERY.STATUS.eq("SENDING"));
-        if (updateStatus(query, deliveryStatus) == 0) {
+        if (updateAttemptStatus(id, attempt, "SENDING", deliveryStatus) == 0) {
             return;
         }
-        var patch = rows.touch(new GotoneDeliveryAttemptDO());
-        patch.setStatus(attemptStatus);
-        patch.setReason(reason);
-        patch.setRemoteId(remoteId);
-        patch.setFinishedAt(utc(rows.clock().instant()));
-        if (attempts.updateByQuery(
-                        patch,
-                        QueryWrapper.create()
-                                .where(GOTONE_DELIVERY_ATTEMPT.DELIVERY_ID.eq(id))
-                                .and(GOTONE_DELIVERY_ATTEMPT.NUMBER.eq(attempt)))
-                != 1) {
+        var now = now();
+        int changed = jdbc.sql("""
+                    UPDATE gotone_delivery_attempt SET status = :status, reason = COALESCE(:reason, reason),
+                        remote_id = COALESCE(:remoteId, remote_id), finished_at = :now, updated_at = :now
+                    WHERE delivery_id = :id AND number = :number
+                    """)
+                .param("status", attemptStatus)
+                .param("reason", reason)
+                .param("remoteId", remoteId)
+                .param("now", now)
+                .param("id", id)
+                .param("number", attempt)
+                .update();
+        if (changed != 1) {
             throw new CommonException(REQUEST_CONFLICT);
         }
     }
 
     public void failWaiting(String id, int attempt) {
-        updateStatus(
-                byId(id).and(GOTONE_DELIVERY.ATTEMPT_NO.eq(attempt)).and(GOTONE_DELIVERY.STATUS.eq("RETRY_WAIT")),
-                "FAILED");
+        updateAttemptStatus(id, attempt, "RETRY_WAIT", "FAILED");
     }
 
     public void expire(String id) {
-        updateStatus(byId(id).and(GOTONE_DELIVERY.STATUS.in(List.of("PENDING", "RETRY_WAIT"))), "EXPIRED");
+        jdbc.sql("""
+                    UPDATE gotone_delivery SET status = 'EXPIRED', updated_at = :now
+                    WHERE id = :id AND status IN ('PENDING', 'RETRY_WAIT')
+                    """).param("now", now()).param("id", id).update();
     }
 
     public void retry(Work work, Retry retry, String actor) {
@@ -311,8 +291,8 @@ public final class GotoneDeliveryStore {
         row.setActor(actor);
         row.setReason(retry.reason());
         row.setRequestedAt(row.getCreatedAt());
-        retries.insert(row);
-        updateStatus(byId(work.id()), "PENDING");
+        aggregates.insert(row);
+        updateStatus(work.id(), "PENDING");
     }
 
     public void resolve(Work work, Resolution resolution, String actor) {
@@ -326,14 +306,33 @@ public final class GotoneDeliveryStore {
         row.setReason(resolution.reason());
         row.setActor(actor);
         row.setResolvedAt(row.getCreatedAt());
-        resolutions.insert(row);
-        updateStatus(byId(work.id()), resolution.accepted() ? "SENT" : "FAILED");
+        aggregates.insert(row);
+        updateStatus(work.id(), resolution.accepted() ? "SENT" : "FAILED");
     }
 
-    private int updateStatus(QueryWrapper query, String status) {
-        var patch = rows.touch(new GotoneDeliveryDO());
-        patch.setStatus(status);
-        return deliveries.updateByQuery(patch, query);
+    private void updateStatus(String id, String status) {
+        jdbc.sql("UPDATE gotone_delivery SET status = :status, updated_at = :now WHERE id = :id")
+                .param("status", status)
+                .param("now", now())
+                .param("id", id)
+                .update();
+    }
+
+    private int updateAttemptStatus(String id, int attempt, String expected, String status) {
+        return jdbc.sql("""
+                    UPDATE gotone_delivery SET status = :status, updated_at = :now
+                    WHERE id = :id AND attempt_no = :attempt AND status = :expected
+                    """)
+                .param("status", status)
+                .param("now", now())
+                .param("id", id)
+                .param("attempt", attempt)
+                .param("expected", expected)
+                .update();
+    }
+
+    private LocalDateTime now() {
+        return utc(rows.clock().instant());
     }
 
     public record StoredRequest(Receipt receipt, String digest) {}

@@ -19,12 +19,10 @@ import io.github.loadup.components.runtime.mapping.LoadUpMapStructConfig;
 import io.github.loadup.modules.upms.domain.model.UserOAuthBinding;
 import io.github.loadup.modules.upms.infrastructure.dataobject.UserOAuthBindingDO;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 @Mapper(config = LoadUpMapStructConfig.class)
 public interface UserOAuthBindingConverter {
     UserOAuthBinding toEntity(UserOAuthBindingDO value);
 
-    @Mapping(target = "deleted", ignore = true)
     UserOAuthBindingDO toDO(UserOAuthBinding value);
 }

@@ -15,7 +15,6 @@
  */
 package io.github.loadup.modules.audit.infrastructure.repository;
 
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.github.loadup.commons.domain.PageResult;
 import io.github.loadup.components.database.id.IdGenerator;
 import io.github.loadup.modules.audit.domain.gateway.AuditGateway;
@@ -23,27 +22,21 @@ import io.github.loadup.modules.audit.domain.model.AuditEvent;
 import io.github.loadup.modules.audit.domain.model.AuditQuery;
 import io.github.loadup.modules.audit.infrastructure.converter.AuditStorageConverter;
 import io.github.loadup.modules.audit.infrastructure.dataobject.AuditEventDO;
-import io.github.loadup.modules.audit.infrastructure.mapper.AuditEventMapper;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-public class AuditGatewayImpl extends ServiceImpl<AuditEventMapper, AuditEventDO> implements AuditGateway {
+public class AuditGatewayImpl implements AuditGateway {
     private final NamedParameterJdbcTemplate jdbc;
     private final IdGenerator ids;
     private final AuditStorageConverter converter;
     private final Clock clock;
 
     public AuditGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            AuditEventMapper mapper,
-            IdGenerator ids,
-            AuditStorageConverter converter,
-            Clock clock) {
+            NamedParameterJdbcTemplate jdbc, IdGenerator ids, AuditStorageConverter converter, Clock clock) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
         this.ids = ids;
         this.converter = converter;
         this.clock = clock;
@@ -58,8 +51,14 @@ public class AuditGatewayImpl extends ServiceImpl<AuditEventMapper, AuditEventDO
         var now = LocalDateTime.now(clock);
         row.setCreatedAt(now);
         row.setUpdatedAt(now);
-        row.setDeleted(false);
-        save(row);
+        jdbc.update("""
+            INSERT INTO audit_event (
+                id, actor_id, action, http_method, request_path, outcome, trace_id, occurred_at,
+                created_at, updated_at, deleted)
+            VALUES (
+                :id, :actorId, :action, :method, :path, :outcome, :traceId, :occurredAt,
+                :createdAt, :updatedAt, FALSE)
+            """, new org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource(row));
     }
 
     @Override

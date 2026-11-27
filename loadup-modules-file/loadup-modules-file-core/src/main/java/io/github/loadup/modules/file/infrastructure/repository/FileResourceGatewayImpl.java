@@ -15,19 +15,12 @@
  */
 package io.github.loadup.modules.file.infrastructure.repository;
 
-import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.github.loadup.commons.domain.PageResult;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.modules.file.client.error.FileResultCodeEnum;
 import io.github.loadup.modules.file.domain.gateway.FileResourceGateway;
 import io.github.loadup.modules.file.domain.model.FileReference;
 import io.github.loadup.modules.file.domain.model.FileResource;
-import io.github.loadup.modules.file.infrastructure.dataobject.FileResourceInsert;
-import io.github.loadup.modules.file.infrastructure.mapper.FileReferenceRowMapper;
-import io.github.loadup.modules.file.infrastructure.mapper.FileResourceInsertMapper;
-import io.github.loadup.modules.file.infrastructure.table.Tables;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -39,32 +32,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-public class FileResourceGatewayImpl extends ServiceImpl<FileResourceInsertMapper, FileResourceInsert>
-        implements FileResourceGateway {
+public class FileResourceGatewayImpl implements FileResourceGateway {
     private final JdbcTemplate jdbc;
-    private final FileReferenceRowMapper referenceMapper;
     private final Clock clock;
 
-    public FileResourceGatewayImpl(
-            JdbcTemplate jdbc, FileResourceInsertMapper mapper, FileReferenceRowMapper referenceMapper, Clock clock) {
+    public FileResourceGatewayImpl(JdbcTemplate jdbc, Clock clock) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
-        this.referenceMapper = referenceMapper;
         this.clock = clock;
-    }
-
-    private static FileResource toResource(FileResourceInsert row) {
-        return new FileResource(
-                row.getId(),
-                row.getOwnerId(),
-                row.getStorageId(),
-                row.getFilename(),
-                row.getContentType(),
-                row.getContentLength(),
-                row.getProvider(),
-                row.getState(),
-                row.getCreatedAt(),
-                row.getUpdatedAt());
     }
 
     private static FileResource file(ResultSet rs, int index) throws SQLException {
@@ -84,7 +58,13 @@ public class FileResourceGatewayImpl extends ServiceImpl<FileResourceInsertMappe
     @Override
     public void insert(FileResource file) {
         LocalDateTime now = LocalDateTime.now(clock);
-        save(new FileResourceInsert(
+        jdbc.update(
+                """
+                INSERT INTO file_resource
+                    (id, owner_id, storage_id, filename, content_type, content_length, provider, state,
+                     created_at, updated_at, deleted)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)
+                """,
                 file.id(),
                 file.ownerId(),
                 file.storageId(),
@@ -94,13 +74,18 @@ public class FileResourceGatewayImpl extends ServiceImpl<FileResourceInsertMappe
                 file.provider(),
                 file.state(),
                 file.createdAt() == null ? now : file.createdAt(),
-                now,
-                false));
+                now);
     }
 
     @Override
     public Optional<FileResource> find(String id) {
-        return getByIdOpt(id).map(FileResourceGatewayImpl::toResource);
+        return jdbc
+                .query(
+                        "SELECT * FROM file_resource WHERE id = ? AND deleted = FALSE",
+                        FileResourceGatewayImpl::file,
+                        id)
+                .stream()
+                .findFirst();
     }
 
     @Override
@@ -123,19 +108,15 @@ public class FileResourceGatewayImpl extends ServiceImpl<FileResourceInsertMappe
 
     @Override
     public PageResult<FileResource> list(String owner, int page, int size) {
-        var result = page(
-                new Page<>(page, size),
-                QueryWrapper.create()
-                        .where(Tables.FILE_RESOURCE_INSERT.OWNER_ID.eq(owner))
-                        .and(Tables.FILE_RESOURCE_INSERT.STATE.eq("ACTIVE"))
-                        .orderBy(Tables.FILE_RESOURCE_INSERT.CREATED_AT.desc(), Tables.FILE_RESOURCE_INSERT.ID.desc()));
-        return new PageResult<>(
-                result.getRecords().stream()
-                        .map(FileResourceGatewayImpl::toResource)
-                        .toList(),
-                result.getTotalRow(),
-                page,
-                size);
+        String predicate = " FROM file_resource WHERE owner_id = ? AND state = 'ACTIVE' AND deleted = FALSE";
+        Long total = jdbc.queryForObject("SELECT COUNT(*)" + predicate, Long.class, owner);
+        var records = jdbc.query(
+                "SELECT *" + predicate + " ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?",
+                FileResourceGatewayImpl::file,
+                owner,
+                size,
+                (long) (page - 1) * size);
+        return new PageResult<>(records, total == null ? 0 : total, page, size);
     }
 
     @Override
@@ -174,13 +155,10 @@ public class FileResourceGatewayImpl extends ServiceImpl<FileResourceInsertMappe
 
     @Override
     public List<FileResource> pending(int limit) {
-        var query = QueryWrapper.create()
-                .where(Tables.FILE_RESOURCE_INSERT.STATE.eq("PENDING_DELETE"))
-                .orderBy(Tables.FILE_RESOURCE_INSERT.UPDATED_AT.asc(), Tables.FILE_RESOURCE_INSERT.ID.asc());
-        return list(query).stream()
-                .limit(limit)
-                .map(FileResourceGatewayImpl::toResource)
-                .toList();
+        return jdbc.query("""
+                SELECT * FROM file_resource WHERE state = 'PENDING_DELETE' AND deleted = FALSE
+                ORDER BY updated_at ASC, id ASC LIMIT ?
+                """, FileResourceGatewayImpl::file, limit);
     }
 
     @Override

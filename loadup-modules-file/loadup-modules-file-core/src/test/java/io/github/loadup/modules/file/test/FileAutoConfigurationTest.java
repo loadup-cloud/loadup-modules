@@ -28,16 +28,12 @@ import io.github.loadup.modules.file.app.service.FileResourceService;
 import io.github.loadup.modules.file.domain.gateway.FileResourceGateway;
 import io.github.loadup.modules.file.domain.model.FileResource;
 import io.github.loadup.modules.file.infrastructure.autoconfigure.FilePersistenceAutoConfiguration;
-import io.github.loadup.modules.file.infrastructure.dataobject.FileResourceInsert;
-import io.github.loadup.modules.file.infrastructure.mapper.FileReferenceRowMapper;
-import io.github.loadup.modules.file.infrastructure.mapper.FileResourceInsertMapper;
 import io.github.loadup.modules.file.infrastructure.repository.FileResourceGatewayImpl;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -50,8 +46,6 @@ class FileAutoConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withBean(DataSource.class, () -> mock(DataSource.class))
             .withBean(JdbcTemplate.class, () -> mock(JdbcTemplate.class))
-            .withBean(FileResourceInsertMapper.class, () -> mock(FileResourceInsertMapper.class))
-            .withBean(FileReferenceRowMapper.class, () -> mock(FileReferenceRowMapper.class))
             .withBean("databaseClock", Clock.class, Clock::systemDefaultZone)
             .withConfiguration(AutoConfigurations.of(
                     FilePersistenceAutoConfiguration.class,
@@ -59,7 +53,7 @@ class FileAutoConfigurationTest {
                     DfsAutoConfiguration.class));
 
     @Test
-    void wiresDomainPortAndApplicationMapper() {
+    void wiresDomainPortAndApplicationService() {
         runner.withBean(DfsTemplate.class, () -> mock(DfsTemplate.class)).run(context -> {
             assertThat(context)
                     .hasNotFailed()
@@ -123,24 +117,26 @@ class FileAutoConfigurationTest {
     }
 
     @Test
-    void fileAggregatePreservesAssignedIdAndReadMapping() {
-        var resources = mock(FileResourceInsertMapper.class);
-        var references = mock(FileReferenceRowMapper.class);
-        var gateway = new FileResourceGatewayImpl(mock(JdbcTemplate.class), resources, references, Clock.systemUTC());
+    void fileAggregatePreservesAssignedIdAndInsertMapping() {
+        var jdbc = mock(JdbcTemplate.class);
+        var gateway = new FileResourceGatewayImpl(jdbc, Clock.systemUTC());
         var now = LocalDateTime.of(2026, 1, 1, 0, 0);
         var file =
                 new FileResource("file", "owner", "storage", "name", "text/plain", 7, "database", "ACTIVE", now, now);
         gateway.insert(file);
-        var inserted = ArgumentCaptor.forClass(FileResourceInsert.class);
-        verify(resources).insert(inserted.capture(), ArgumentMatchers.eq(true));
-        assertThat(inserted.getValue().getId()).isEqualTo("file");
-        assertThat(inserted.getValue().getDeleted()).isFalse();
-        when(resources.selectOneById("file")).thenReturn(inserted.getValue());
-        var read = gateway.find("file").orElseThrow();
-        assertThat(read.id()).isEqualTo(file.id());
-        assertThat(read.storageId()).isEqualTo(file.storageId());
-        assertThat(read.size()).isEqualTo(file.size());
-        assertThat(read.state()).isEqualTo(file.state());
+        verify(jdbc)
+                .update(
+                        ArgumentMatchers.contains("INSERT INTO file_resource"),
+                        ArgumentMatchers.eq(file.id()),
+                        ArgumentMatchers.eq(file.ownerId()),
+                        ArgumentMatchers.eq(file.storageId()),
+                        ArgumentMatchers.eq(file.filename()),
+                        ArgumentMatchers.eq(file.contentType()),
+                        ArgumentMatchers.eq(file.size()),
+                        ArgumentMatchers.eq(file.provider()),
+                        ArgumentMatchers.eq(file.state()),
+                        ArgumentMatchers.eq(now),
+                        ArgumentMatchers.any(LocalDateTime.class));
     }
 
     @AutoConfiguration(before = DfsAutoConfiguration.class)

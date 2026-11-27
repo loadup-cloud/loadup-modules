@@ -15,9 +15,6 @@
  */
 package io.github.loadup.modules.transfer.infrastructure.repository;
 
-import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.github.loadup.commons.domain.PageResult;
 import io.github.loadup.commons.enums.CommonResultCodeEnum;
 import io.github.loadup.commons.error.CommonException;
@@ -28,34 +25,24 @@ import io.github.loadup.modules.transfer.domain.model.TransferKind;
 import io.github.loadup.modules.transfer.domain.model.TransferStatus;
 import io.github.loadup.modules.transfer.domain.model.TransferTask;
 import io.github.loadup.modules.transfer.infrastructure.dataobject.TransferTaskRow;
-import io.github.loadup.modules.transfer.infrastructure.mapper.TransferTaskOptionRowMapper;
-import io.github.loadup.modules.transfer.infrastructure.mapper.TransferTaskRowMapper;
-import io.github.loadup.modules.transfer.infrastructure.table.Tables;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
-public class TransferGatewayImpl extends ServiceImpl<TransferTaskRowMapper, TransferTaskRow>
-        implements TransferGateway {
+public class TransferGatewayImpl implements TransferGateway {
     private final JdbcTemplate jdbc;
-    private final TransferTaskOptionRowMapper optionMapper;
     private final IdGenerator ids;
     private final Clock clock;
 
-    public TransferGatewayImpl(
-            JdbcTemplate jdbc,
-            TransferTaskRowMapper mapper,
-            TransferTaskOptionRowMapper optionMapper,
-            IdGenerator ids,
-            Clock clock) {
+    public TransferGatewayImpl(JdbcTemplate jdbc, IdGenerator ids, Clock clock) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
-        this.optionMapper = optionMapper;
         this.ids = ids;
         this.clock = clock;
     }
@@ -120,43 +107,69 @@ public class TransferGatewayImpl extends ServiceImpl<TransferTaskRowMapper, Tran
         if (limit < 1 || limit > 100) {
             throw new CommonException(CommonResultCodeEnum.PARAM_ILLEGAL);
         }
-        var query = QueryWrapper.create()
-                .where(Tables.TRANSFER_TASK_ROW.STATUS.eq("QUEUED"))
-                .orderBy(Tables.TRANSFER_TASK_ROW.CREATED_AT.asc(), Tables.TRANSFER_TASK_ROW.ID.asc())
-                .limit(limit);
-        return list(query).stream().map(TransferTaskRow::getId).toList();
+        return jdbc.query(
+                "SELECT id FROM transfer_task WHERE status = 'QUEUED' AND deleted = FALSE "
+                        + "ORDER BY created_at ASC, id ASC LIMIT ?",
+                (resultSet, rowNumber) -> resultSet.getString("id"),
+                limit);
     }
 
     /** Internal bootstrap lookup; user-facing callers verify ownership. */
     @Override
     public Optional<TransferTask> find(String id) {
-        return getByIdOpt(id).map(TransferGatewayImpl::task);
+        return jdbc
+                .query(
+                        "SELECT id, owner_id, kind, handler_key, source_file_id, result_file_id, status, "
+                                + "processed_count, total_count, error_message, created_at, started_at, finished_at "
+                                + "FROM transfer_task WHERE id = ? AND deleted = FALSE",
+                        BeanPropertyRowMapper.newInstance(TransferTaskRow.class),
+                        id)
+                .stream()
+                .findFirst()
+                .map(TransferGatewayImpl::task);
     }
 
     @Override
     public PageResult<TransferTask> list(String owner, TransferKind kind, TransferStatus status, int page, int size) {
-        var task = Tables.TRANSFER_TASK_ROW;
-        var query = QueryWrapper.create().where(task.OWNER_ID.eq(owner));
+        var where = new StringBuilder("owner_id = :owner AND deleted = FALSE");
+        var args = new ArrayList<Object>();
+        args.add(owner);
         if (kind != null) {
-            query.and(task.KIND.eq(kind.name()));
+            where.append(" AND kind = :kind");
+            args.add(kind.name());
         }
         if (status != null) {
-            query.and(task.STATUS.eq(status.name()));
+            where.append(" AND status = :status");
+            args.add(status.name());
         }
-        var result = page(new Page<>(page, size), query.orderBy(task.CREATED_AT.desc(), task.ID.desc()));
-        return new PageResult<>(
-                result.getRecords().stream().map(TransferGatewayImpl::task).toList(), result.getTotalRow(), page, size);
+        String predicate =
+                where.toString().replace(":owner", "?").replace(":kind", "?").replace(":status", "?");
+        long total = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM transfer_task WHERE " + predicate, Long.class, args.toArray());
+        args.add(size);
+        args.add((long) (page - 1) * size);
+        var rows = jdbc.query(
+                "SELECT id, owner_id, kind, handler_key, source_file_id, result_file_id, status, "
+                        + "processed_count, total_count, error_message, created_at, started_at, finished_at "
+                        + "FROM transfer_task WHERE " + predicate
+                        + " ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?",
+                BeanPropertyRowMapper.newInstance(TransferTaskRow.class),
+                args.toArray());
+        return new PageResult<>(rows.stream().map(TransferGatewayImpl::task).toList(), total, page, size);
     }
 
     @Override
     public Map<String, String> options(String id) {
         Map<String, String> result = new LinkedHashMap<>();
-        var query = QueryWrapper.create()
-                .where(Tables.TRANSFER_TASK_OPTION_ROW.TASK_ID.eq(id))
-                .orderBy(Tables.TRANSFER_TASK_OPTION_ROW.OPTION_NAME.asc());
-        for (var option : optionMapper.selectListByQuery(query)) {
-            result.put(option.getOptionName(), option.getOptionValue());
-        }
+        jdbc.query(
+                "SELECT option_name, option_value FROM transfer_task_option "
+                        + "WHERE task_id = ? AND deleted = FALSE ORDER BY option_name ASC",
+                resultSet -> {
+                    while (resultSet.next()) {
+                        result.put(resultSet.getString("option_name"), resultSet.getString("option_value"));
+                    }
+                },
+                id);
         return Map.copyOf(result);
     }
 

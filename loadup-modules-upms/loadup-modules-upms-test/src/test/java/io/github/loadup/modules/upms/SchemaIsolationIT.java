@@ -26,7 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @SpringBootTest(classes = TestApplication.class)
-@EnableTestContainers(ContainerType.POSTGRESQL)
+@EnableTestContainers(value = ContainerType.POSTGRESQL, reuse = false)
 class SchemaIsolationIT {
     @Autowired
     private JdbcTemplate jdbc;
@@ -43,7 +43,7 @@ class SchemaIsolationIT {
     }
 
     @Test
-    void migrationsTargetTheDefaultSchema() {
-        assertThat(jdbc.queryForObject("SELECT current_schema()", String.class)).isEqualTo("public");
+    void migrationsTargetTheConfiguredSchema() {
+        assertThat(jdbc.queryForObject("SELECT current_schema()", String.class)).isEqualTo("upms_test");
     }
 }

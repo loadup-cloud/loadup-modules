@@ -27,12 +27,6 @@ import io.github.loadup.modules.upms.infrastructure.converter.PermissionConverte
 import io.github.loadup.modules.upms.infrastructure.converter.RoleConverter;
 import io.github.loadup.modules.upms.infrastructure.converter.UserConverter;
 import io.github.loadup.modules.upms.infrastructure.converter.UserOAuthBindingConverter;
-import io.github.loadup.modules.upms.infrastructure.mapper.DepartmentMapper;
-import io.github.loadup.modules.upms.infrastructure.mapper.PermissionMapper;
-import io.github.loadup.modules.upms.infrastructure.mapper.RoleMapper;
-import io.github.loadup.modules.upms.infrastructure.mapper.UserMapper;
-import io.github.loadup.modules.upms.infrastructure.mapper.UserOAuthBindingMapper;
-import io.github.loadup.modules.upms.infrastructure.mapper.UserRoleMapper;
 import io.github.loadup.modules.upms.infrastructure.repository.DepartmentGatewayImpl;
 import io.github.loadup.modules.upms.infrastructure.repository.LoginLogGatewayImpl;
 import io.github.loadup.modules.upms.infrastructure.repository.PermissionGatewayImpl;
@@ -54,12 +48,8 @@ public class UpmsPersistenceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(DepartmentGateway.class)
     public DepartmentGatewayImpl departmentGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            DepartmentMapper mapper,
-            UserMapper userMapper,
-            DepartmentConverter converter,
-            Clock clock) {
-        return new DepartmentGatewayImpl(jdbc, mapper, userMapper, converter, clock);
+            NamedParameterJdbcTemplate jdbc, DepartmentConverter converter, Clock clock) {
+        return new DepartmentGatewayImpl(jdbc, converter, clock);
     }
 
     @Bean
@@ -71,35 +61,26 @@ public class UpmsPersistenceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(PermissionGateway.class)
     public PermissionGatewayImpl permissionGatewayImpl(
-            NamedParameterJdbcTemplate jdbc, PermissionMapper mapper, PermissionConverter converter, Clock clock) {
-        return new PermissionGatewayImpl(jdbc, mapper, converter, clock);
+            NamedParameterJdbcTemplate jdbc, PermissionConverter converter, Clock clock) {
+        return new PermissionGatewayImpl(jdbc, converter, clock);
     }
 
     @Bean
     @ConditionalOnMissingBean(RoleGateway.class)
-    public RoleGatewayImpl roleGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            RoleMapper mapper,
-            UserRoleMapper userRoleMapper,
-            RoleConverter converter,
-            Clock clock) {
-        return new RoleGatewayImpl(jdbc, mapper, userRoleMapper, converter, clock);
+    public RoleGatewayImpl roleGatewayImpl(NamedParameterJdbcTemplate jdbc, RoleConverter converter, Clock clock) {
+        return new RoleGatewayImpl(jdbc, converter, clock);
     }
 
     @Bean
     @ConditionalOnMissingBean(UserGateway.class)
-    public UserGatewayImpl userGatewayImpl(
-            NamedParameterJdbcTemplate jdbc, UserMapper mapper, UserConverter converter, Clock clock) {
-        return new UserGatewayImpl(jdbc, mapper, converter, clock);
+    public UserGatewayImpl userGatewayImpl(NamedParameterJdbcTemplate jdbc, UserConverter converter, Clock clock) {
+        return new UserGatewayImpl(jdbc, converter, clock);
     }
 
     @Bean
     @ConditionalOnMissingBean(UserOAuthBindingGateway.class)
     public UserOAuthBindingGatewayImpl userOAuthBindingGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            UserOAuthBindingMapper mapper,
-            UserOAuthBindingConverter converter,
-            Clock clock) {
-        return new UserOAuthBindingGatewayImpl(jdbc, mapper, converter, clock);
+            NamedParameterJdbcTemplate jdbc, UserOAuthBindingConverter converter, Clock clock) {
+        return new UserOAuthBindingGatewayImpl(jdbc, converter, clock);
     }
 }

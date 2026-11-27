@@ -13,7 +13,7 @@ flowchart LR
     Worker --> Result["投递与尝试记录"]
 ```
 
-`web` 适配 HTTP 和身份鉴权，`client` 定义调用契约，`core` 实现应用逻辑、渠道集成及 MyBatis-Flex Mapper。一个渠道的一个目标对应一条
+`web` 适配 HTTP 和身份鉴权，`client` 定义调用契约，`core` 实现应用逻辑、渠道集成及 JDBC 持久化。一个渠道的一个目标对应一条
 Task。Inbox 写入和结果在同一事务，外部尝试在调用前登记，数据库事务之外执行传输。Task 类型分别为 `gotone.deliver.sms`、
 `gotone.deliver.email`、`gotone.deliver.push`、`gotone.deliver.inbox`、`gotone.deliver.webhook`。可通过 `loadup.task.types`
 覆盖每类租约及重试策略，或用 `loadup.task.task-type` 部署专用 Worker。
@@ -36,7 +36,7 @@ Gotone 保管站内信模板和投递记录。`IN_APP` Handler 以 `deliveryId` 
 JDBC 事务标记 `SENT`。收件人消息副本及已读、归档状态归 Inbox 模块。 [Inbox 模块](../loadup-modules-inbox/README.md)
 
 Gotone 使用 11 张 `gotone_` 表。渠道模板和账号设置存为文本 JSON，由应用校验，不按渠道复制表。持久化对象继承 `BaseDO`，字符串
-ID 由 `IdGenerator` 生成；MyBatis-Flex Mapper 由 Database processor 生成，常规单表操作使用生成 Mapper。
+ID 由 `IdGenerator` 生成。常规插入使用 Spring Data JDBC，条件更新和行锁使用参数化 SQL。
 
 DDL 不包含外键，仓储不使用多表 JOIN 或 PostgreSQL 专属运行时 SQL。表间引用由应用校验、唯一约束和本地事务维护。
 `(source, request_key)` 唯一键竞争失败后，受理方重新读取已提交行并比较内容摘要，匹配则返回既有受理结果，否则报告冲突。生成的

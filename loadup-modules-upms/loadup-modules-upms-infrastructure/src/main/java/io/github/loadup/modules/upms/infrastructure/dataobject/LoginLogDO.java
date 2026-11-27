@@ -15,9 +15,9 @@
  */
 package io.github.loadup.modules.upms.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDateTime;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Table("upms_login_log")
 public class LoginLogDO extends BaseDO {

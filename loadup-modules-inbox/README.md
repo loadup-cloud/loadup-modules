@@ -5,7 +5,7 @@ Inbox 保存当前用户收到的站内信，提供分页查询、未读计数�
 | Maven 坐标                    | 职责                                                                                |
 |-------------------------------|-------------------------------------------------------------------------------------|
 | `loadup-modules-inbox-client` | `InboxReceiver` 幂等接收已渲染消息，`InboxFacade` 管理收件人的查询和状态。          |
-| `loadup-modules-inbox-core`   | 通过 Database 组件持久化。MyBatis-Flex 根据 `InboxMessageDO` 生成 Mapper 和表定义。 |
+| `loadup-modules-inbox-core`   | 通过 Database 组件持久化。使用显式 SQL 读写收件箱和归档状态。 |
 | `loadup-modules-inbox-web`    | 通过 `/api/inbox` 处理收件人请求。收件人 ID 取自登录身份。                          |
 
 三个 JAR 由 `loadup-modules-bom` 管理，groupId 为 `io.github.loadup-cloud`。宿主接入 `inbox-web` 并将

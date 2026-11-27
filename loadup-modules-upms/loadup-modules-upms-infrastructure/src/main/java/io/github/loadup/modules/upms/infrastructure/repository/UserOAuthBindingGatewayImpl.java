@@ -15,15 +15,11 @@
  */
 package io.github.loadup.modules.upms.infrastructure.repository;
 
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.github.loadup.commons.util.IdUtils;
 import io.github.loadup.modules.upms.domain.gateway.UserOAuthBindingGateway;
 import io.github.loadup.modules.upms.domain.model.UserOAuthBinding;
 import io.github.loadup.modules.upms.infrastructure.converter.UserOAuthBindingConverter;
 import io.github.loadup.modules.upms.infrastructure.dataobject.UserOAuthBindingDO;
-import io.github.loadup.modules.upms.infrastructure.mapper.UserOAuthBindingMapper;
-import io.github.loadup.modules.upms.infrastructure.table.Tables;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,23 +27,21 @@ import java.util.Optional;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-public class UserOAuthBindingGatewayImpl extends ServiceImpl<UserOAuthBindingMapper, UserOAuthBindingDO>
-        implements UserOAuthBindingGateway {
+public class UserOAuthBindingGatewayImpl implements UserOAuthBindingGateway {
     private final NamedParameterJdbcTemplate jdbc;
+    private final JdbcClient queries;
     private final Clock clock;
     private final UserOAuthBindingConverter converter;
 
     public UserOAuthBindingGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            UserOAuthBindingMapper mapper,
-            UserOAuthBindingConverter converter,
-            Clock clock) {
+            NamedParameterJdbcTemplate jdbc, UserOAuthBindingConverter converter, Clock clock) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
+        this.queries = JdbcClient.create(jdbc);
         this.clock = clock;
         this.converter = converter;
     }
@@ -90,25 +84,36 @@ public class UserOAuthBindingGatewayImpl extends ServiceImpl<UserOAuthBindingMap
 
     @Override
     public Optional<UserOAuthBinding> findByProviderAndOpenId(String provider, String openId) {
-        var query = QueryWrapper.create()
-                .where(Tables.USER_OAUTH_BINDING.PROVIDER.eq(provider))
-                .and(Tables.USER_OAUTH_BINDING.OPEN_ID.eq(openId));
-        return getOneOpt(query).map(converter::toEntity);
+        return queries.sql(
+                        "SELECT * FROM upms_user_oauth_binding WHERE deleted = FALSE AND provider = :provider AND open_id = :open_id")
+                .param("provider", provider)
+                .param("open_id", openId)
+                .query(UserOAuthBindingDO.class)
+                .optional()
+                .map(converter::toEntity);
     }
 
     @Override
     public List<UserOAuthBinding> findByUserId(String userId) {
-        return list(QueryWrapper.create().where(Tables.USER_OAUTH_BINDING.USER_ID.eq(userId))).stream()
+        return queries
+                .sql("SELECT * FROM upms_user_oauth_binding WHERE deleted = FALSE AND user_id = :user_id")
+                .param("user_id", userId)
+                .query(UserOAuthBindingDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
 
     @Override
     public Optional<UserOAuthBinding> findByUserIdAndProvider(String userId, String provider) {
-        var query = QueryWrapper.create()
-                .where(Tables.USER_OAUTH_BINDING.USER_ID.eq(userId))
-                .and(Tables.USER_OAUTH_BINDING.PROVIDER.eq(provider));
-        return getOneOpt(query).map(converter::toEntity);
+        return queries.sql(
+                        "SELECT * FROM upms_user_oauth_binding WHERE deleted = FALSE AND user_id = :user_id AND provider = :provider")
+                .param("user_id", userId)
+                .param("provider", provider)
+                .query(UserOAuthBindingDO.class)
+                .optional()
+                .map(converter::toEntity);
     }
 
     @Override

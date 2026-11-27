@@ -52,8 +52,7 @@ web → app → domain
 Facade 是 client 的业务契约，应用服务直接实现；Controller 和跨模块消费者依赖 Facade。domain 保留业务状态、规则与
 Gateway，表示层字段转换交给 Spring 管理的 MapStruct。共享配置固定 Spring 模式、构造器注入和目标字段严格校验。
 
-仓储显式维护 ID、审计时间、租户和逻辑删除字段。字典删除与文件引用解绑明确使用物理删除；文件状态、通知归档和任务生命周期是业务状态，独立于
-BaseDO 的 deleted。
+仓储显式维护 ID 和审计时间。业务表按部署 schema 隔离。需要软删除的表由业务 SQL 维护状态和读取条件。
 
 所有数据对象的诊断文本使用 commons-json；诊断序列化与真实 API JSON 分离，避免因 HTTP 脱敏设置改变日志中的凭证披露规则。
 

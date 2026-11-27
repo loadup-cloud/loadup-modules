@@ -18,14 +18,7 @@ package io.github.loadup.modules.gotone.infrastructure.repository;
 import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.GOTONE_NOT_FOUND;
 import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.INVALID_SUBMISSION;
 import static io.github.loadup.modules.gotone.client.error.GotoneResultCode.REQUEST_CONFLICT;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_PROVIDER_ACCOUNT;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_SERVICE;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_SERVICE_CHANNEL_MAP;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_SERVICE_DRAFT;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_SERVICE_REVISION;
-import static io.github.loadup.modules.gotone.infrastructure.table.Tables.GOTONE_SMS_TEMPLATE_BINDING;
 
-import com.mybatisflex.core.query.QueryWrapper;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.modules.gotone.client.Gotone.Account;
 import io.github.loadup.modules.gotone.client.Gotone.Channel;
@@ -38,79 +31,60 @@ import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneServiceDO
 import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneServiceDraftDO;
 import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneServiceRevisionDO;
 import io.github.loadup.modules.gotone.infrastructure.dataobject.GotoneSmsTemplateBindingDO;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneProviderAccountMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceChannelMapMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceDraftMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceRevisionMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneSmsTemplateBindingMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 public final class GotoneConfigurationStore {
     private static final TypeReference<Map<String, String>> FIELDS = new TypeReference<>() {};
     private static final TypeReference<List<String>> PARAMETERS = new TypeReference<>() {};
-    private final GotoneServiceMapper services;
-    private final GotoneServiceDraftMapper drafts;
-    private final GotoneServiceRevisionMapper revisions;
-    private final GotoneServiceChannelMapMapper channels;
-    private final GotoneProviderAccountMapper accounts;
-    private final GotoneSmsTemplateBindingMapper bindings;
+    private final JdbcClient jdbc;
+    private final JdbcAggregateTemplate aggregates;
     private final GotoneRows rows;
     private final JsonMapper json;
 
     public GotoneConfigurationStore(
-            GotoneServiceMapper services,
-            GotoneServiceDraftMapper drafts,
-            GotoneServiceRevisionMapper revisions,
-            GotoneServiceChannelMapMapper channels,
-            GotoneProviderAccountMapper accounts,
-            GotoneSmsTemplateBindingMapper bindings,
-            GotoneRows rows,
-            JsonMapper json) {
-        this.services = services;
-        this.drafts = drafts;
-        this.revisions = revisions;
-        this.channels = channels;
-        this.accounts = accounts;
-        this.bindings = bindings;
+            JdbcClient jdbc, JdbcAggregateTemplate aggregates, GotoneRows rows, JsonMapper json) {
+        this.jdbc = jdbc;
+        this.aggregates = aggregates;
         this.rows = rows;
         this.json = json;
     }
 
-    private static QueryWrapper serviceQuery(String code) {
-        return QueryWrapper.create().where(GOTONE_SERVICE.SERVICE_CODE.eq(code));
+    private Optional<GotoneServiceDO> service(String code, boolean lock) {
+        return jdbc.sql("SELECT * FROM gotone_service WHERE service_code = :code" + (lock ? " FOR UPDATE" : ""))
+                .param("code", code)
+                .query(GotoneServiceDO.class)
+                .optional();
     }
 
-    private static QueryWrapper channelQuery(String code, int revision) {
-        return QueryWrapper.create()
-                .where(GOTONE_SERVICE_CHANNEL_MAP.SERVICE_CODE.eq(code))
-                .and(GOTONE_SERVICE_CHANNEL_MAP.REVISION.eq(revision));
+    private Optional<GotoneProviderAccountDO> accountRow(String code, boolean lock) {
+        return jdbc.sql("SELECT * FROM gotone_provider_account WHERE account_code = :code"
+                        + (lock ? " FOR UPDATE" : ""))
+                .param("code", code)
+                .query(GotoneProviderAccountDO.class)
+                .optional();
     }
 
-    private static QueryWrapper draftQuery(String code, String actor) {
-        return QueryWrapper.create()
-                .where(GOTONE_SERVICE_DRAFT.SERVICE_CODE.eq(code))
-                .and(GOTONE_SERVICE_DRAFT.ACTOR.eq(actor));
-    }
-
-    private static QueryWrapper accountQuery(String code) {
-        return QueryWrapper.create().where(GOTONE_PROVIDER_ACCOUNT.ACCOUNT_CODE.eq(code));
-    }
-
-    private static QueryWrapper bindingQuery(String mapId, String account) {
-        return QueryWrapper.create()
-                .where(GOTONE_SMS_TEMPLATE_BINDING.MAP_ID.eq(mapId))
-                .and(GOTONE_SMS_TEMPLATE_BINDING.ACCOUNT_CODE.eq(account));
+    private Optional<GotoneSmsTemplateBindingDO> bindingRow(String mapId, String account, boolean lock) {
+        return jdbc.sql("SELECT * FROM gotone_sms_template_binding WHERE map_id = :mapId AND account_code = :account"
+                        + (lock ? " FOR UPDATE" : ""))
+                .param("mapId", mapId)
+                .param("account", account)
+                .query(GotoneSmsTemplateBindingDO.class)
+                .optional();
     }
 
     public List<Route> routes() {
-        var published = services.selectListByQuery(QueryWrapper.create().orderBy(GOTONE_SERVICE.SERVICE_CODE.asc()));
+        var published = jdbc.sql("SELECT * FROM gotone_service ORDER BY service_code")
+                .query(GotoneServiceDO.class)
+                .list();
         if (published.isEmpty()) {
             return List.of();
         }
@@ -119,17 +93,22 @@ public final class GotoneConfigurationStore {
                 .map(GotoneServiceDO::getActiveRevision)
                 .distinct()
                 .toList();
-        var history = revisions
-                .selectListByQuery(QueryWrapper.create()
-                        .where(GOTONE_SERVICE_REVISION.SERVICE_CODE.in(codes))
-                        .and(GOTONE_SERVICE_REVISION.REVISION.in(versions)))
+        var history = jdbc
+                .sql("SELECT * FROM gotone_service_revision WHERE service_code IN (:codes) AND revision IN (:versions)")
+                .param("codes", codes)
+                .param("versions", versions)
+                .query(GotoneServiceRevisionDO.class)
+                .list()
                 .stream()
                 .collect(Collectors.toMap(r -> new Version(r.getServiceCode(), r.getRevision()), r -> r));
-        var templates = channels
-                .selectListByQuery(QueryWrapper.create()
-                        .where(GOTONE_SERVICE_CHANNEL_MAP.SERVICE_CODE.in(codes))
-                        .and(GOTONE_SERVICE_CHANNEL_MAP.REVISION.in(versions))
-                        .orderBy(GOTONE_SERVICE_CHANNEL_MAP.CHANNEL.asc()))
+        var templates = jdbc
+                .sql("""
+                    SELECT * FROM gotone_service_channel_map WHERE service_code IN (:codes) AND revision IN (:versions) ORDER BY channel
+                    """)
+                .param("codes", codes)
+                .param("versions", versions)
+                .query(GotoneServiceChannelMapDO.class)
+                .list()
                 .stream()
                 .collect(Collectors.groupingBy(r -> new Version(r.getServiceCode(), r.getRevision())));
         return published.stream()
@@ -141,34 +120,37 @@ public final class GotoneConfigurationStore {
     }
 
     public Optional<Revision> active(String code) {
-        return Optional.ofNullable(services.selectOneByQuery(serviceQuery(code)))
+        return service(code, false)
                 .filter(s -> Boolean.TRUE.equals(s.getEnabled()))
                 .map(s -> revision(code, s.getActiveRevision()));
     }
 
     public List<Route> drafts(String actor) {
-        return drafts
-                .selectListByQuery(QueryWrapper.create()
-                        .where(GOTONE_SERVICE_DRAFT.ACTOR.eq(actor))
-                        .and(GOTONE_SERVICE_DRAFT.CONFIG.isNotNull())
-                        .orderBy(GOTONE_SERVICE_DRAFT.UPDATED_AT.desc()))
+        return jdbc
+                .sql(
+                        "SELECT * FROM gotone_service_draft WHERE actor = :actor AND config IS NOT NULL ORDER BY updated_at DESC")
+                .param("actor", actor)
+                .query(GotoneServiceDraftDO.class)
+                .list()
                 .stream()
-                .map(d -> json.readValue(d.getConfig(), Route.class))
+                .map(draft -> json.readValue(draft.getConfig(), Route.class))
                 .toList();
     }
 
     public void saveDraft(Route route, String actor) {
-        String config = json.writeValueAsString(route);
-        var patch = rows.touch(new GotoneServiceDraftDO());
-        patch.setConfig(config);
-        var key = draftQuery(route.serviceCode(), actor);
-        if (drafts.updateByQuery(patch, key) == 0) {
-            var draft = rows.create(new GotoneServiceDraftDO());
-            draft.setActor(actor);
-            draft.setServiceCode(route.serviceCode());
-            draft.setConfig(config);
-            drafts.insert(draft);
-        }
+        var draft = rows.create(new GotoneServiceDraftDO());
+        jdbc.sql("""
+                    INSERT INTO gotone_service_draft (id, service_code, actor, config, created_at, updated_at)
+                    VALUES (:id, :code, :actor, :config, :now, :now)
+                    ON CONFLICT (service_code, actor) DO UPDATE
+                    SET config = EXCLUDED.config, updated_at = EXCLUDED.updated_at
+                    """)
+                .param("id", draft.getId())
+                .param("code", route.serviceCode())
+                .param("actor", actor)
+                .param("config", json.writeValueAsString(route))
+                .param("now", draft.getCreatedAt())
+                .update();
     }
 
     public Route publish(Route route, String actor) {
@@ -183,12 +165,12 @@ public final class GotoneConfigurationStore {
         current.setActiveRevision(version);
         if (route.version() == 0) {
             try {
-                services.insert(current);
+                aggregates.insert(current);
             } catch (DuplicateKeyException conflict) {
                 throw new CommonException(REQUEST_CONFLICT, conflict);
             }
         } else {
-            services.update(rows.touch(current), false);
+            aggregates.update(rows.touch(current));
         }
         var revision = rows.create(new GotoneServiceRevisionDO());
         revision.setServiceCode(code);
@@ -196,19 +178,25 @@ public final class GotoneConfigurationStore {
         revision.setPublishedBy(actor);
         revision.setPublishedAt(revision.getCreatedAt());
         revision.setRequiredParameters(json.writeValueAsString(route.requiredParameters()));
-        revisions.insert(revision);
+        aggregates.insert(revision);
         for (Template template : route.channels()) {
             var mapping = rows.create(new GotoneServiceChannelMapDO());
             mapping.setServiceCode(code);
             mapping.setRevision(version);
             mapping.setChannel(template.channel().name());
             mapping.setFields(json.writeValueAsString(template.fields()));
-            channels.insert(mapping);
+            aggregates.insert(mapping);
         }
-        var draft = drafts.selectOneByQuery(draftQuery(code, actor).forUpdate());
+        var draft = jdbc.sql(
+                        "SELECT * FROM gotone_service_draft WHERE service_code = :code AND actor = :actor FOR UPDATE")
+                .param("code", code)
+                .param("actor", actor)
+                .query(GotoneServiceDraftDO.class)
+                .optional()
+                .orElse(null);
         if (draft != null) {
             draft.setConfig(null);
-            drafts.update(rows.touch(draft), false);
+            aggregates.update(rows.touch(draft));
         }
         return route(current, revision(code, version));
     }
@@ -226,9 +214,12 @@ public final class GotoneConfigurationStore {
                         old.parameters(),
                         old.templates().stream().map(MappedTemplate::template).toList()),
                 actor);
-        for (var row : bindings.selectListByQuery(QueryWrapper.create()
-                .where(GOTONE_SMS_TEMPLATE_BINDING.SERVICE_CODE.eq(code))
-                .and(GOTONE_SMS_TEMPLATE_BINDING.REVISION.eq(number)))) {
+        for (var row : jdbc.sql(
+                        "SELECT * FROM gotone_sms_template_binding WHERE service_code = :code AND revision = :revision")
+                .param("code", code)
+                .param("revision", number)
+                .query(GotoneSmsTemplateBindingDO.class)
+                .list()) {
             var binding = toSmsBinding(row);
             saveSmsBinding(new SmsBinding(
                     code,
@@ -242,24 +233,24 @@ public final class GotoneConfigurationStore {
     }
 
     public List<Account> accounts() {
-        return accounts
-                .selectListByQuery(QueryWrapper.create()
-                        .orderBy(GOTONE_PROVIDER_ACCOUNT.PRIORITY.asc(), GOTONE_PROVIDER_ACCOUNT.ACCOUNT_CODE.asc()))
+        return jdbc
+                .sql("SELECT * FROM gotone_provider_account ORDER BY priority, account_code")
+                .query(GotoneProviderAccountDO.class)
+                .list()
                 .stream()
                 .map(this::account)
                 .toList();
     }
 
     public Optional<Account> account(String code) {
-        return Optional.ofNullable(accounts.selectOneByQuery(accountQuery(code)))
-                .map(this::account);
+        return accountRow(code, false).map(this::account);
     }
 
     public Account saveAccount(Account account) {
         var fresh = account.version() == 0;
         var current = fresh
                 ? rows.create(new GotoneProviderAccountDO())
-                : accounts.selectOneByQuery(accountQuery(account.accountCode()).forUpdate());
+                : accountRow(account.accountCode(), true).orElse(null);
         if (!fresh
                 && (current == null
                         || current.getVersion() != account.version()
@@ -284,32 +275,36 @@ public final class GotoneConfigurationStore {
         current.setVersion(account.version() + 1);
         if (fresh) {
             try {
-                accounts.insert(current);
+                aggregates.insert(current);
             } catch (DuplicateKeyException conflict) {
                 throw new CommonException(REQUEST_CONFLICT, conflict);
             }
         } else {
-            accounts.update(rows.touch(current), false);
+            aggregates.update(rows.touch(current));
         }
         return account(current);
     }
 
     public List<SmsBinding> smsBindings() {
-        return bindings
-                .selectListByQuery(QueryWrapper.create()
-                        .orderBy(
-                                GOTONE_SMS_TEMPLATE_BINDING.SERVICE_CODE.asc(),
-                                GOTONE_SMS_TEMPLATE_BINDING.REVISION.asc(),
-                                GOTONE_SMS_TEMPLATE_BINDING.ACCOUNT_CODE.asc()))
+        return jdbc
+                .sql("SELECT * FROM gotone_sms_template_binding ORDER BY service_code, revision, account_code")
+                .query(GotoneSmsTemplateBindingDO.class)
+                .list()
                 .stream()
                 .map(this::toSmsBinding)
                 .toList();
     }
 
     public void saveSmsBinding(SmsBinding binding) {
-        var mapping = channels.selectOneByQuery(channelQuery(binding.serviceCode(), binding.revision())
-                .and(GOTONE_SERVICE_CHANNEL_MAP.CHANNEL.eq(Channel.SMS.name()))
-                .forUpdate());
+        var mapping = jdbc.sql("""
+                    SELECT * FROM gotone_service_channel_map WHERE service_code = :code AND revision = :revision AND channel = :channel FOR UPDATE
+                    """)
+                .param("code", binding.serviceCode())
+                .param("revision", binding.revision())
+                .param("channel", Channel.SMS.name())
+                .query(GotoneServiceChannelMapDO.class)
+                .optional()
+                .orElse(null);
         if (mapping == null
                 || account(binding.accountCode())
                         .filter(a -> a.channel() == Channel.SMS)
@@ -321,8 +316,7 @@ public final class GotoneConfigurationStore {
                 .containsAll(binding.variableMapping().values())) {
             throw new CommonException(INVALID_SUBMISSION);
         }
-        var current = bindings.selectOneByQuery(
-                bindingQuery(mapping.getId(), binding.accountCode()).forUpdate());
+        var current = bindingRow(mapping.getId(), binding.accountCode(), true).orElse(null);
         boolean fresh = current == null;
         if (fresh) {
             current = rows.create(new GotoneSmsTemplateBindingDO());
@@ -335,19 +329,19 @@ public final class GotoneConfigurationStore {
         current.setRemoteSignature(binding.remoteSignature());
         current.setVariableMapping(json.writeValueAsString(binding.variableMapping()));
         if (fresh) {
-            bindings.insert(current);
+            aggregates.insert(current);
         } else {
-            bindings.update(rows.touch(current), false);
+            aggregates.update(rows.touch(current));
         }
     }
 
     public Optional<Binding> binding(String mapId, String account) {
-        return Optional.ofNullable(bindings.selectOneByQuery(bindingQuery(mapId, account)))
+        return bindingRow(mapId, account, false)
                 .map(b -> new Binding(b.getRemoteTemplateId(), b.getRemoteSignature(), fields(b.getVariableMapping())));
     }
 
     private GotoneServiceDO lockedService(String code, int version) {
-        var row = services.selectOneByQuery(serviceQuery(code).forUpdate());
+        var row = service(code, true).orElse(null);
         if (row == null) {
             throw new CommonException(GOTONE_NOT_FOUND);
         }
@@ -369,16 +363,21 @@ public final class GotoneConfigurationStore {
     }
 
     private Revision revision(String code, int number) {
-        return revision(
-                revisionRow(code, number),
-                channels.selectListByQuery(
-                        channelQuery(code, number).orderBy(GOTONE_SERVICE_CHANNEL_MAP.CHANNEL.asc())));
+        var mappings = jdbc.sql(
+                        "SELECT * FROM gotone_service_channel_map WHERE service_code = :code AND revision = :revision ORDER BY channel")
+                .param("code", code)
+                .param("revision", number)
+                .query(GotoneServiceChannelMapDO.class)
+                .list();
+        return revision(revisionRow(code, number), mappings);
     }
 
     private GotoneServiceRevisionDO revisionRow(String code, int number) {
-        return Optional.ofNullable(revisions.selectOneByQuery(QueryWrapper.create()
-                        .where(GOTONE_SERVICE_REVISION.SERVICE_CODE.eq(code))
-                        .and(GOTONE_SERVICE_REVISION.REVISION.eq(number))))
+        return jdbc.sql("SELECT * FROM gotone_service_revision WHERE service_code = :code AND revision = :revision")
+                .param("code", code)
+                .param("revision", number)
+                .query(GotoneServiceRevisionDO.class)
+                .optional()
                 .orElseThrow(() -> new CommonException(GOTONE_NOT_FOUND));
     }
 

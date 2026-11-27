@@ -106,17 +106,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths combine.children="append">
-                        <path>
-                            <groupId>io.github.loadup-cloud</groupId>
-                            <artifactId>loadup-components-database-processor</artifactId>
-                        </path>
-                    </annotationProcessorPaths>
-                    <annotationProcessors combine.children="append">
-                        <annotationProcessor>io.github.loadup.components.database.processor.LoadUpMyBatisFlexProcessor</annotationProcessor>
-                    </annotationProcessors>
-                </configuration>
+                <configuration/>
             </plugin>
         </plugins>
     </build>

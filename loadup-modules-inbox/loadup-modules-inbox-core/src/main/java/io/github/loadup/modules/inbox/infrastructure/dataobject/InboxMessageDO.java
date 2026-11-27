@@ -15,9 +15,9 @@
  */
 package io.github.loadup.modules.inbox.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDateTime;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Table("inbox_message")
 public class InboxMessageDO extends BaseDO {

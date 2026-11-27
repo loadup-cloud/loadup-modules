@@ -24,7 +24,6 @@ import io.github.loadup.modules.audit.app.converter.AuditDTOConverter;
 import io.github.loadup.modules.audit.app.service.AuditService;
 import io.github.loadup.modules.audit.domain.gateway.AuditGateway;
 import io.github.loadup.modules.audit.infrastructure.autoconfigure.AuditPersistenceAutoConfiguration;
-import io.github.loadup.modules.audit.infrastructure.mapper.AuditEventMapper;
 import java.time.Clock;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ class AuditAutoConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withBean(DataSource.class, () -> mock(DataSource.class))
             .withBean(NamedParameterJdbcTemplate.class, () -> mock(NamedParameterJdbcTemplate.class))
-            .withBean(AuditEventMapper.class, () -> mock(AuditEventMapper.class))
             .withBean(IdGenerator.class, () -> () -> "audit-id")
             .withBean("databaseClock", Clock.class, Clock::systemDefaultZone)
             .withConfiguration(

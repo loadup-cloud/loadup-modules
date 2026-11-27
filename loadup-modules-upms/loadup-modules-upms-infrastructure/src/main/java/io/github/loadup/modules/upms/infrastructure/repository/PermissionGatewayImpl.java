@@ -15,16 +15,12 @@
  */
 package io.github.loadup.modules.upms.infrastructure.repository;
 
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.modules.upms.client.error.UpmsResultCodeEnum;
 import io.github.loadup.modules.upms.domain.gateway.PermissionGateway;
 import io.github.loadup.modules.upms.domain.model.Permission;
 import io.github.loadup.modules.upms.infrastructure.converter.PermissionConverter;
 import io.github.loadup.modules.upms.infrastructure.dataobject.PermissionDO;
-import io.github.loadup.modules.upms.infrastructure.mapper.PermissionMapper;
-import io.github.loadup.modules.upms.infrastructure.table.Tables;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,19 +31,20 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-public class PermissionGatewayImpl extends ServiceImpl<PermissionMapper, PermissionDO> implements PermissionGateway {
+public class PermissionGatewayImpl implements PermissionGateway {
     private final NamedParameterJdbcTemplate jdbc;
+    private final JdbcClient queries;
     private final Clock clock;
     private final PermissionConverter converter;
 
-    public PermissionGatewayImpl(
-            NamedParameterJdbcTemplate jdbc, PermissionMapper mapper, PermissionConverter converter, Clock clock) {
+    public PermissionGatewayImpl(NamedParameterJdbcTemplate jdbc, PermissionConverter converter, Clock clock) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
+        this.queries = JdbcClient.create(jdbc);
         this.clock = clock;
         this.converter = converter;
     }
@@ -121,12 +118,19 @@ public class PermissionGatewayImpl extends ServiceImpl<PermissionMapper, Permiss
 
     @Override
     public Optional<Permission> findById(String id) {
-        return getByIdOpt(id).map(converter::toEntity);
+        return queries.sql("SELECT * FROM upms_permission WHERE deleted = FALSE AND id = :id")
+                .param("id", id)
+                .query(PermissionDO.class)
+                .optional()
+                .map(converter::toEntity);
     }
 
     @Override
     public Optional<Permission> findByPermissionCode(String permissionCode) {
-        return getOneOpt(QueryWrapper.create().where(Tables.PERMISSION.PERMISSION_CODE.eq(permissionCode)))
+        return queries.sql("SELECT * FROM upms_permission WHERE deleted = FALSE AND permission_code = :permission_code")
+                .param("permission_code", permissionCode)
+                .query(PermissionDO.class)
+                .optional()
                 .map(converter::toEntity);
     }
 
@@ -140,42 +144,71 @@ public class PermissionGatewayImpl extends ServiceImpl<PermissionMapper, Permiss
 
     @Override
     public List<Permission> findByParentId(String parentId) {
-        return list(QueryWrapper.create().where(Tables.PERMISSION.PARENT_ID.eq(parentId))).stream()
+        return queries
+                .sql("SELECT * FROM upms_permission WHERE deleted = FALSE AND parent_id = :parent_id")
+                .param("parent_id", parentId)
+                .query(PermissionDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
 
     @Override
     public List<Permission> findByPermissionType(Short permissionType) {
-        return list(QueryWrapper.create().where(Tables.PERMISSION.PERMISSION_TYPE.eq(permissionType))).stream()
+        return queries
+                .sql("SELECT * FROM upms_permission WHERE deleted = FALSE AND permission_type = :permission_type")
+                .param("permission_type", permissionType)
+                .query(PermissionDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
 
     @Override
     public List<Permission> findAll() {
-        return list().stream().map(converter::toEntity).toList();
+        return queries
+                .sql("SELECT * FROM upms_permission WHERE deleted = FALSE AND TRUE")
+                .query(PermissionDO.class)
+                .list()
+                .stream()
+                .map(converter::toEntity)
+                .toList();
     }
 
     @Override
     public List<Permission> findAllEnabled() {
-        return list(QueryWrapper.create().where(Tables.PERMISSION.STATUS.eq((short) 1))).stream()
+        return queries
+                .sql("SELECT * FROM upms_permission WHERE deleted = FALSE AND status = :status")
+                .param("status", (short) 1)
+                .query(PermissionDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
 
     @Override
     public List<Permission> findMenuPermissions() {
-        var query = QueryWrapper.create()
-                .where(Tables.PERMISSION.PERMISSION_TYPE.in(List.of((short) 1, (short) 2)))
-                .and(Tables.PERMISSION.STATUS.eq((short) 1))
-                .orderBy(Tables.PERMISSION.SORT_ORDER.asc());
-        return list(query).stream().map(converter::toEntity).toList();
+        return queries
+                .sql(
+                        "SELECT * FROM upms_permission WHERE deleted = FALSE AND permission_type IN (1, 2) AND status = 1 ORDER BY sort_order")
+                .query(PermissionDO.class)
+                .list()
+                .stream()
+                .map(converter::toEntity)
+                .toList();
     }
 
     @Override
     public boolean existsByPermissionCode(String permissionCode) {
-        return exists(QueryWrapper.create().where(Tables.PERMISSION.PERMISSION_CODE.eq(permissionCode)));
+        return queries.sql(
+                                "SELECT COUNT(*) FROM upms_permission WHERE deleted = FALSE AND permission_code = :permission_code")
+                        .param("permission_code", permissionCode)
+                        .query(Long.class)
+                        .single()
+                > 0;
     }
 
     private void lockParent(String id) {

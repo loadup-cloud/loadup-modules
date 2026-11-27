@@ -43,17 +43,6 @@ import io.github.loadup.modules.gotone.app.service.InboxDeliveryHandler;
 import io.github.loadup.modules.gotone.app.service.PushDeliveryHandler;
 import io.github.loadup.modules.gotone.app.service.SmsDeliveryHandler;
 import io.github.loadup.modules.gotone.app.service.WebhookDeliveryHandler;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryAttemptMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryResolutionMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneDeliveryRetryMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneProviderAccountMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneRequestMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceChannelMapMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceDraftMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneServiceRevisionMapper;
-import io.github.loadup.modules.gotone.infrastructure.mapper.GotoneSmsTemplateBindingMapper;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigurationStore;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore;
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneRows;
@@ -76,6 +65,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -93,27 +84,14 @@ public class GotoneAutoConfiguration {
 
     @Bean
     GotoneConfigurationStore gotoneConfigurationStore(
-            GotoneServiceMapper services,
-            GotoneServiceDraftMapper drafts,
-            GotoneServiceRevisionMapper revisions,
-            GotoneServiceChannelMapMapper channels,
-            GotoneProviderAccountMapper accounts,
-            GotoneSmsTemplateBindingMapper bindings,
-            GotoneRows rows,
-            JsonMapper json) {
-        return new GotoneConfigurationStore(services, drafts, revisions, channels, accounts, bindings, rows, json);
+            JdbcClient jdbc, JdbcAggregateTemplate aggregates, GotoneRows rows, JsonMapper json) {
+        return new GotoneConfigurationStore(jdbc, aggregates, rows, json);
     }
 
     @Bean
     GotoneDeliveryStore gotoneDeliveryStore(
-            GotoneRequestMapper requests,
-            GotoneDeliveryMapper deliveries,
-            GotoneDeliveryAttemptMapper attempts,
-            GotoneDeliveryRetryMapper retries,
-            GotoneDeliveryResolutionMapper resolutions,
-            GotoneRows rows,
-            JsonMapper json) {
-        return new GotoneDeliveryStore(requests, deliveries, attempts, retries, resolutions, rows, json);
+            JdbcClient jdbc, JdbcAggregateTemplate aggregates, GotoneRows rows, JsonMapper json) {
+        return new GotoneDeliveryStore(jdbc, aggregates, rows, json);
     }
 
     @Bean

@@ -15,8 +15,8 @@
  */
 package io.github.loadup.modules.gotone.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Table("gotone_service_channel_map")
 public class GotoneServiceChannelMapDO extends BaseDO {

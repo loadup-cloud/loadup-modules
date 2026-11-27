@@ -7,7 +7,7 @@ Inbox 保存按收件人隔离的已渲染消息。消息写入后，标题、�
 | 层 | 责任 |
 |---|---|
 | `inbox-client` | `InboxReceiver` 接收已渲染通知；`InboxFacade` 提供收件人查询和状态操作。 |
-| `inbox-core` | `InboxReceiverService`、`InboxService` 校验输入并执行用例；`InboxGatewayImpl` 通过 MyBatis-Flex 读写 `inbox_message`。 |
+| `inbox-core` | `InboxReceiverService`、`InboxService` 校验输入并执行用例；`InboxGatewayImpl` 通过 参数化 JDBC 读写 `inbox_message`。 |
 | `inbox-web` | 从登录主体取得收件人 ID，映射查询和状态 API。 |
 
 Flyway 脚本 `db/migration/modules/inbox/V20261126000001__create_inbox.sql` 建立消息表，并以 `(recipient_id, request_key)` 唯一约束保证同一收件人的重复投递不会新增消息。Core 持久化自动配置要求单一 DataSource 且 `loadup.modules.inbox.enabled` 未关闭；Web 自动配置要求 `InboxFacade` 可用且 `loadup.modules.inbox.web.enabled` 未关闭。

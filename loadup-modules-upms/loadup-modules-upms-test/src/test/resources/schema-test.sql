@@ -17,6 +17,8 @@
 -- limitations under the License.
 -- #L%
 ---
+CREATE SCHEMA IF NOT EXISTS upms_test;
+
 -- Clear UPMS test tables before applying the production initial migration.
 DROP TABLE IF EXISTS loadup_sequence_allocation;
 DROP TABLE IF EXISTS upms_user_config;

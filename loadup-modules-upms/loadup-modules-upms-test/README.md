@@ -35,12 +35,11 @@ mvnd -B -ntp -T 1 clean verify \
   和 database 能力；不直接扫描 database 自动配置类。
 - 公共 `application.yml` 先执行 `schema-test.sql`，再执行 database 组件提供的 Sequence 建表 SQL。本地及 CI 共用初始化顺序。
 - `schema-test.sql` 仅重置测试数据库，包含清理旧 Sequence 表；真实消费工程仍应通过迁移管理 Sequence。
-- 不配置 `mybatis-flex.global-config`，持久化约定由 database 代码统一维护；测试也不能绕过配置保护。
 
 分层与用例边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 阶段 1C 新增 UpmsAutoConfigurationTest（过滤持久化/JDBC/ORM 类，验证自定义 Gateway
-独立装配与原密码匹配）、UpmsPersistenceAutoConfigurationTest（六类默认及逐项替换）。后者仅以模拟的 JDBC/Mapper 验证 Bean
+独立装配与原密码匹配）、UpmsPersistenceAutoConfigurationTest（六类默认及逐项替换）。后者仅以模拟的 JDBC 验证 Bean
 图，不替代真实数据库测试。TestApplication 已使用 EnableAutoConfiguration，保留原启动方式，由新增 infrastructure imports
 自动发现默认实现；其 POM 已直接声明 infrastructure，无需新增重复扫描或
 Import。ServiceInputContractTest、SchemaIsolationIT、UserServiceIT 及原身份权限测试仍待运行。

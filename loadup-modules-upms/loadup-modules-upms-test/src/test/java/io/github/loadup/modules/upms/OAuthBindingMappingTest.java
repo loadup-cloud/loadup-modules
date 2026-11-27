@@ -31,7 +31,6 @@ class OAuthBindingMappingTest {
             var converter = context.getBean(UserOAuthBindingConverter.class);
             var stored = new UserOAuthBindingDO();
             stored.setId("binding");
-            stored.setDeleted(false);
             stored.setUserId("user");
             stored.setProvider("test");
             stored.setOpenId("subject");

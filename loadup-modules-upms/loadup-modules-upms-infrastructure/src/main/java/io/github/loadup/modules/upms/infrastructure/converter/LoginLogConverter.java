@@ -30,7 +30,6 @@ public interface LoginLogConverter {
      * @param loginLog domain entity
      * @return data object
      */
-    @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     LoginLogDO toDataObject(LoginLog loginLog);

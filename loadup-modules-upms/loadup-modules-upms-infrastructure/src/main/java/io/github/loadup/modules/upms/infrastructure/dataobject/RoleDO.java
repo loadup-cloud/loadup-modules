@@ -15,12 +15,13 @@
  */
 package io.github.loadup.modules.upms.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Column;
-import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Table("upms_role")
 public class RoleDO extends BaseDO {
+    private Boolean deleted;
 
     private String roleName;
 
@@ -142,5 +143,13 @@ public class RoleDO extends BaseDO {
 
     public void setUpdatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public Boolean getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
     }
 }

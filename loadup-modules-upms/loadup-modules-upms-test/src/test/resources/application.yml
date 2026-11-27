@@ -13,5 +13,7 @@ spring:
       continue-on-error: false
 
 loadup:
+  database:
+    schema: upms_test
   flyway:
     enabled: false

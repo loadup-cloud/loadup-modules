@@ -33,17 +33,15 @@ Web → App → Domain Gateway → Infrastructure；认证适配连接 UPMS 凭�
 
 ## 启动与数据生命周期
 
-测试启动器只开启 Boot 自动配置，不再手动扫描 `io.github.loadup.components.database`，也不重复声明 UPMS 的 Mapper
-扫描。正式自动配置负责装配顺序与条件判断，真实数据库不会替换为 Mock。
+测试启动器只开启 Boot 自动配置，不再手动扫描 `io.github.loadup.components.database`，并沿用 UPMS 的 JDBC 自动装配。正式自动配置负责装配顺序与条件判断，真实数据库不会替换为 Mock。
 
 本地与 CI 共用 `application.yml` 的 SQL 初始化：先重置 UPMS 测试表及 Sequence 分配元数据，再执行 database 提供的
 `V2026101201__sequence_allocation.sql`。测试容器数据可清理；这些初始化脚本不得用于生产数据库。
 
-`mybatis-flex.global-config` 属于 database 的受保护配置，测试 profile 不提供覆盖项。该保护持续生效；不能为了通过测试而关闭保护或替换框架默认
-ID 策略。`UserServiceIT` 通过真实自动装配、数据初始化和服务调用构成此次启动失败的回归入口。
+测试使用 Database 的正式 ID 与事务装配。`UserServiceIT` 通过真实自动装配、数据初始化和服务调用构成此次启动失败的回归入口。
 
 阶段 1C 新增 UpmsAutoConfigurationTest（过滤持久化/JDBC/ORM 类，验证自定义 Gateway
-独立装配与原密码匹配）、UpmsPersistenceAutoConfigurationTest（六类默认及逐项替换）。后者仅以模拟的 JDBC/Mapper 验证 Bean
+独立装配与原密码匹配）、UpmsPersistenceAutoConfigurationTest（六类默认及逐项替换）。后者仅以模拟的 JDBC 验证 Bean
 图，不替代真实数据库测试。TestApplication 已使用 EnableAutoConfiguration，保留原启动方式，由新增 infrastructure imports
 自动发现默认实现；其 POM 已直接声明 infrastructure，无需新增重复扫描或
 Import。ServiceInputContractTest、SchemaIsolationIT、UserServiceIT 及原身份权限测试仍待运行。

@@ -15,10 +15,10 @@
  */
 package io.github.loadup.modules.audit.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Column;
-import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDateTime;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Table("audit_event")
 public class AuditEventDO extends BaseDO {

@@ -15,11 +15,8 @@
  */
 package io.github.loadup.modules.file.infrastructure.autoconfigure;
 
-import com.mybatisflex.spring.boot.v4.MybatisFlexAutoConfiguration;
 import io.github.loadup.components.database.autoconfigure.DatabaseCoreAutoConfiguration;
 import io.github.loadup.modules.file.domain.gateway.FileResourceGateway;
-import io.github.loadup.modules.file.infrastructure.mapper.FileReferenceRowMapper;
-import io.github.loadup.modules.file.infrastructure.mapper.FileResourceInsertMapper;
 import io.github.loadup.modules.file.infrastructure.repository.FileResourceGatewayImpl;
 import java.time.Clock;
 import javax.sql.DataSource;
@@ -32,12 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-@AutoConfiguration(
-        after = {
-            JdbcTemplateAutoConfiguration.class,
-            MybatisFlexAutoConfiguration.class,
-            DatabaseCoreAutoConfiguration.class
-        })
+@AutoConfiguration(after = {JdbcTemplateAutoConfiguration.class, DatabaseCoreAutoConfiguration.class})
 @ConditionalOnSingleCandidate(DataSource.class)
 @ConditionalOnProperty(prefix = "loadup.modules.file", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class FilePersistenceAutoConfiguration {
@@ -45,12 +37,8 @@ public class FilePersistenceAutoConfiguration {
     @ConditionalOnMissingBean(FileResourceGateway.class)
     static class DefaultPersistence {
         @Bean
-        public FileResourceGateway fileGateway(
-                JdbcTemplate jdbc,
-                FileResourceInsertMapper mapper,
-                FileReferenceRowMapper referenceMapper,
-                Clock clock) {
-            return new FileResourceGatewayImpl(jdbc, mapper, referenceMapper, clock);
+        public FileResourceGateway fileGateway(JdbcTemplate jdbc, Clock clock) {
+            return new FileResourceGatewayImpl(jdbc, clock);
         }
     }
 }

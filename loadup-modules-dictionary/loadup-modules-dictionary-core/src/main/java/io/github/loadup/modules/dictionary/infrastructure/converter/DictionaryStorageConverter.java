@@ -21,16 +21,13 @@ import io.github.loadup.modules.dictionary.domain.model.DictionaryType;
 import io.github.loadup.modules.dictionary.infrastructure.dataobject.DictionaryItemDO;
 import io.github.loadup.modules.dictionary.infrastructure.dataobject.DictionaryTypeDO;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 @Mapper(config = LoadUpMapStructConfig.class)
 public interface DictionaryStorageConverter {
-    @Mapping(target = "deleted", ignore = true)
     DictionaryTypeDO toDO(DictionaryType source);
 
     DictionaryType toDomain(DictionaryTypeDO source);
 
-    @Mapping(target = "deleted", ignore = true)
     DictionaryItemDO toDO(DictionaryItem source);
 
     DictionaryItem toDomain(DictionaryItemDO source);

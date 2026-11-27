@@ -130,5 +130,4 @@ loadup:
 
 ## Database 编译期处理器
 
-编译期配置由 database processor 内置维护，模块无需同步配置；处理器版本由 framework BOM 管理。详见
-[framework database processor 文档](../loadup-framework/loadup-components/data/loadup-components-database-processor/README.md)。
+持久化入口使用 Spring Data JDBC 或业务 SQL。MapStruct 处理器版本通过 Framework BOM 管理。

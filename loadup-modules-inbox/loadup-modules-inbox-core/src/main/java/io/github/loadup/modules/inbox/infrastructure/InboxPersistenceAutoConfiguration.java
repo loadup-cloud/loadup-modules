@@ -17,10 +17,8 @@ package io.github.loadup.modules.inbox.infrastructure;
 
 import io.github.loadup.components.database.autoconfigure.DatabaseCoreAutoConfiguration;
 import io.github.loadup.components.database.autoconfigure.IdGeneratorAutoConfiguration;
-import io.github.loadup.components.database.autoconfigure.MyBatisFlexAutoConfiguration;
 import io.github.loadup.components.database.id.IdGenerator;
 import io.github.loadup.modules.inbox.domain.InboxGateway;
-import io.github.loadup.modules.inbox.infrastructure.mapper.InboxMessageMapper;
 import java.time.Clock;
 import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -29,22 +27,21 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @AutoConfiguration(
         after = {
             DataSourceAutoConfiguration.class,
             DatabaseCoreAutoConfiguration.class,
-            IdGeneratorAutoConfiguration.class,
-            MyBatisFlexAutoConfiguration.class
+            IdGeneratorAutoConfiguration.class
         })
 @ConditionalOnSingleCandidate(DataSource.class)
 @ConditionalOnProperty(prefix = "loadup.modules.inbox", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class InboxPersistenceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(InboxGateway.class)
-    InboxGateway inboxGateway(
-            InboxMessageMapper mapper, PlatformTransactionManager transactions, IdGenerator ids, Clock clock) {
-        return new InboxGatewayImpl(mapper, transactions, clock, ids);
+    InboxGateway inboxGateway(JdbcClient jdbc, PlatformTransactionManager transactions, IdGenerator ids, Clock clock) {
+        return new InboxGatewayImpl(jdbc, transactions, clock, ids);
     }
 }

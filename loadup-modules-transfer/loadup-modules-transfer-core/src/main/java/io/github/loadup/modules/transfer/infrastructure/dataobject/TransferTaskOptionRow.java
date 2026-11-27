@@ -15,9 +15,9 @@
  */
 package io.github.loadup.modules.transfer.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDateTime;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Table("transfer_task_option")
 public class TransferTaskOptionRow extends BaseDO {
@@ -33,15 +33,13 @@ public class TransferTaskOptionRow extends BaseDO {
             String optionName,
             String optionValue,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt,
-            boolean deleted) {
+            LocalDateTime updatedAt) {
         setId(id);
         this.taskId = taskId;
         this.optionName = optionName;
         this.optionValue = optionValue;
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        setDeleted(deleted);
     }
 
     public String getTaskId() {

@@ -15,10 +15,6 @@
  */
 package io.github.loadup.modules.upms.infrastructure.repository;
 
-import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryColumn;
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.github.loadup.commons.domain.PageResult;
 import io.github.loadup.commons.dto.PageQuery;
 import io.github.loadup.commons.error.CommonException;
@@ -27,8 +23,6 @@ import io.github.loadup.modules.upms.domain.gateway.UserGateway;
 import io.github.loadup.modules.upms.domain.model.User;
 import io.github.loadup.modules.upms.infrastructure.converter.UserConverter;
 import io.github.loadup.modules.upms.infrastructure.dataobject.UserDO;
-import io.github.loadup.modules.upms.infrastructure.mapper.UserMapper;
-import io.github.loadup.modules.upms.infrastructure.table.Tables;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,11 +33,12 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements UserGateway {
+public class UserGatewayImpl implements UserGateway {
     private static final String FROM = " FROM upms_user WHERE deleted = FALSE AND ";
     private static final String COLUMNS =
             "id, username, password, nickname, real_name, dept_id, email, email_verified, mobile, mobile_verified,"
@@ -51,12 +46,13 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
                     + " credentials_non_expired, last_login_time, last_login_ip, login_fail_count, locked_time,"
                     + " password_update_time, remark, created_by, updated_by, created_at, updated_at, deleted";
     private final NamedParameterJdbcTemplate jdbc;
+    private final JdbcClient queries;
     private final Clock clock;
     private final UserConverter converter;
 
-    public UserGatewayImpl(NamedParameterJdbcTemplate jdbc, UserMapper mapper, UserConverter converter, Clock clock) {
+    public UserGatewayImpl(NamedParameterJdbcTemplate jdbc, UserConverter converter, Clock clock) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
+        this.queries = JdbcClient.create(jdbc);
         this.clock = clock;
         this.converter = converter;
     }
@@ -153,51 +149,55 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
 
     @Override
     public Optional<User> findById(String id) {
-        return getByIdOpt(id).map(converter::toEntity);
+        return queries.sql("SELECT * FROM upms_user WHERE deleted = FALSE AND id = :id")
+                .param("id", id)
+                .query(UserDO.class)
+                .optional()
+                .map(converter::toEntity);
     }
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return getOneOpt(QueryWrapper.create().where(Tables.USER.USERNAME.eq(username)))
+        return queries.sql("SELECT * FROM upms_user WHERE deleted = FALSE AND username = :username")
+                .param("username", username)
+                .query(UserDO.class)
+                .optional()
                 .map(converter::toEntity);
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return getOneOpt(QueryWrapper.create().where(Tables.USER.EMAIL.eq(email)))
+        return queries.sql("SELECT * FROM upms_user WHERE deleted = FALSE AND email = :email")
+                .param("email", email)
+                .query(UserDO.class)
+                .optional()
                 .map(converter::toEntity);
     }
 
     @Override
     public Optional<User> findByMobile(String mobile) {
-        return getOneOpt(QueryWrapper.create().where(Tables.USER.MOBILE.eq(mobile)))
+        return queries.sql("SELECT * FROM upms_user WHERE deleted = FALSE AND mobile = :mobile")
+                .param("mobile", mobile)
+                .query(UserDO.class)
+                .optional()
                 .map(converter::toEntity);
     }
 
     @Override
     public List<User> findByDeptId(String deptId) {
-        return list(QueryWrapper.create().where(Tables.USER.DEPT_ID.eq(deptId))).stream()
+        return queries
+                .sql("SELECT * FROM upms_user WHERE deleted = FALSE AND dept_id = :dept_id")
+                .param("dept_id", deptId)
+                .query(UserDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
 
     @Override
     public PageResult<User> findAll(PageQuery query, String sortBy, String sortOrder) {
-        QueryColumn column = switch (sortBy) {
-            case "createdAt" -> Tables.USER.CREATED_AT;
-            case "username" -> Tables.USER.USERNAME;
-            case "nickname" -> Tables.USER.NICKNAME;
-            case "id" -> Tables.USER.ID;
-            default -> throw new CommonException(UpmsResultCodeEnum.UNSUPPORTED_USER_SORT_FIELD);
-        };
-        var page = page(
-                new Page<>(query.pageNum(), query.pageSize()),
-                QueryWrapper.create().orderBy(column, !"DESC".equalsIgnoreCase(sortOrder)));
-        return PageResult.of(
-                page.getRecords().stream().map(converter::toEntity).toList(),
-                page.getTotalRow(),
-                query.pageNum(),
-                query.pageSize());
+        return page("TRUE", params(), query, sortBy, sortOrder);
     }
 
     @Override
@@ -212,22 +212,37 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
 
     @Override
     public boolean existsByUsername(String username) {
-        return exists(QueryWrapper.create().where(Tables.USER.USERNAME.eq(username)));
+        return queries.sql("SELECT COUNT(*) FROM upms_user WHERE deleted = FALSE AND username = :username")
+                        .param("username", username)
+                        .query(Long.class)
+                        .single()
+                > 0;
     }
 
     @Override
     public boolean existsByEmail(String email) {
-        return exists(QueryWrapper.create().where(Tables.USER.EMAIL.eq(email)));
+        return queries.sql("SELECT COUNT(*) FROM upms_user WHERE deleted = FALSE AND email = :email")
+                        .param("email", email)
+                        .query(Long.class)
+                        .single()
+                > 0;
     }
 
     @Override
     public boolean existsByMobile(String mobile) {
-        return exists(QueryWrapper.create().where(Tables.USER.MOBILE.eq(mobile)));
+        return queries.sql("SELECT COUNT(*) FROM upms_user WHERE deleted = FALSE AND mobile = :mobile")
+                        .param("mobile", mobile)
+                        .query(Long.class)
+                        .single()
+                > 0;
     }
 
     @Override
     public long countByDeptId(String deptId) {
-        return count(QueryWrapper.create().where(Tables.USER.DEPT_ID.eq(deptId)));
+        return queries.sql("SELECT COUNT(*) FROM upms_user WHERE deleted = FALSE AND dept_id = :dept_id")
+                .param("dept_id", deptId)
+                .query(Long.class)
+                .single();
     }
 
     private void lockDepartment(String id) {

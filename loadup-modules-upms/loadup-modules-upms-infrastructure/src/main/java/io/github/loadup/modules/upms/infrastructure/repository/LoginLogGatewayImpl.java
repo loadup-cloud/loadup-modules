@@ -69,7 +69,6 @@ public class LoginLogGatewayImpl implements LoginLogGateway {
         row.setProvider(rs.getString("provider"));
         row.setCreatedAt(rs.getObject("created_at", LocalDateTime.class));
         row.setUpdatedAt(rs.getObject("updated_at", LocalDateTime.class));
-        row.setDeleted(rs.getBoolean("deleted"));
         return row;
     }
 

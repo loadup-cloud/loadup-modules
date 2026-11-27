@@ -13,7 +13,7 @@
 ## 数据与一致性
 
 `dictionary_type` 按 `type_code` 唯一，`dictionary_item` 按 `(type_id, item_value)` 唯一，条目通过外键引用类型。两表保留标准
-`id`、`created_at`、`updated_at`、`deleted` 列，不含 `tenant_id`；当前删除为物理删除，类型有条目时拒绝删除。类型编码和值不可修改，避免已被业务引用的含义发生漂移。
+`id`、`created_at`、`updated_at` 列，不含 `tenant_id`；当前删除为物理删除，类型有条目时拒绝删除。类型编码和值不可修改，避免已被业务引用的含义发生漂移。
 
 写操作由 `@Transactional` 包裹。管理查询返回含停用数据的分页结果；业务读取只有在类型启用时才返回启用条目，按排序值、标签、value
 排序。每次读取直接访问数据库，因此修改立即可见，不引入缓存失效问题。
@@ -53,8 +53,7 @@ web → app → domain
 Facade 是 client 的业务契约，应用服务直接实现；Controller 和跨模块消费者依赖 Facade。domain 保留业务状态、规则与
 Gateway，表示层字段转换交给 Spring 管理的 MapStruct。共享配置固定 Spring 模式、构造器注入和目标字段严格校验。
 
-仓储显式维护 ID、审计时间、租户和逻辑删除字段。字典删除与文件引用解绑明确使用物理删除；文件状态、通知归档和任务生命周期是业务状态，独立于
-BaseDO 的 deleted。
+仓储显式维护 ID 和审计时间。业务表按部署 schema 隔离。需要软删除的表由业务 SQL 维护状态和读取条件。
 
 所有数据对象的诊断文本使用 commons-json；诊断序列化与真实 API JSON 分离，避免因 HTTP 脱敏设置改变日志中的凭证披露规则。
 

@@ -15,9 +15,9 @@
  */
 package io.github.loadup.modules.file.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDateTime;
+import org.springframework.data.relational.core.mapping.Table;
 
 /** Single file row with an application-assigned identifier, used for insertion and lookup. */
 @Table("file_resource")
@@ -42,8 +42,7 @@ public class FileResourceInsert extends BaseDO {
             String provider,
             String state,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt,
-            boolean deleted) {
+            LocalDateTime updatedAt) {
         setId(id);
         this.ownerId = ownerId;
         this.storageId = storageId;
@@ -54,7 +53,6 @@ public class FileResourceInsert extends BaseDO {
         this.state = state;
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        setDeleted(deleted);
     }
 
     public String getOwnerId() {

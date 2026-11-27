@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS dictionary_type
     enabled     BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMP(6) NOT NULL,
     updated_at  TIMESTAMP(6) NOT NULL,
-    deleted     BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT uk_dictionary_type_code UNIQUE (type_code)
 );
 CREATE TABLE IF NOT EXISTS dictionary_item
@@ -23,7 +22,6 @@ CREATE TABLE IF NOT EXISTS dictionary_item
     enabled     BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMP(6) NOT NULL,
     updated_at  TIMESTAMP(6) NOT NULL,
-    deleted     BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT uk_dictionary_item_type_value UNIQUE (type_id, item_value)
 );
 CREATE INDEX idx_dictionary_item_display ON dictionary_item (type_id, enabled, sort_order);

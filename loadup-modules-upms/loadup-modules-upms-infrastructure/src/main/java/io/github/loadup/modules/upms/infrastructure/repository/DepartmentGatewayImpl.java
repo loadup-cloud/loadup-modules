@@ -15,15 +15,10 @@
  */
 package io.github.loadup.modules.upms.infrastructure.repository;
 
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.github.loadup.modules.upms.domain.gateway.DepartmentGateway;
 import io.github.loadup.modules.upms.domain.model.Department;
 import io.github.loadup.modules.upms.infrastructure.converter.DepartmentConverter;
 import io.github.loadup.modules.upms.infrastructure.dataobject.DepartmentDO;
-import io.github.loadup.modules.upms.infrastructure.mapper.DepartmentMapper;
-import io.github.loadup.modules.upms.infrastructure.mapper.UserMapper;
-import io.github.loadup.modules.upms.infrastructure.table.Tables;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,25 +28,20 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-public class DepartmentGatewayImpl extends ServiceImpl<DepartmentMapper, DepartmentDO> implements DepartmentGateway {
+public class DepartmentGatewayImpl implements DepartmentGateway {
     private final NamedParameterJdbcTemplate jdbc;
-    private final UserMapper userMapper;
+    private final JdbcClient queries;
     private final Clock clock;
     private final DepartmentConverter converter;
 
-    public DepartmentGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            DepartmentMapper mapper,
-            UserMapper userMapper,
-            DepartmentConverter converter,
-            Clock clock) {
+    public DepartmentGatewayImpl(NamedParameterJdbcTemplate jdbc, DepartmentConverter converter, Clock clock) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
-        this.userMapper = userMapper;
+        this.queries = JdbcClient.create(jdbc);
         this.clock = clock;
         this.converter = converter;
     }
@@ -121,30 +111,56 @@ public class DepartmentGatewayImpl extends ServiceImpl<DepartmentMapper, Departm
 
     @Override
     public Optional<Department> findById(String id) {
-        return getByIdOpt(id).map(converter::toEntity);
+        return queries.sql("SELECT d.*, d.phone AS mobile FROM upms_department d WHERE d.deleted = FALSE AND id = :id")
+                .param("id", id)
+                .query(DepartmentDO.class)
+                .optional()
+                .map(converter::toEntity);
     }
 
     @Override
     public Optional<Department> findByDeptCode(String deptCode) {
-        return getOneOpt(QueryWrapper.create().where(Tables.DEPARTMENT.DEPT_CODE.eq(deptCode)))
+        return queries.sql(
+                        "SELECT d.*, d.phone AS mobile FROM upms_department d WHERE d.deleted = FALSE AND dept_code = :dept_code")
+                .param("dept_code", deptCode)
+                .query(DepartmentDO.class)
+                .optional()
                 .map(converter::toEntity);
     }
 
     @Override
     public List<Department> findByParentId(String parentId) {
-        return list(QueryWrapper.create().where(Tables.DEPARTMENT.PARENT_ID.eq(parentId))).stream()
+        return queries
+                .sql(
+                        "SELECT d.*, d.phone AS mobile FROM upms_department d WHERE d.deleted = FALSE AND parent_id = :parent_id")
+                .param("parent_id", parentId)
+                .query(DepartmentDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
 
     @Override
     public List<Department> findAll() {
-        return list().stream().map(converter::toEntity).toList();
+        return queries
+                .sql("SELECT d.*, d.phone AS mobile FROM upms_department d WHERE d.deleted = FALSE AND TRUE")
+                .query(DepartmentDO.class)
+                .list()
+                .stream()
+                .map(converter::toEntity)
+                .toList();
     }
 
     @Override
     public List<Department> findAllEnabled() {
-        return list(QueryWrapper.create().where(Tables.DEPARTMENT.STATUS.eq((short) 1))).stream()
+        return queries
+                .sql(
+                        "SELECT d.*, d.phone AS mobile FROM upms_department d WHERE d.deleted = FALSE AND status = :status")
+                .param("status", (short) 1)
+                .query(DepartmentDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
@@ -158,17 +174,29 @@ public class DepartmentGatewayImpl extends ServiceImpl<DepartmentMapper, Departm
 
     @Override
     public boolean existsByDeptCode(String deptCode) {
-        return exists(QueryWrapper.create().where(Tables.DEPARTMENT.DEPT_CODE.eq(deptCode)));
+        return queries.sql("SELECT COUNT(*) FROM upms_department WHERE deleted = FALSE AND dept_code = :dept_code")
+                        .param("dept_code", deptCode)
+                        .query(Long.class)
+                        .single()
+                > 0;
     }
 
     @Override
     public boolean hasChildren(String deptId) {
-        return exists(QueryWrapper.create().where(Tables.DEPARTMENT.PARENT_ID.eq(deptId)));
+        return queries.sql("SELECT COUNT(*) FROM upms_department WHERE deleted = FALSE AND parent_id = :parent_id")
+                        .param("parent_id", deptId)
+                        .query(Long.class)
+                        .single()
+                > 0;
     }
 
     @Override
     public boolean hasUsers(String deptId) {
-        return userMapper.selectCountByQuery(QueryWrapper.create().where(Tables.USER.DEPT_ID.eq(deptId))) > 0;
+        return queries.sql("SELECT COUNT(*) FROM upms_user WHERE deleted = FALSE AND dept_id = :dept_id")
+                        .param("dept_id", deptId)
+                        .query(Long.class)
+                        .single()
+                > 0;
     }
 
     @Override

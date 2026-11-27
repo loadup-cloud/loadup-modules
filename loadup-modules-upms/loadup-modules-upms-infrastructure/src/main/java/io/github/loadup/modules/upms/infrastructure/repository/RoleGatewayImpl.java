@@ -15,9 +15,6 @@
  */
 package io.github.loadup.modules.upms.infrastructure.repository;
 
-import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.github.loadup.commons.domain.PageResult;
 import io.github.loadup.commons.dto.PageQuery;
 import io.github.loadup.commons.error.CommonException;
@@ -26,10 +23,6 @@ import io.github.loadup.modules.upms.domain.gateway.RoleGateway;
 import io.github.loadup.modules.upms.domain.model.Role;
 import io.github.loadup.modules.upms.infrastructure.converter.RoleConverter;
 import io.github.loadup.modules.upms.infrastructure.dataobject.RoleDO;
-import io.github.loadup.modules.upms.infrastructure.dataobject.UserRoleDO;
-import io.github.loadup.modules.upms.infrastructure.mapper.RoleMapper;
-import io.github.loadup.modules.upms.infrastructure.mapper.UserRoleMapper;
-import io.github.loadup.modules.upms.infrastructure.table.Tables;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,29 +33,24 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements RoleGateway {
+public class RoleGatewayImpl implements RoleGateway {
     private static final String FROM = " FROM upms_role r WHERE r.deleted = FALSE AND ";
     private static final String COLUMNS =
             "r.id, r.role_name, r.role_code, r.parent_role_id AS parent_id, r.role_level, r.data_scope, r.sort_order,"
                     + " r.status, r.remark, r.created_by, r.updated_by, r.created_at, r.updated_at, r.deleted";
     private final NamedParameterJdbcTemplate jdbc;
-    private final UserRoleMapper userRoleMapper;
+    private final JdbcClient queries;
     private final Clock clock;
     private final RoleConverter converter;
 
-    public RoleGatewayImpl(
-            NamedParameterJdbcTemplate jdbc,
-            RoleMapper mapper,
-            UserRoleMapper userRoleMapper,
-            RoleConverter converter,
-            Clock clock) {
+    public RoleGatewayImpl(NamedParameterJdbcTemplate jdbc, RoleConverter converter, Clock clock) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
-        this.userRoleMapper = userRoleMapper;
+        this.queries = JdbcClient.create(jdbc);
         this.clock = clock;
         this.converter = converter;
     }
@@ -134,12 +122,19 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
 
     @Override
     public Optional<Role> findById(String id) {
-        return getByIdOpt(id).map(converter::toEntity);
+        return queries.sql("SELECT " + COLUMNS + FROM + "id = :id")
+                .param("id", id)
+                .query(RoleDO.class)
+                .optional()
+                .map(converter::toEntity);
     }
 
     @Override
     public Optional<Role> findByRoleCode(String roleCode) {
-        return getOneOpt(QueryWrapper.create().where(Tables.ROLE.ROLE_CODE.eq(roleCode)))
+        return queries.sql("SELECT " + COLUMNS + FROM + "role_code = :role_code")
+                .param("role_code", roleCode)
+                .query(RoleDO.class)
+                .optional()
                 .map(converter::toEntity);
     }
 
@@ -153,26 +148,42 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
 
     @Override
     public List<Role> findByParentId(String parentId) {
-        return list(QueryWrapper.create().where(Tables.ROLE.PARENT_ID.eq(parentId))).stream()
+        return queries
+                .sql("SELECT " + COLUMNS + FROM + "parent_role_id = :parent_role_id")
+                .param("parent_role_id", parentId)
+                .query(RoleDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
 
     @Override
     public List<Role> findAll() {
-        return list().stream().map(converter::toEntity).toList();
+        return queries.sql("SELECT " + COLUMNS + FROM + "TRUE").query(RoleDO.class).list().stream()
+                .map(converter::toEntity)
+                .toList();
     }
 
     @Override
     public List<Role> findAllEnabled() {
-        return list(QueryWrapper.create().where(Tables.ROLE.STATUS.eq((short) 1))).stream()
+        return queries
+                .sql("SELECT " + COLUMNS + FROM + "status = :status")
+                .param("status", (short) 1)
+                .query(RoleDO.class)
+                .list()
+                .stream()
                 .map(converter::toEntity)
                 .toList();
     }
 
     @Override
     public boolean existsByRoleCode(String roleCode) {
-        return exists(QueryWrapper.create().where(Tables.ROLE.ROLE_CODE.eq(roleCode)));
+        return queries.sql("SELECT COUNT(*) FROM upms_role WHERE deleted = FALSE AND role_code = :role_code")
+                        .param("role_code", roleCode)
+                        .query(Long.class)
+                        .single()
+                > 0;
     }
 
     @Override
@@ -190,11 +201,10 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
 
     @Override
     public List<String> getUserRoleIds(String userId) {
-        return userRoleMapper
-                .selectListByQuery(QueryWrapper.create().where(Tables.USER_ROLE.USER_ID.eq(userId)))
-                .stream()
-                .map(UserRoleDO::getRoleId)
-                .toList();
+        return queries.sql("SELECT role_id FROM upms_user_role WHERE deleted = FALSE AND user_id = :id")
+                .param("id", userId)
+                .query(String.class)
+                .list();
     }
 
     @Override
@@ -234,19 +244,21 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
 
     @Override
     public PageResult<Role> findAll(PageQuery query) {
-        var page = page(
-                new Page<>(query.pageNum(), query.pageSize()),
-                QueryWrapper.create().orderBy(Tables.ROLE.ID.asc()));
-        return PageResult.of(
-                page.getRecords().stream().map(converter::toEntity).toList(),
-                page.getTotalRow(),
-                query.pageNum(),
-                query.pageSize());
+        long total = queries.sql("SELECT COUNT(*) FROM upms_role WHERE deleted = FALSE")
+                .query(Long.class)
+                .single();
+        var args = params().addValue("limit", query.pageSize())
+                .addValue("offset", (query.pageNum() - 1L) * query.pageSize());
+        var roles = select("TRUE", args, " ORDER BY r.id LIMIT :limit OFFSET :offset");
+        return PageResult.of(roles, total, query.pageNum(), query.pageSize());
     }
 
     @Override
     public long countUsersByRoleId(String roleId) {
-        return userRoleMapper.selectCountByQuery(QueryWrapper.create().where(Tables.USER_ROLE.ROLE_ID.eq(roleId)));
+        return queries.sql("SELECT COUNT(*) FROM upms_user_role WHERE deleted = FALSE AND role_id = :role_id")
+                .param("role_id", roleId)
+                .query(Long.class)
+                .single();
     }
 
     private void lockParent(String id) {

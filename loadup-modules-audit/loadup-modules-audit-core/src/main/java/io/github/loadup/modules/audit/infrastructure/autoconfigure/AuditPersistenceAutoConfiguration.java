@@ -15,14 +15,12 @@
  */
 package io.github.loadup.modules.audit.infrastructure.autoconfigure;
 
-import com.mybatisflex.spring.boot.v4.MybatisFlexAutoConfiguration;
 import io.github.loadup.components.database.autoconfigure.DatabaseCoreAutoConfiguration;
 import io.github.loadup.components.database.autoconfigure.IdGeneratorAutoConfiguration;
 import io.github.loadup.components.database.id.IdGenerator;
 import io.github.loadup.modules.audit.domain.gateway.AuditGateway;
 import io.github.loadup.modules.audit.infrastructure.converter.AuditStorageConverter;
 import io.github.loadup.modules.audit.infrastructure.converter.AuditStorageConverterImpl;
-import io.github.loadup.modules.audit.infrastructure.mapper.AuditEventMapper;
 import io.github.loadup.modules.audit.infrastructure.repository.AuditGatewayImpl;
 import java.time.Clock;
 import javax.sql.DataSource;
@@ -39,7 +37,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 @AutoConfiguration(
         after = {
             DataSourceAutoConfiguration.class,
-            MybatisFlexAutoConfiguration.class,
             DatabaseCoreAutoConfiguration.class,
             IdGeneratorAutoConfiguration.class
         })
@@ -52,12 +49,8 @@ public class AuditPersistenceAutoConfiguration {
     static class DefaultPersistence {
         @Bean
         public AuditGateway auditGateway(
-                NamedParameterJdbcTemplate jdbc,
-                AuditEventMapper mapper,
-                IdGenerator ids,
-                AuditStorageConverter converter,
-                Clock clock) {
-            return new AuditGatewayImpl(jdbc, mapper, ids, converter, clock);
+                NamedParameterJdbcTemplate jdbc, IdGenerator ids, AuditStorageConverter converter, Clock clock) {
+            return new AuditGatewayImpl(jdbc, ids, converter, clock);
         }
     }
 }

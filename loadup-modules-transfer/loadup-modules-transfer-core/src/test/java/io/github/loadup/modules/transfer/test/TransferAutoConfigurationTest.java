@@ -31,8 +31,6 @@ import io.github.loadup.modules.transfer.client.enums.TransferKind;
 import io.github.loadup.modules.transfer.client.spi.TransferHandler;
 import io.github.loadup.modules.transfer.domain.gateway.TransferGateway;
 import io.github.loadup.modules.transfer.infrastructure.autoconfigure.TransferPersistenceAutoConfiguration;
-import io.github.loadup.modules.transfer.infrastructure.mapper.TransferTaskOptionRowMapper;
-import io.github.loadup.modules.transfer.infrastructure.mapper.TransferTaskRowMapper;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -43,8 +41,6 @@ class TransferAutoConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withBean(DataSource.class, () -> mock(DataSource.class))
             .withBean(JdbcTemplate.class, () -> mock(JdbcTemplate.class))
-            .withBean(TransferTaskRowMapper.class, () -> mock(TransferTaskRowMapper.class))
-            .withBean(TransferTaskOptionRowMapper.class, () -> mock(TransferTaskOptionRowMapper.class))
             .withBean(IdGenerator.class, () -> () -> "id")
             .withBean(FileResourceService.class, () -> mock(FileResourceService.class))
             .withBean(TransferHandler.class, () -> {

@@ -15,12 +15,9 @@
  */
 package io.github.loadup.modules.transfer.infrastructure.autoconfigure;
 
-import com.mybatisflex.spring.boot.v4.MybatisFlexAutoConfiguration;
 import io.github.loadup.components.database.autoconfigure.IdGeneratorAutoConfiguration;
 import io.github.loadup.components.database.id.IdGenerator;
 import io.github.loadup.modules.transfer.domain.gateway.TransferGateway;
-import io.github.loadup.modules.transfer.infrastructure.mapper.TransferTaskOptionRowMapper;
-import io.github.loadup.modules.transfer.infrastructure.mapper.TransferTaskRowMapper;
 import io.github.loadup.modules.transfer.infrastructure.repository.TransferGatewayImpl;
 import java.time.Clock;
 import javax.sql.DataSource;
@@ -33,12 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-@AutoConfiguration(
-        after = {
-            JdbcTemplateAutoConfiguration.class,
-            MybatisFlexAutoConfiguration.class,
-            IdGeneratorAutoConfiguration.class
-        })
+@AutoConfiguration(after = {JdbcTemplateAutoConfiguration.class, IdGeneratorAutoConfiguration.class})
 @ConditionalOnSingleCandidate(DataSource.class)
 @ConditionalOnProperty(
         prefix = "loadup.modules.transfer",
@@ -51,13 +43,8 @@ public class TransferPersistenceAutoConfiguration {
     @ConditionalOnMissingBean(TransferGateway.class)
     static class DefaultPersistence {
         @Bean
-        public TransferGateway transferGateway(
-                JdbcTemplate jdbc,
-                TransferTaskRowMapper mapper,
-                TransferTaskOptionRowMapper optionMapper,
-                IdGenerator ids,
-                Clock clock) {
-            return new TransferGatewayImpl(jdbc, mapper, optionMapper, ids, clock);
+        public TransferGateway transferGateway(JdbcTemplate jdbc, IdGenerator ids, Clock clock) {
+            return new TransferGatewayImpl(jdbc, ids, clock);
         }
     }
 }

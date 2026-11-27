@@ -18,31 +18,38 @@ package io.github.loadup.modules.dictionary.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.github.loadup.components.database.autoconfigure.JdbcTransactionAutoConfiguration;
 import io.github.loadup.components.database.id.IdGenerator;
 import io.github.loadup.modules.dictionary.app.autoconfigure.DictionaryAutoConfiguration;
 import io.github.loadup.modules.dictionary.app.converter.DictionaryDTOConverter;
 import io.github.loadup.modules.dictionary.app.service.DictionaryService;
 import io.github.loadup.modules.dictionary.domain.gateway.DictionaryGateway;
 import io.github.loadup.modules.dictionary.infrastructure.autoconfigure.DictionaryPersistenceAutoConfiguration;
-import io.github.loadup.modules.dictionary.infrastructure.mapper.DictionaryItemMapper;
-import io.github.loadup.modules.dictionary.infrastructure.mapper.DictionaryTypeMapper;
+import io.github.loadup.modules.dictionary.infrastructure.repository.jdbc.DictionaryItemRepository;
+import io.github.loadup.modules.dictionary.infrastructure.repository.jdbc.DictionaryTypeRepository;
 import java.time.Clock;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.data.jdbc.autoconfigure.DataJdbcRepositoriesAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.context.annotation.Configuration;
 
 class DictionaryAutoConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withBean(DataSource.class, () -> mock(DataSource.class))
-            .withBean(NamedParameterJdbcTemplate.class, () -> mock(NamedParameterJdbcTemplate.class))
-            .withBean(DictionaryTypeMapper.class, () -> mock(DictionaryTypeMapper.class))
-            .withBean(DictionaryItemMapper.class, () -> mock(DictionaryItemMapper.class))
+            .withPropertyValues("spring.data.jdbc.dialect=postgresql")
+            .withUserConfiguration(TestApplication.class)
             .withBean(IdGenerator.class, () -> () -> "dictionary-id")
             .withBean("databaseClock", Clock.class, Clock::systemDefaultZone)
             .withConfiguration(AutoConfigurations.of(
-                    DictionaryPersistenceAutoConfiguration.class, DictionaryAutoConfiguration.class));
+                    JdbcTemplateAutoConfiguration.class,
+                    JdbcTransactionAutoConfiguration.class,
+                    DataJdbcRepositoriesAutoConfiguration.class,
+                    DictionaryPersistenceAutoConfiguration.class,
+                    DictionaryAutoConfiguration.class));
 
     @Test
     void wiresDomainPortAndApplicationMapper() {
@@ -50,6 +57,8 @@ class DictionaryAutoConfigurationTest {
             assertThat(context)
                     .hasNotFailed()
                     .hasSingleBean(DictionaryGateway.class)
+                    .hasSingleBean(DictionaryTypeRepository.class)
+                    .hasSingleBean(DictionaryItemRepository.class)
                     .hasSingleBean(DictionaryDTOConverter.class)
                     .hasSingleBean(DictionaryService.class);
         });
@@ -62,6 +71,8 @@ class DictionaryAutoConfigurationTest {
             assertThat(context)
                     .hasNotFailed()
                     .hasSingleBean(DictionaryGateway.class)
+                    .doesNotHaveBean(DictionaryTypeRepository.class)
+                    .doesNotHaveBean(DictionaryItemRepository.class)
                     .hasSingleBean(DictionaryService.class);
             assertThat(context.getBean(DictionaryGateway.class)).isSameAs(gateway);
         });
@@ -73,7 +84,13 @@ class DictionaryAutoConfigurationTest {
             assertThat(context)
                     .hasNotFailed()
                     .doesNotHaveBean(DictionaryGateway.class)
+                    .doesNotHaveBean(DictionaryTypeRepository.class)
+                    .doesNotHaveBean(DictionaryItemRepository.class)
                     .doesNotHaveBean(DictionaryService.class);
         });
     }
+
+    @Configuration(proxyBeanMethods = false)
+    @AutoConfigurationPackage
+    static class TestApplication {}
 }

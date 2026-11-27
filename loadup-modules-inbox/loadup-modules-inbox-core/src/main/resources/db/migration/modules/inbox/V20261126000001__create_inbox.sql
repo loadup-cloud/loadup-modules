@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS inbox_message
     archived_at  TIMESTAMP(6),
     created_at   TIMESTAMP(6)  NOT NULL,
     updated_at   TIMESTAMP(6)  NOT NULL,
-    deleted      BOOLEAN       NOT NULL DEFAULT FALSE,
+
     CONSTRAINT uk_inbox_message_request UNIQUE (recipient_id, request_key)
 );
 CREATE INDEX idx_inbox_message ON inbox_message (recipient_id, archived_at, created_at);

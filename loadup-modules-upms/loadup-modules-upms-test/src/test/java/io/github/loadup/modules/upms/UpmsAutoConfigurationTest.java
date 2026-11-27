@@ -57,8 +57,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 class UpmsAutoConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withClassLoader(new FilteredClassLoader(
-                    "io.github.loadup.modules.upms.infrastructure", "org.springframework.jdbc", "com.mybatisflex"))
+            .withClassLoader(
+                    new FilteredClassLoader("io.github.loadup.modules.upms.infrastructure", "org.springframework.jdbc"))
             .withConfiguration(AutoConfigurations.of(UpmsAutoConfiguration.class))
             .withBean(Clock.class, Clock::systemUTC)
             .withBean(UserGateway.class, () -> mock(UserGateway.class))

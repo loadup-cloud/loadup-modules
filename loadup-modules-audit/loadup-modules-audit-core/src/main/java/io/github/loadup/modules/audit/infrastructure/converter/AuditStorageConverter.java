@@ -24,7 +24,6 @@ import org.mapstruct.Mapping;
 @Mapper(config = LoadUpMapStructConfig.class)
 public interface AuditStorageConverter {
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     AuditEventDO toDO(AuditEvent source);
 

@@ -53,7 +53,7 @@ authserver 适配。
 
 ## 装配与配置
 
-业务模块的默认 MyBatis-Flex / Spring JDBC Gateway 与 Flyway 脚本归 core 的 `infrastructure` 包；持久化自动配置创建端口适配。
+业务模块的默认 Spring Data JDBC / Spring JDBC Gateway 与 Flyway 脚本归 core 的 `infrastructure` 包；持久化自动配置创建端口适配。
 app 在其之后按 Gateway 和所需组件条件创建用例服务。消费者可替换 Gateway Bean。
 
 配置为 `loadup.modules.<business>.*`。Web 一般按 `*-web` 依赖装配，Gotone 和 Inbox 另有各自的 Web 开关。全局安全协议由
@@ -83,6 +83,4 @@ BOM 为独立无父 POM 模型，避免“父 POM 导入 BOM、BOM 又继承父 
 
 ## Database 编译期处理器
 
-编译期配置由 database processor 内置维护，模块无需同步配置；处理器路径不单独声明版本，统一通过 Modules BOM → Framework BOM
-解析。详见
-[framework database processor 文档](../loadup-framework/loadup-components/data/loadup-components-database-processor/README.md)。
+持久化入口使用 Spring Data JDBC 或业务 SQL。MapStruct 处理器版本通过 Framework BOM 管理。

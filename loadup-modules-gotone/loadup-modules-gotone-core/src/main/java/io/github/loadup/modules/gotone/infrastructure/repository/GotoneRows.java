@@ -26,7 +26,6 @@ public record GotoneRows(IdGenerator ids, Clock clock) {
         row.setId(ids.generate());
         row.setCreatedAt(LocalDateTime.now(clock));
         row.setUpdatedAt(row.getCreatedAt());
-        row.setDeleted(false);
         return row;
     }
 

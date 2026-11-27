@@ -15,9 +15,9 @@
  */
 package io.github.loadup.modules.file.infrastructure.dataobject;
 
-import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDateTime;
+import org.springframework.data.relational.core.mapping.Table;
 
 /** A reference row; parent-file lifecycle is managed explicitly by the gateway. */
 @Table("file_resource_reference")
@@ -34,15 +34,13 @@ public class FileReferenceRow extends BaseDO {
             String referenceType,
             String referenceId,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt,
-            boolean deleted) {
+            LocalDateTime updatedAt) {
         setId(id);
         this.fileId = fileId;
         this.referenceType = referenceType;
         this.referenceId = referenceId;
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        setDeleted(deleted);
     }
 
     public String getFileId() {
