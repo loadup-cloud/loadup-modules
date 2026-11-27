@@ -54,8 +54,7 @@ Maven Daemon 和 Docker，执行单元测试与 Testcontainers 集成测试并�
 
 向 `main`、`develop` 或 `dev` 推送且验证通过后，发布作业将业务 JAR、BOM 和 POM 上传到
 `loadup-cloud/loadup-packages`。在这些分支手动运行时，可勾选 `publish-packages` 发布。
-发布复用组织级 `OSSRH_USERNAME` 和 `OSSRH_TOKEN`。验证用组织级 `LOADUP_PACKAGES_USERNAME` 和
-`LOADUP_PACKAGES_TOKEN` 读取依赖，缺少这些凭证时使用工作流的只读令牌。
+验证和发布均复用组织级 `OSSRH_USERNAME` 和 `OSSRH_TOKEN`。验证在组织凭证不可用时使用工作流的只读令牌。
 
 ## 发布
 
