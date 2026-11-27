@@ -43,9 +43,7 @@ public class UserPasswordResetCommand {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String confirmPassword;
 
-    /**
-     * Verification type: EMAIL or SMS
-     */
+    /** Verification type: EMAIL or SMS */
     @Schema(description = "Verification type")
     private String verificationType;
 

@@ -45,9 +45,7 @@ public class DepartmentService implements DepartmentFacade {
         this.userGateway = userGateway;
     }
 
-    /**
-     * Create department
-     */
+    /** Create department */
     @Transactional
     public DepartmentDTO createDepartment(DepartmentCreateCommand command) {
         // Validate department code uniqueness
@@ -90,9 +88,7 @@ public class DepartmentService implements DepartmentFacade {
         return convertToDTO(department);
     }
 
-    /**
-     * Update department
-     */
+    /** Update department */
     @Transactional
     public DepartmentDTO updateDepartment(DepartmentUpdateCommand command) {
         Department department = departmentGateway
@@ -151,9 +147,7 @@ public class DepartmentService implements DepartmentFacade {
         return convertToDTO(department);
     }
 
-    /**
-     * Delete department
-     */
+    /** Delete department */
     @Transactional
     public void deleteDepartment(String id) {
         departmentGateway.findById(id).orElseThrow(() -> new CommonException(UpmsResultCodeEnum.DEPARTMENT_NOT_FOUND));
@@ -171,9 +165,7 @@ public class DepartmentService implements DepartmentFacade {
         departmentGateway.deleteById(id);
     }
 
-    /**
-     * Get department by ID
-     */
+    /** Get department by ID */
     public DepartmentDTO getDepartmentById(String id) {
         Department department = departmentGateway
                 .findById(id)
@@ -181,17 +173,13 @@ public class DepartmentService implements DepartmentFacade {
         return convertToDTO(department);
     }
 
-    /**
-     * Get all departments as tree
-     */
+    /** Get all departments as tree */
     public List<DepartmentDTO> getDepartmentTree() {
         List<Department> allDepartments = departmentGateway.findAll();
         return buildDepartmentTree(allDepartments, null);
     }
 
-    /**
-     * Get department tree (from specific department)
-     */
+    /** Get department tree (from specific department) */
     public DepartmentDTO getDepartmentTreeById(String id) {
         Department department = departmentGateway
                 .findById(id)
@@ -206,9 +194,7 @@ public class DepartmentService implements DepartmentFacade {
         return dto;
     }
 
-    /**
-     * Move department to another parent
-     */
+    /** Move department to another parent */
     @Transactional
     public void moveDepartment(String deptId, String newParentId) {
         Department department = departmentGateway
@@ -239,9 +225,7 @@ public class DepartmentService implements DepartmentFacade {
         departmentGateway.update(department);
     }
 
-    /**
-     * Check if targetId is a descendant of ancestorId
-     */
+    /** Check if targetId is a descendant of ancestorId */
     private boolean isDescendant(String ancestorId, String targetId) {
         Department target = departmentGateway.findById(targetId).orElse(null);
         if (target == null) {
@@ -256,9 +240,7 @@ public class DepartmentService implements DepartmentFacade {
         return isDescendant(ancestorId, target.getParentId());
     }
 
-    /**
-     * Convert Department entity to DepartmentDTO
-     */
+    /** Convert Department entity to DepartmentDTO */
     private DepartmentDTO convertToDTO(Department department) {
         String leaderName = department.getLeaderUserId() == null
                 ? null
@@ -269,9 +251,7 @@ public class DepartmentService implements DepartmentFacade {
         return dtoConverter.toDepartment(department, leaderName);
     }
 
-    /**
-     * Build department tree recursively
-     */
+    /** Build department tree recursively */
     private List<DepartmentDTO> buildDepartmentTree(List<Department> allDepartments, String parentId) {
         List<DepartmentDTO> tree = new ArrayList<>();
         for (Department department : allDepartments) {

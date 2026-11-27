@@ -18,7 +18,6 @@ package io.github.loadup.modules.upms.app.strategy.oauth;
 public interface OAuthProvider {
 
     /**
-     *
      * @return wechat | github | google
      */
     String getProviderName();
@@ -26,7 +25,6 @@ public interface OAuthProvider {
     String getAuthorizationUrl(String state, String redirectUri);
 
     /**
-     *
      * @return OAuth Token
      */
     OAuthToken exchangeToken(String code, String redirectUri);

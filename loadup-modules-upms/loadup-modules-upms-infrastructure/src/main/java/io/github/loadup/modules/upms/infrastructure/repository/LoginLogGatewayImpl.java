@@ -142,7 +142,9 @@ public class LoginLogGatewayImpl implements LoginLogGateway {
     @Override
     public List<LoginLog> findByLoginTimeBetween(LocalDateTime startTime, LocalDateTime endTime) {
         return jdbc
-                .sql("SELECT " + COLUMNS + FROM
+                .sql("SELECT "
+                        + COLUMNS
+                        + FROM
                         + " AND login_time BETWEEN :startTime AND :endTime ORDER BY login_time DESC")
                 .param("startTime", startTime)
                 .param("endTime", endTime)
@@ -191,7 +193,9 @@ public class LoginLogGatewayImpl implements LoginLogGateway {
 
     @Override
     public Optional<LoginLog> findLastSuccessfulLogin(String userId) {
-        return jdbc.sql("SELECT " + COLUMNS + FROM
+        return jdbc.sql("SELECT "
+                        + COLUMNS
+                        + FROM
                         + " AND user_id = :userId AND login_status = :loginStatus ORDER BY login_time DESC LIMIT 1")
                 .param("userId", userId)
                 .param("loginStatus", SUCCESS)

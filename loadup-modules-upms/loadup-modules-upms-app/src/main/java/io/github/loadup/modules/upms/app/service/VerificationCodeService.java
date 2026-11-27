@@ -44,9 +44,7 @@ public class VerificationCodeService {
         this.clock = clock;
     }
 
-    /**
-     * Generate verification code
-     */
+    /** Generate verification code */
     public String generateCode(String target, String type) {
         String code = generateRandomCode();
         String key = buildKey(target, type);
@@ -119,9 +117,7 @@ public class VerificationCodeService {
         return verificationCode;
     }
 
-    /**
-     * Validate verification code
-     */
+    /** Validate verification code */
     public boolean validateCode(String target, String type, String code) {
         String key = buildKey(target, type);
         VerificationCode verificationCode = codeStorage.get(key);
@@ -167,9 +163,7 @@ public class VerificationCodeService {
         return true;
     }
 
-    /**
-     * Check if code can be sent (rate limiting)
-     */
+    /** Check if code can be sent (rate limiting) */
     public boolean canSendCode(String target, String type) {
         String key = buildKey(target, type);
         VerificationCode existingCode = codeStorage.get(key);
@@ -206,16 +200,12 @@ public class VerificationCodeService {
         return generateCode(email, "EMAIL");
     }
 
-    /**
-     * Build storage key
-     */
+    /** Build storage key */
     private String buildKey(String target, String type) {
         return type + ":" + target;
     }
 
-    /**
-     * Generate random numeric code
-     */
+    /** Generate random numeric code */
     private String generateRandomCode() {
         StringBuilder code = new StringBuilder();
         for (int i = 0; i < CODE_LENGTH; i++) {

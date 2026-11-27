@@ -21,14 +21,11 @@ import java.time.LocalDateTime;
 
 public record FileResourceDTO(
         @Schema(description = "Resource identifier") String id,
-
         @Schema(description = "Owner user identifier") String ownerId,
         @Schema(description = "Storage object identifier") String storageId,
         @Schema(description = "Original filename") String filename,
         @Schema(description = "MIME content type") String contentType,
-
         @Schema(description = "File length in bytes") long size,
-
         @Schema(description = "Provider") String provider,
         @Schema(description = "State") String state,
 

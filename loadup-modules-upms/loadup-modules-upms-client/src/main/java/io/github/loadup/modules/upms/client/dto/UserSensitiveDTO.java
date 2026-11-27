@@ -21,11 +21,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public record UserSensitiveDTO(
         @Schema(description = "Resource identifier") String id,
-
         @Schema(description = "Real name") @DiagnosticHidden String realName,
-
         @Schema(description = "Email") @DiagnosticHidden String email,
-
         @Schema(description = "Mobile") @DiagnosticHidden String mobile) {
     @Override
     public String toString() {

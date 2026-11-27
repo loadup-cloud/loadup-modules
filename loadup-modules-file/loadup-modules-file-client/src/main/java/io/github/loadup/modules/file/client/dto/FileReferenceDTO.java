@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 
 public record FileReferenceDTO(
         @Schema(description = "Resource identifier") String id,
-
         @Schema(description = "File id") String fileId,
         @Schema(description = "Reference type") String referenceType,
         @Schema(description = "Reference id") String referenceId,

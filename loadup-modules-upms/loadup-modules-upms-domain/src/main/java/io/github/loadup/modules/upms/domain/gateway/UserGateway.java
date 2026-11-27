@@ -23,78 +23,48 @@ import java.util.Optional;
 
 public interface UserGateway {
 
-    /**
-     * Save user
-     */
+    /** Save user */
     User save(User user);
 
-    /**
-     * Update user
-     */
+    /** Update user */
     User update(User user);
 
-    /**
-     * Applies a reset only while the verified email and current password still match.
-     */
+    /** Applies a reset only while the verified email and current password still match. */
     boolean resetPasswordWithVerifiedEmail(String id, String email, String expectedHash, String newHash);
 
-    /**
-     * Delete user by ID
-     */
+    /** Delete user by ID */
     void deleteById(String id);
 
-    /**
-     * Find user by ID
-     */
+    /** Find user by ID */
     Optional<User> findById(String id);
 
-    /**
-     * Find user by username
-     */
+    /** Find user by username */
     Optional<User> findByUsername(String username);
 
-    /**
-     * Find user by email
-     */
+    /** Find user by email */
     Optional<User> findByEmail(String email);
 
-    /**
-     * Find user by phone
-     */
+    /** Find user by phone */
     Optional<User> findByMobile(String mobile);
 
-    /**
-     * Find users by department ID
-     */
+    /** Find users by department ID */
     List<User> findByDeptId(String deptId);
 
-    /**
-     * Find all users (with pagination)
-     */
+    /** Find all users (with pagination) */
     PageResult<User> findAll(PageQuery query, String sortBy, String sortOrder);
 
-    /**
-     * Search users by keyword
-     */
+    /** Search users by keyword */
     PageResult<User> search(String keyword, PageQuery query, String sortBy, String sortOrder);
 
-    /**
-     * Check if username exists
-     */
+    /** Check if username exists */
     boolean existsByUsername(String username);
 
-    /**
-     * Check if email exists
-     */
+    /** Check if email exists */
     boolean existsByEmail(String email);
 
-    /**
-     * Check if mobile exists
-     */
+    /** Check if mobile exists */
     boolean existsByMobile(String mobile);
 
-    /**
-     * Count users by department ID
-     */
+    /** Count users by department ID */
     long countByDeptId(String deptId);
 }

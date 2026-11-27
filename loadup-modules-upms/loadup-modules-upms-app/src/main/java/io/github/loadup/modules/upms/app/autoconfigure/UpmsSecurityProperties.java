@@ -50,19 +50,13 @@ public class UpmsSecurityProperties {
     }
 
     public static class LoginConfig {
-        /**
-         * Enable login failure tracking
-         */
+        /** Enable login failure tracking */
         private Boolean enableFailureTracking = true;
 
-        /**
-         * Maximum failed login attempts before locking
-         */
+        /** Maximum failed login attempts before locking */
         private Integer maxFailAttempts = 5;
 
-        /**
-         * Account lock duration in minutes
-         */
+        /** Account lock duration in minutes */
         private Integer lockDuration = 30;
 
         public Boolean getEnableFailureTracking() {
@@ -121,24 +115,16 @@ public class UpmsSecurityProperties {
     }
 
     public static class OAuthConfig {
-        /**
-         * Whether this provider is enabled
-         */
+        /** Whether this provider is enabled */
         private Boolean enabled = false;
 
-        /**
-         * Client ID
-         */
+        /** Client ID */
         private String clientId;
 
-        /**
-         * Client Secret
-         */
+        /** Client Secret */
         private String clientSecret;
 
-        /**
-         * OAuth redirect URI
-         */
+        /** OAuth redirect URI */
         private String redirectUri;
 
         public Boolean getEnabled() {

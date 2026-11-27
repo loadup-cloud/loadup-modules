@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 
 public record TransferTaskDTO(
         @Schema(description = "Resource identifier") String id,
-
         @Schema(description = "Owner user identifier") String ownerId,
         @Schema(description = "Task or catalog category") TransferKind kind,
         @Schema(description = "Handler key") String handlerKey,

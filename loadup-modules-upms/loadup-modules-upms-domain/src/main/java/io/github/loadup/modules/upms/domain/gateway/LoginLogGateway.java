@@ -24,59 +24,39 @@ import java.util.Optional;
 
 public interface LoginLogGateway {
 
-    /**
-     * Save login log
-     */
+    /** Save login log */
     LoginLog save(LoginLog log);
 
-    /**
-     * Find log by ID
-     */
+    /** Find log by ID */
     Optional<LoginLog> findById(String id);
 
-    /**
-     * Find logs by user ID
-     */
+    /** Find logs by user ID */
     PageResult<LoginLog> findByUserId(String userId, PageQuery query);
 
-    /**
-     * Find logs by username
-     */
+    /** Find logs by username */
     PageResult<LoginLog> findByUsername(String username, PageQuery query);
 
-    /**
-     * Find logs by date range
-     */
+    /** Find logs by date range */
     PageResult<LoginLog> findByDateRange(LocalDateTime startTime, LocalDateTime endTime, PageQuery query);
 
-    /**
-     * Find failed login attempts
-     */
+    /** Find failed login attempts */
     PageResult<LoginLog> findFailedLogins(LocalDateTime startTime, LocalDateTime endTime, PageQuery query);
 
-    /**
-     * Delete logs before specified date
-     */
+    /** Delete logs before specified date */
     void deleteBeforeDate(LocalDateTime date);
 
     List<LoginLog> findByLoginTimeBetween(LocalDateTime startTime, LocalDateTime endTime);
 
     PageResult<LoginLog> findAll(PageQuery query);
 
-    /**
-     * Count login attempts by user and time range
-     */
+    /** Count login attempts by user and time range */
     long countLoginAttempts(String userId, LocalDateTime startTime, LocalDateTime endTime);
 
-    /**
-     * Count failed login attempts by user and time range
-     */
+    /** Count failed login attempts by user and time range */
     long countFailedLoginAttempts(String userId, LocalDateTime startTime, LocalDateTime endTime);
 
     List<LoginLog> findByUserId(String userId);
 
-    /**
-     * Get last successful login
-     */
+    /** Get last successful login */
     Optional<LoginLog> findLastSuccessfulLogin(String userId);
 }

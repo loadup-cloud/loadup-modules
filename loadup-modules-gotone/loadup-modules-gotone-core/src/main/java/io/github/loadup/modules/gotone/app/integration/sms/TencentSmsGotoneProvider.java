@@ -158,13 +158,26 @@ public final class TencentSmsGotoneProvider implements GotoneProvider {
             throws GeneralSecurityException {
         String date = now.atOffset(ZoneOffset.UTC).toLocalDate().toString();
         String signedHeaders = "content-type;host;x-tc-action";
-        String canonical = "POST\n/\n\ncontent-type:" + CONTENT_TYPE + "\nhost:" + ENDPOINT.getHost()
-                + "\nx-tc-action:sendsms\n\n" + signedHeaders + "\n" + sha256(body);
+        String canonical = "POST\n/\n\ncontent-type:"
+                + CONTENT_TYPE
+                + "\nhost:"
+                + ENDPOINT.getHost()
+                + "\nx-tc-action:sendsms\n\n"
+                + signedHeaders
+                + "\n"
+                + sha256(body);
         String scope = date + "/sms/tc3_request";
         String toSign = ALGORITHM + "\n" + now.getEpochSecond() + "\n" + scope + "\n" + sha256(canonical);
         byte[] key = hmac(("TC3" + secret).getBytes(StandardCharsets.UTF_8), date);
         key = hmac(hmac(key, "sms"), "tc3_request");
-        return ALGORITHM + " Credential=" + secretId + "/" + scope + ", SignedHeaders=" + signedHeaders + ", Signature="
+        return ALGORITHM
+                + " Credential="
+                + secretId
+                + "/"
+                + scope
+                + ", SignedHeaders="
+                + signedHeaders
+                + ", Signature="
                 + HexFormat.of().formatHex(hmac(key, toSign));
     }
 

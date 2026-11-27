@@ -20,15 +20,12 @@ import io.github.loadup.modules.upms.client.error.UpmsResultCodeEnum;
 
 public final class OAuthProviderCode {
 
-    /**
-     * GitHub
-     */
+    /** GitHub */
     public static final String GITHUB = "github";
 
     public static final String WECHAT = "wechat";
-    /**
-     * Google
-     */
+
+    /** Google */
     public static final String GOOGLE = "google";
 
     private OAuthProviderCode() {

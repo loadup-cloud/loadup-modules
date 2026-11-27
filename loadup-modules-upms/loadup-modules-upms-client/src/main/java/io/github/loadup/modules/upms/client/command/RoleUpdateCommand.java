@@ -32,9 +32,7 @@ public class RoleUpdateCommand {
     @Schema(description = "Parent id")
     private String parentId;
 
-    /**
-     * Data scope: 1-All, 2-Custom, 3-Dept, 4-Dept and children, 5-Self only
-     */
+    /** Data scope: 1-All, 2-Custom, 3-Dept, 4-Dept and children, 5-Self only */
     @Schema(description = "Data scope")
     private Short dataScope;
 

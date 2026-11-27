@@ -64,9 +64,7 @@ public class RoleService implements RoleFacade {
         this.userGateway = userGateway;
     }
 
-    /**
-     * Create role
-     */
+    /** Create role */
     @Transactional
     public RoleDTO createRole(RoleCreateCommand command) {
         // Validate role code uniqueness
@@ -109,9 +107,7 @@ public class RoleService implements RoleFacade {
         return convertToDTO(role);
     }
 
-    /**
-     * Update role
-     */
+    /** Update role */
     @Transactional
     public RoleDTO updateRole(RoleUpdateCommand command) {
         Role role = roleGateway
@@ -183,9 +179,7 @@ public class RoleService implements RoleFacade {
         return convertToDTO(role);
     }
 
-    /**
-     * Delete role
-     */
+    /** Delete role */
     @Transactional
     public void deleteRole(String id) {
         roleGateway.findById(id).orElseThrow(() -> new CommonException(UpmsResultCodeEnum.ROLE_NOT_FOUND));
@@ -205,17 +199,13 @@ public class RoleService implements RoleFacade {
         roleGateway.deleteById(id);
     }
 
-    /**
-     * Get role by ID
-     */
+    /** Get role by ID */
     public RoleDTO getRoleById(String id) {
         Role role = roleGateway.findById(id).orElseThrow(() -> new CommonException(UpmsResultCodeEnum.ROLE_NOT_FOUND));
         return convertToDTO(role);
     }
 
-    /**
-     * Query roles with pagination
-     */
+    /** Query roles with pagination */
     public PageDTO<RoleDTO> queryRoles(RolePageQuery query) {
         if (query.getSortOrder() != null
                 && !query.getSortOrder().equalsIgnoreCase("ASC")
@@ -256,9 +246,7 @@ public class RoleService implements RoleFacade {
         return PageDTO.of(result, (long) matches.size(), page, size);
     }
 
-    /**
-     * Get role tree (hierarchy)
-     */
+    /** Get role tree (hierarchy) */
     public List<RoleDTO> getRoleTree() {
         List<Role> allRoles = roleGateway.findAll();
         Map<String, RoleDTO> byId = allRoles.stream()
@@ -279,9 +267,7 @@ public class RoleService implements RoleFacade {
         return roots;
     }
 
-    /**
-     * Assign role to user
-     */
+    /** Assign role to user */
     @Transactional
     public void assignRoleToUser(String roleId, String userId) {
         Role role =
@@ -293,17 +279,13 @@ public class RoleService implements RoleFacade {
         roleGateway.assignRoleToUser(userId, roleId, "0");
     }
 
-    /**
-     * Remove role from user
-     */
+    /** Remove role from user */
     @Transactional
     public void removeRoleFromUser(String roleId, String userId) {
         roleGateway.removeRoleFromUser(userId, roleId);
     }
 
-    /**
-     * Assign permissions to role
-     */
+    /** Assign permissions to role */
     @Transactional
     public void assignPermissionsToRole(String roleId, List<String> permissionIds) {
         roleGateway.findById(roleId).orElseThrow(() -> new CommonException(UpmsResultCodeEnum.ROLE_NOT_FOUND));
@@ -317,9 +299,7 @@ public class RoleService implements RoleFacade {
         roleGateway.assignPermissionsToRole(roleId, permissionIds);
     }
 
-    /**
-     * Convert Role entity to RoleDTO
-     */
+    /** Convert Role entity to RoleDTO */
     private RoleDTO convertToDTO(Role role) {
         var permissions = permissionGateway.findByRoleId(role.getId()).stream()
                 .map(dtoConverter::toPermissionSummary)

@@ -37,9 +37,7 @@ public class Department extends BaseEntity {
 
     private String email;
 
-    /**
-     * Status: 1-Normal, 0-Disabled
-     */
+    /** Status: 1-Normal, 0-Disabled */
     private Short status;
 
     private Boolean deleted;
@@ -61,23 +59,17 @@ public class Department extends BaseEntity {
 
     private User leader;
 
-    /**
-     * Check if department is enabled
-     */
+    /** Check if department is enabled */
     public boolean isEnabled() {
         return status != null && status == 1 && !Boolean.TRUE.equals(deleted);
     }
 
-    /**
-     * Check if this is a root department
-     */
+    /** Check if this is a root department */
     public boolean isRoot() {
         return parentId == null || "0".equals(parentId);
     }
 
-    /**
-     * Get full path (for display in tree structure)
-     */
+    /** Get full path (for display in tree structure) */
     public String getFullPath() {
         if (parent == null || isRoot()) {
             return deptName;

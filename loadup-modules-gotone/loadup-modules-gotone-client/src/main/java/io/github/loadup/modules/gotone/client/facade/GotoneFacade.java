@@ -20,9 +20,7 @@ import io.github.loadup.modules.gotone.client.Gotone.Request;
 import io.github.loadup.modules.gotone.client.Gotone.Submit;
 
 public interface GotoneFacade {
-    /**
-     * Call from a producer task after the business transaction commits.
-     */
+    /** Call from a producer task after the business transaction commits. */
     Receipt submit(String source, String senderId, Submit command);
 
     Request status(String source, String requestId);

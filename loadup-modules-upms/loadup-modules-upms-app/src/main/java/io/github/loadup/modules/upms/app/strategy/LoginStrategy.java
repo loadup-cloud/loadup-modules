@@ -20,7 +20,6 @@ import io.github.loadup.modules.upms.client.dto.AuthenticatedUserDTO;
 public interface LoginStrategy {
 
     /**
-     *
      * @return PASSWORD | MOBILE | EMAIL | OAUTH
      */
     String getLoginType();

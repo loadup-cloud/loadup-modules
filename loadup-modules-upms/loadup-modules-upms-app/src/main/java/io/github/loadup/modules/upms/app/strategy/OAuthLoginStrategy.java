@@ -132,7 +132,8 @@ public class OAuthLoginStrategy implements LoginStrategy {
 
     private User autoRegisterUser(OAuthUserInfo oauthUser, String provider, OAuthToken token) {
 
-        String username = provider + "_"
+        String username = provider
+                + "_"
                 + oauthUser
                         .getOpenId()
                         .substring(0, Math.min(8, oauthUser.getOpenId().length()));

@@ -61,9 +61,13 @@ public class GitHubOAuthProvider implements OAuthProvider {
         UpmsSecurityProperties.OAuthConfig config =
                 securityProperties.getOauth().getGithub();
 
-        return AUTHORIZE_URL + "?client_id=" + config.getClientId()
-                + "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
-                + "&state=" + state
+        return AUTHORIZE_URL
+                + "?client_id="
+                + config.getClientId()
+                + "&redirect_uri="
+                + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
+                + "&state="
+                + state
                 + "&scope=user:email";
     }
 

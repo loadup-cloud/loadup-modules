@@ -47,9 +47,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/**
- * Registers replaceable persistence adapters independently of application services.
- */
+/** Registers replaceable persistence adapters independently of application services. */
 @AutoConfiguration(beforeName = "io.github.loadup.modules.upms.app.autoconfigure.UpmsAutoConfiguration")
 @ComponentScan(basePackageClasses = UserConverter.class)
 public class UpmsPersistenceAutoConfiguration {

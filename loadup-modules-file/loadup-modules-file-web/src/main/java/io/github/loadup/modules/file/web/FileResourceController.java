@@ -53,6 +53,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+/** Public metadata omits the internal DFS storage key. */
 @RestController
 @RequestMapping("/files")
 @Tag(name = "File Resources", description = "Managed file uploads, downloads and lifecycle")
@@ -173,6 +174,4 @@ public class FileResourceController {
     public SuccessResponse<Integer> cleanup(@RequestBody FileCleanupCommand request) {
         return SuccessResponse.of(service.cleanupPending(request.limit() == null ? 100 : request.limit()));
     }
-
-    /** Public metadata omits the internal DFS storage key. */
 }

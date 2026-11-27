@@ -19,8 +19,6 @@ import io.github.loadup.modules.upms.client.dto.UserDetailDTO;
 
 public interface UserQueryFacade {
 
-    /**
-     * Public business facade.
-     */
+    /** Public business facade. */
     UserDetailDTO getUserById(String userId);
 }

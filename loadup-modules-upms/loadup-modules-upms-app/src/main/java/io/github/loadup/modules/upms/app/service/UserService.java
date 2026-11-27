@@ -83,9 +83,7 @@ public class UserService implements UserFacade {
         }
     }
 
-    /**
-     * Create user
-     */
+    /** Create user */
     @Transactional
     public UserDetailDTO createUser(UserCreateCommand command) {
         if (command == null) {
@@ -145,9 +143,7 @@ public class UserService implements UserFacade {
         return convertToDetailDTO(user);
     }
 
-    /**
-     * Update user
-     */
+    /** Update user */
     @Transactional
     public UserDetailDTO updateUser(UserUpdateCommand command) {
         rejectMaskedValues(command.getRealName(), command.getEmail(), command.getMobile());
@@ -229,9 +225,7 @@ public class UserService implements UserFacade {
         return convertToDetailDTO(user);
     }
 
-    /**
-     * Delete user
-     */
+    /** Delete user */
     @Transactional
     public void deleteUser(String id) {
         userGateway.findById(id).orElseThrow(() -> new CommonException(UpmsResultCodeEnum.USER_NOT_FOUND));
@@ -262,9 +256,7 @@ public class UserService implements UserFacade {
         }
     }
 
-    /**
-     * Get user by ID
-     */
+    /** Get user by ID */
     public UserDetailDTO getUserById(IdQuery idQuery) {
         User user = userGateway
                 .findById(idQuery.id())
@@ -272,9 +264,7 @@ public class UserService implements UserFacade {
         return convertToDetailDTO(user);
     }
 
-    /**
-     * Query users with pagination
-     */
+    /** Query users with pagination */
     public PageDTO<UserDetailDTO> queryUsers(UserPageQuery query) {
         var pagination = query.pagination();
         String sortBy = query.getSortBy() == null ? "createdAt" : query.getSortBy();
@@ -305,9 +295,7 @@ public class UserService implements UserFacade {
         return PageDTO.of(dtoList, userPage.total(), userPage.page(), userPage.size());
     }
 
-    /**
-     * Change user password
-     */
+    /** Change user password */
     @Transactional
     public void changePassword(UserPasswordChangeCommand command) {
         if (command == null
@@ -346,9 +334,7 @@ public class UserService implements UserFacade {
         userGateway.update(user);
     }
 
-    /**
-     * Lock user account
-     */
+    /** Lock user account */
     @Transactional
     public void lockUser(String id) {
         User user = userGateway.findById(id).orElseThrow(() -> new CommonException(UpmsResultCodeEnum.USER_NOT_FOUND));
@@ -357,9 +343,7 @@ public class UserService implements UserFacade {
         userGateway.update(user);
     }
 
-    /**
-     * Unlock user account
-     */
+    /** Unlock user account */
     @Transactional
     public void unlockUser(String id) {
         User user = userGateway.findById(id).orElseThrow(() -> new CommonException(UpmsResultCodeEnum.USER_NOT_FOUND));
@@ -369,9 +353,7 @@ public class UserService implements UserFacade {
         userGateway.update(user);
     }
 
-    /**
-     * Convert User entity to UserDetailDTO
-     */
+    /** Convert User entity to UserDetailDTO */
     private UserDetailDTO convertToDetailDTO(User user) {
         List<RoleDTO> roles = roleGateway.findByUserId(user.getId()).stream()
                 .map(dtoConverter::toRoleSummary)

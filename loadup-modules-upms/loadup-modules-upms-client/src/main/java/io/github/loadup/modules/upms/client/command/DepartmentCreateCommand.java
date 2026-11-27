@@ -45,9 +45,7 @@ public class DepartmentCreateCommand {
     @Email() @Schema(description = "Email")
     private String email;
 
-    /**
-     * Status: 1-Normal, 0-Disabled
-     */
+    /** Status: 1-Normal, 0-Disabled */
     @Schema(description = "Current lifecycle status")
     private Short status;
 

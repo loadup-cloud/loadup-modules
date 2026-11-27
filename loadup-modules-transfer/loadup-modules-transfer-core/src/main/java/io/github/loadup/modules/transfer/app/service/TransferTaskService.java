@@ -166,9 +166,7 @@ public class TransferTaskService implements TransferTaskFacade {
         return converter.toPageDTO(repository.list(owner, kind, status, query.page(), query.size()));
     }
 
-    /**
-     * Redispatch a queued task or explicitly replay a failed task.
-     */
+    /** Redispatch a queued task or explicitly replay a failed task. */
     @Transactional
     public TransferTaskDTO retry(String id, String actorId, boolean admin) {
         TransferTask task = requireTask(id, actorId, admin);
@@ -202,9 +200,7 @@ public class TransferTaskService implements TransferTaskFacade {
                 null));
     }
 
-    /**
-     * Drains a bounded snapshot; atomic claims prevent duplicate work across worker instances.
-     */
+    /** Drains a bounded snapshot; atomic claims prevent duplicate work across worker instances. */
     public boolean executeQueuedTasks() {
         boolean succeeded = true;
         for (String id : repository.queued(properties.getDispatchBatchSize())) {

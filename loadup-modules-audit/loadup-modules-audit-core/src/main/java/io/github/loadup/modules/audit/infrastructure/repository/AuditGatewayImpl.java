@@ -91,7 +91,8 @@ public class AuditGatewayImpl extends ServiceImpl<AuditEventMapper, AuditEventDO
         long total = jdbc.queryForObject("SELECT COUNT(*) FROM audit_event WHERE " + where, args, Long.class);
         var rows = jdbc.query(
                 "SELECT id, actor_id, action, http_method AS method, request_path AS path, outcome, trace_id, occurred_at "
-                        + "FROM audit_event WHERE " + where
+                        + "FROM audit_event WHERE "
+                        + where
                         + " ORDER BY occurred_at DESC, id DESC LIMIT :limit OFFSET :offset",
                 args,
                 BeanPropertyRowMapper.newInstance(AuditEventDO.class));

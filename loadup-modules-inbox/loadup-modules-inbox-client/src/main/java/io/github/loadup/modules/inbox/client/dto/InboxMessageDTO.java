@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 
 public record InboxMessageDTO(
         @Schema(description = "Resource identifier") String id,
-
         @Schema(description = "Recipient user identifier") String recipientId,
         @Schema(description = "Sender id") String senderId,
         @Schema(description = "Category") String category,

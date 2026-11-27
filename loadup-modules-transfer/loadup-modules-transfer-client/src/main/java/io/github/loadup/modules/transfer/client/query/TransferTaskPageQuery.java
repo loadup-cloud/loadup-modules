@@ -26,7 +26,6 @@ import jakarta.validation.constraints.Min;
 
 public record TransferTaskPageQuery(
         @Schema(description = "Owner user identifier") String ownerId,
-
         @Schema(description = "Filter by import or export") TransferKind kind,
 
         @Schema(description = "Filter by current task status")

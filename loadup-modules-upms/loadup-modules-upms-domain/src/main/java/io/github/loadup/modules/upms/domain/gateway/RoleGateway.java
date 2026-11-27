@@ -23,100 +23,62 @@ import java.util.Optional;
 
 public interface RoleGateway {
 
-    /**
-     * Save role
-     */
+    /** Save role */
     Role save(Role role);
 
-    /**
-     * Update role
-     */
+    /** Update role */
     Role update(Role role);
 
-    /**
-     * Delete role by ID
-     */
+    /** Delete role by ID */
     void deleteById(String id);
 
-    /**
-     * Find role by ID
-     */
+    /** Find role by ID */
     Optional<Role> findById(String id);
 
-    /**
-     * Find role by code
-     */
+    /** Find role by code */
     Optional<Role> findByRoleCode(String roleCode);
 
-    /**
-     * Find roles by user ID
-     */
+    /** Find roles by user ID */
     List<Role> findByUserId(String userId);
 
-    /**
-     * Find roles by parent role ID
-     */
+    /** Find roles by parent role ID */
     List<Role> findByParentId(String parentId);
 
-    /**
-     * Find all roles
-     */
+    /** Find all roles */
     List<Role> findAll();
 
-    /**
-     * Find enabled roles
-     */
+    /** Find enabled roles */
     List<Role> findAllEnabled();
 
-    /**
-     * Check if role code exists
-     */
+    /** Check if role code exists */
     boolean existsByRoleCode(String roleCode);
 
-    /**
-     * Assign role to user
-     */
+    /** Assign role to user */
     void assignRoleToUser(String userId, String roleId, String operatorId);
 
-    /**
-     * Remove role from user
-     */
+    /** Remove role from user */
     void removeRoleFromUser(String userId, String roleId);
 
-    /**
-     * Get user's role IDs
-     */
+    /** Get user's role IDs */
     List<String> getUserRoleIds(String userId);
 
-    /**
-     * Assign permissions to role (batch)
-     */
+    /** Assign permissions to role (batch) */
     void assignPermissionsToRole(String roleId, List<String> permissionIds);
 
-    /**
-     * Remove permissions from role (batch)
-     */
+    /** Remove permissions from role (batch) */
     void removePermissionsFromRole(String roleId, List<String> permissionIds);
 
-    /**
-     * Assign departments to role (for custom data scope)
-     */
+    /** Assign departments to role (for custom data scope) */
     void assignDepartmentsToRole(String roleId, List<String> departmentIds);
 
-    /**
-     * Remove departments from role
-     */
+    /** Remove departments from role */
     void removeDepartmentsFromRole(String roleId, List<String> departmentIds);
 
-    /**
-     * Get department IDs by role ID (for custom data scope)
-     */
+    /** Get department IDs by role ID (for custom data scope) */
     List<String> findDepartmentIdsByRoleId(String roleId);
 
     PageResult<Role> findAll(PageQuery query);
 
-    /**
-     * Count users by role ID
-     */
+    /** Count users by role ID */
     long countUsersByRoleId(String roleId);
 }

@@ -36,9 +36,7 @@ public class LoginLog extends BaseEntity {
 
     private String os;
 
-    /**
-     * Login status: 1-Success, 0-Failure
-     */
+    /** Login status: 1-Success, 0-Failure */
     private Short loginStatus;
 
     private String loginMessage;

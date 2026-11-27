@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 
 public record DictionaryTypeDTO(
         @Schema(description = "Resource identifier") String id,
-
         @Schema(description = "Business code") String code,
         @Schema(description = "Name") String name,
         @Schema(description = "Description") String description,

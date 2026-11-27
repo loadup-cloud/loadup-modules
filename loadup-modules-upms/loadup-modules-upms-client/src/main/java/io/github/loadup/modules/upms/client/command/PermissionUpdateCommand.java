@@ -31,9 +31,7 @@ public class PermissionUpdateCommand {
     @Size(max = 50) @Schema(description = "Permission name")
     private String permissionName;
 
-    /**
-     * Permission type: 1-Menu, 2-Button, 3-API
-     */
+    /** Permission type: 1-Menu, 2-Button, 3-API */
     @Schema(description = "Permission type")
     private Short permissionType;
 

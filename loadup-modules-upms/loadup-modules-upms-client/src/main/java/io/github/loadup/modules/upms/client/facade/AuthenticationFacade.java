@@ -22,9 +22,7 @@ import io.github.loadup.modules.upms.client.dto.UserDetailDTO;
 
 public interface AuthenticationFacade {
 
-    /**
-     * Public business facade.
-     */
+    /** Public business facade. */
     AuthenticatedUserDTO login(UserLoginCommand command);
 
     UserDetailDTO register(UserRegisterCommand command);

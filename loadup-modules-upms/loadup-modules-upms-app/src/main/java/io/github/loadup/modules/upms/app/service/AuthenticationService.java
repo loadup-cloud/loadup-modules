@@ -76,9 +76,7 @@ public class AuthenticationService implements AuthenticationFacade {
         this.userQueryService = userQueryService;
     }
 
-    /**
-     * User login
-     */
+    /** User login */
     @Override
     public AuthenticatedUserDTO login(UserLoginCommand command) {
         try {
@@ -119,9 +117,7 @@ public class AuthenticationService implements AuthenticationFacade {
         return dtoConverter.toCredentials(command);
     }
 
-    /**
-     * User register
-     */
+    /** User register */
     @Transactional
     @Override
     public UserDetailDTO register(UserRegisterCommand command) {
@@ -168,9 +164,7 @@ public class AuthenticationService implements AuthenticationFacade {
         return userQueryService.getUserById(user.getId());
     }
 
-    /**
-     * Record login success
-     */
+    /** Record login success */
     private void recordLoginSuccess(User user, UserLoginCommand command, String loginType) {
         LoginLog loginLog = new LoginLog();
         loginLog.setUserId(user.getId());
@@ -185,9 +179,7 @@ public class AuthenticationService implements AuthenticationFacade {
         loginLogGateway.save(loginLog);
     }
 
-    /**
-     * Record login failure
-     */
+    /** Record login failure */
     private void recordLoginFailure(UserLoginCommand command, String message, String loginType) {
         LoginLog loginLog = new LoginLog();
         String loginIdentity = command.getUsername() != null ? command.getUsername() : command.getMobile();
@@ -208,9 +200,7 @@ public class AuthenticationService implements AuthenticationFacade {
         loginLogGateway.save(loginLog);
     }
 
-    /**
-     * Assign default role to new user
-     */
+    /** Assign default role to new user */
     private void assignDefaultRole(String userId) {
         // Try to assign "ROLE_USER" if it exists
         roleGateway

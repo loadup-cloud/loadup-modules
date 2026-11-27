@@ -127,9 +127,7 @@ public class TransferGatewayImpl extends ServiceImpl<TransferTaskRowMapper, Tran
         return list(query).stream().map(TransferTaskRow::getId).toList();
     }
 
-    /**
-     * Internal bootstrap lookup; user-facing callers verify ownership.
-     */
+    /** Internal bootstrap lookup; user-facing callers verify ownership. */
     @Override
     public Optional<TransferTask> find(String id) {
         return getByIdOpt(id).map(TransferGatewayImpl::task);

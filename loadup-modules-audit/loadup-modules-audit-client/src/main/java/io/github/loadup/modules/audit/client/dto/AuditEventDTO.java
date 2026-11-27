@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 
 public record AuditEventDTO(
         @Schema(description = "Resource identifier") String id,
-
         @Schema(description = "Actor identifier") String actorId,
         @Schema(description = "Action") String action,
         @Schema(description = "HTTP request method") String method,

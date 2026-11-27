@@ -24,9 +24,7 @@ public record FileResourceViewDTO(
         @Schema(description = "Owner user identifier") String ownerId,
         @Schema(description = "Original filename") String filename,
         @Schema(description = "MIME content type") String contentType,
-
         @Schema(description = "File length in bytes") long size,
-
         @Schema(description = "Provider") String provider,
 
         @Schema(description = "Creation time in the application local time zone")

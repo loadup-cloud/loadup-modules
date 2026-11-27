@@ -53,9 +53,7 @@ public final class Approval {
         DEPARTMENT
     }
 
-    /**
-     * Constructed by a trusted authentication adapter, never deserialized from request data.
-     */
+    /** Constructed by a trusted authentication adapter, never deserialized from request data. */
     public record Caller(String subject, boolean human, Set<String> authorities) {
         public Caller {
             authorities = Set.copyOf(authorities);

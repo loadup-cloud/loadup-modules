@@ -21,9 +21,7 @@ import io.github.loadup.modules.gotone.infrastructure.repository.GotoneConfigura
 import io.github.loadup.modules.gotone.infrastructure.repository.GotoneDeliveryStore.Work;
 import java.util.Set;
 
-/**
- * Core integration seam for a system account backed by a real transport.
- */
+/** Core integration seam for a system account backed by a real transport. */
 public interface GotoneProvider {
     String code();
 

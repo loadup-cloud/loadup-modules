@@ -21,63 +21,39 @@ import java.util.Optional;
 
 public interface PermissionGateway {
 
-    /**
-     * Save permission
-     */
+    /** Save permission */
     Permission save(Permission permission);
 
-    /**
-     * Update permission
-     */
+    /** Update permission */
     Permission update(Permission permission);
 
-    /**
-     * Delete permission by ID
-     */
+    /** Delete permission by ID */
     void deleteById(String id);
 
-    /**
-     * Find permission by ID
-     */
+    /** Find permission by ID */
     Optional<Permission> findById(String id);
 
-    /**
-     * Find permission by code
-     */
+    /** Find permission by code */
     Optional<Permission> findByPermissionCode(String permissionCode);
 
-    /**
-     * Find permissions by role ID
-     */
+    /** Find permissions by role ID */
     List<Permission> findByRoleId(String roleId);
 
-    /**
-     * Find permissions by parent ID
-     */
+    /** Find permissions by parent ID */
     List<Permission> findByParentId(String parentId);
 
-    /**
-     * Find permissions by type
-     */
+    /** Find permissions by type */
     List<Permission> findByPermissionType(Short permissionType);
 
-    /**
-     * Find all permissions
-     */
+    /** Find all permissions */
     List<Permission> findAll();
 
-    /**
-     * Find enabled permissions
-     */
+    /** Find enabled permissions */
     List<Permission> findAllEnabled();
 
-    /**
-     * Find menu permissions
-     */
+    /** Find menu permissions */
     List<Permission> findMenuPermissions();
 
-    /**
-     * Check if permission code exists
-     */
+    /** Check if permission code exists */
     boolean existsByPermissionCode(String permissionCode);
 }

@@ -33,9 +33,7 @@ public class PermissionCreateCommand {
     @Schema(description = "Permission code")
     private String permissionCode;
 
-    /**
-     * Permission type: 1-Menu, 2-Button, 3-API
-     */
+    /** Permission type: 1-Menu, 2-Button, 3-API */
     @Schema(description = "Permission type")
     private Short permissionType;
 
@@ -57,9 +55,7 @@ public class PermissionCreateCommand {
     @Schema(description = "Visible")
     private Boolean visible;
 
-    /**
-     * Status: 1-Normal, 0-Disabled
-     */
+    /** Status: 1-Normal, 0-Disabled */
     @Schema(description = "Current lifecycle status")
     private Short status;
 

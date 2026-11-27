@@ -48,9 +48,7 @@ public final class UpmsAuthenticationProvider implements AuthenticationProvider 
         return authenticate(authentication, null);
     }
 
-    /**
-     * Authenticate a first-party HTTP login with its server-observed client address.
-     */
+    /** Authenticate a first-party HTTP login with its server-observed client address. */
     public Authentication authenticate(Authentication authentication, String ipAddress) {
         UserLoginCommand command = new UserLoginCommand();
         command.setUsername(authentication.getName());

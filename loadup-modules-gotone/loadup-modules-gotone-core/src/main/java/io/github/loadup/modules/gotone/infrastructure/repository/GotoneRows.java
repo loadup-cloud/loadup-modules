@@ -20,9 +20,7 @@ import io.github.loadup.components.database.id.IdGenerator;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
-/**
- * Initializes the shared database columns on new Gotone records.
- */
+/** Initializes the shared database columns on new Gotone records. */
 public record GotoneRows(IdGenerator ids, Clock clock) {
     public <T extends BaseDO> T create(T row) {
         row.setId(ids.generate());

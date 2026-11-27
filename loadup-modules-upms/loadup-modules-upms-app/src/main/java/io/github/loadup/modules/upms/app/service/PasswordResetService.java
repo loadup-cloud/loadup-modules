@@ -93,9 +93,7 @@ public class PasswordResetService implements PasswordResetFacade {
         }
     }
 
-    /**
-     * Reset password with verification code
-     */
+    /** Reset password with verification code */
     @Transactional
     public void resetPassword(UserPasswordResetCommand command) {
         if (command == null) {

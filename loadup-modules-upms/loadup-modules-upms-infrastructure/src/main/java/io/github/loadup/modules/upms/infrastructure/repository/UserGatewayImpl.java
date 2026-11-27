@@ -250,7 +250,9 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
                 };
         long total = count(predicate, params);
         params.addValue("limit", page.pageSize()).addValue("offset", ((long) page.pageNum() - 1) * page.pageSize());
-        String order = " ORDER BY " + column + ("DESC".equalsIgnoreCase(sortOrder) ? " DESC" : " ASC")
+        String order = " ORDER BY "
+                + column
+                + ("DESC".equalsIgnoreCase(sortOrder) ? " DESC" : " ASC")
                 + " LIMIT :limit OFFSET :offset";
         return PageResult.of(list(predicate, params, order), total, page.pageNum(), page.pageSize());
     }

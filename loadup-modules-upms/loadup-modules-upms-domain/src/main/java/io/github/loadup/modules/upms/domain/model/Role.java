@@ -24,23 +24,17 @@ public class Role extends BaseEntity {
 
     private String roleCode;
 
-    /**
-     * Parent role ID for role inheritance (RBAC3 feature)
-     */
+    /** Parent role ID for role inheritance (RBAC3 feature) */
     private String parentId;
 
     private Integer roleLevel;
 
-    /**
-     * Data scope: 1-All, 2-Custom, 3-Dept, 4-Dept and children, 5-Self only
-     */
+    /** Data scope: 1-All, 2-Custom, 3-Dept, 4-Dept and children, 5-Self only */
     private Short dataScope;
 
     private Integer sortOrder;
 
-    /**
-     * Status: 1-Normal, 0-Disabled
-     */
+    /** Status: 1-Normal, 0-Disabled */
     private Short status;
 
     private Boolean deleted;
@@ -55,16 +49,12 @@ public class Role extends BaseEntity {
 
     private LocalDateTime updatedAt;
 
-    /**
-     * Check if role is enabled
-     */
+    /** Check if role is enabled */
     public boolean isEnabled() {
         return status != null && status == 1 && !Boolean.TRUE.equals(deleted);
     }
 
-    /**
-     * Check if this is a root role (no parent)
-     */
+    /** Check if this is a root role (no parent) */
     public boolean isRoot() {
         return parentId == null;
     }

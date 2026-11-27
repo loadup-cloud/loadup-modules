@@ -26,9 +26,7 @@ public class Permission extends BaseEntity {
 
     private String permissionCode;
 
-    /**
-     * Permission type: 1-Menu, 2-Button, 3-API
-     */
+    /** Permission type: 1-Menu, 2-Button, 3-API */
     private Short permissionType;
 
     private String resourcePath;
@@ -43,9 +41,7 @@ public class Permission extends BaseEntity {
 
     private boolean visible;
 
-    /**
-     * Status: 1-Normal, 0-Disabled
-     */
+    /** Status: 1-Normal, 0-Disabled */
     private Short status;
 
     private Boolean deleted;
@@ -60,37 +56,27 @@ public class Permission extends BaseEntity {
 
     private LocalDateTime updatedAt;
 
-    /**
-     * Check if permission is enabled
-     */
+    /** Check if permission is enabled */
     public boolean isEnabled() {
         return status != null && status == 1 && !Boolean.TRUE.equals(deleted);
     }
 
-    /**
-     * Check if this is a root permission
-     */
+    /** Check if this is a root permission */
     public boolean isRoot() {
         return parentId == null || "0".equals(parentId);
     }
 
-    /**
-     * Check if this is a menu permission
-     */
+    /** Check if this is a menu permission */
     public boolean isMenu() {
         return permissionType != null && permissionType == 1;
     }
 
-    /**
-     * Check if this is a button permission
-     */
+    /** Check if this is a button permission */
     public boolean isButton() {
         return permissionType != null && permissionType == 2;
     }
 
-    /**
-     * Check if this is an API permission
-     */
+    /** Check if this is an API permission */
     public boolean isApi() {
         return permissionType != null && permissionType == 3;
     }

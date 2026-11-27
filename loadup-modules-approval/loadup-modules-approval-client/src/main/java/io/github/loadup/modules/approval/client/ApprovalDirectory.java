@@ -23,9 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-/**
- * An identity adapter must scope both lookup and enumeration to the registered application.
- */
+/** An identity adapter must scope both lookup and enumeration to the registered application. */
 public interface ApprovalDirectory {
     Optional<Person> person(String app, String userId);
 

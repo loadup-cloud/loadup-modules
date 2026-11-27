@@ -19,9 +19,7 @@ import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDateTime;
 
-/**
- * A reference row; parent-file lifecycle is managed explicitly by the gateway.
- */
+/** A reference row; parent-file lifecycle is managed explicitly by the gateway. */
 @Table("file_resource_reference")
 public class FileReferenceRow extends BaseDO {
     private String fileId;

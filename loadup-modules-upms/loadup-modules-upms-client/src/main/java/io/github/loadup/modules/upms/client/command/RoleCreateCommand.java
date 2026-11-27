@@ -30,24 +30,18 @@ public class RoleCreateCommand {
     @NotBlank() @Size(max = 50) @Pattern(regexp = "^[A-Z_]+$") @Schema(description = "Role code")
     private String roleCode;
 
-    /**
-     * Parent role ID for role inheritance (RBAC3 feature)
-     */
+    /** Parent role ID for role inheritance (RBAC3 feature) */
     @Schema(description = "Parent id")
     private String parentId;
 
-    /**
-     * Data scope: 1-All, 2-Custom, 3-Dept, 4-Dept and children, 5-Self only
-     */
+    /** Data scope: 1-All, 2-Custom, 3-Dept, 4-Dept and children, 5-Self only */
     @Schema(description = "Data scope")
     private Short dataScope;
 
     @Schema(description = "Display order; smaller values appear first")
     private Integer sortOrder;
 
-    /**
-     * Status: 1-Normal, 0-Disabled
-     */
+    /** Status: 1-Normal, 0-Disabled */
     @Schema(description = "Current lifecycle status")
     private Short status;
 

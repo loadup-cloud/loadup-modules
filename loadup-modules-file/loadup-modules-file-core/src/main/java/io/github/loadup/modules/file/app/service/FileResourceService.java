@@ -162,9 +162,7 @@ public class FileResourceService implements FileResourceFacade {
         return converter.toReferenceDTOs(repository.references(file.id()));
     }
 
-    /**
-     * Commit the pending state before calling DFS; retry cleanupPending after storage failure.
-     */
+    /** Commit the pending state before calling DFS; retry cleanupPending after storage failure. */
     @Transactional
     public void requestDeletion(String id, String actorId, boolean admin) {
         FileResource file = lockActive(id, actorId, admin);
@@ -174,9 +172,7 @@ public class FileResourceService implements FileResourceFacade {
         repository.markPending(file.id());
     }
 
-    /**
-     * Idempotent cleanup entry point for operators or a scheduler.
-     */
+    /** Idempotent cleanup entry point for operators or a scheduler. */
     public int cleanupPending(int limit) {
         if (limit < 1 || limit > 1000) {
             throw new CommonException(FileResultCodeEnum.LIMIT_MUST_BE_BETWEEN_1_AND_1000);

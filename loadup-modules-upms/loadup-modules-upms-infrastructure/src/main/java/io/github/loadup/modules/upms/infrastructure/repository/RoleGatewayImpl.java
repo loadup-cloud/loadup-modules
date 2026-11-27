@@ -122,7 +122,8 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
         }
         for (String table : List.of("upms_role_permission", "upms_role_department", "upms_user_role")) {
             jdbc.update(
-                    "UPDATE " + table
+                    "UPDATE "
+                            + table
                             + " SET deleted = TRUE, updated_at = :now WHERE role_id = :id AND deleted = FALSE",
                     params);
         }
@@ -277,10 +278,18 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
                 .addValue("operator", operator)
                 .addValue("now", LocalDateTime.now(clock));
         int changed = jdbc.update(
-                "INSERT INTO " + table + " (id, " + firstColumn + ", " + secondColumn
+                "INSERT INTO "
+                        + table
+                        + " (id, "
+                        + firstColumn
+                        + ", "
+                        + secondColumn
                         + ", created_by, created_at, updated_at, deleted) "
                         + "VALUES (:id, :first, :second, :operator, :now, :now, FALSE) ON CONFLICT ("
-                        + firstColumn + ", " + secondColumn + ") "
+                        + firstColumn
+                        + ", "
+                        + secondColumn
+                        + ") "
                         + "DO UPDATE SET deleted = FALSE, updated_at = EXCLUDED.updated_at",
                 values);
         if (changed != 1) {
@@ -294,7 +303,11 @@ public class RoleGatewayImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
             return;
         }
         jdbc.update(
-                "UPDATE " + table + " SET deleted = TRUE, updated_at = :now WHERE " + firstColumn + " = :first AND "
+                "UPDATE "
+                        + table
+                        + " SET deleted = TRUE, updated_at = :now WHERE "
+                        + firstColumn
+                        + " = :first AND "
                         + secondColumn
                         + " IN (:seconds) AND deleted = FALSE",
                 params().addValue("first", first)

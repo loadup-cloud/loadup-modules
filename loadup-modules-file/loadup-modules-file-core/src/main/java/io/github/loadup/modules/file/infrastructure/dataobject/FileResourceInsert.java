@@ -19,9 +19,7 @@ import com.mybatisflex.annotation.Table;
 import io.github.loadup.components.database.dataobject.BaseDO;
 import java.time.LocalDateTime;
 
-/**
- * Single file row with an application-assigned identifier, used for insertion and lookup.
- */
+/** Single file row with an application-assigned identifier, used for insertion and lookup. */
 @Table("file_resource")
 public class FileResourceInsert extends BaseDO {
     private String ownerId;

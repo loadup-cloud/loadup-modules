@@ -42,16 +42,12 @@ public class User extends BaseEntity {
 
     private String avatar;
 
-    /**
-     * Gender: 0-Unknown, 1-Male, 2-Female
-     */
+    /** Gender: 0-Unknown, 1-Male, 2-Female */
     private Short gender;
 
     private LocalDate birthday;
 
-    /**
-     * Status: 1-Normal, 0-Disabled, 2-Locked
-     */
+    /** Status: 1-Normal, 0-Disabled, 2-Locked */
     private Short status;
 
     private Boolean accountNonExpired;
@@ -87,16 +83,12 @@ public class User extends BaseEntity {
 
     private Department department;
 
-    /**
-     * Check if user account is enabled
-     */
+    /** Check if user account is enabled */
     public boolean isEnabled() {
         return status != null && status == 1 && !Boolean.TRUE.equals(deleted);
     }
 
-    /**
-     * Check if user account is active (enabled and not locked)
-     */
+    /** Check if user account is active (enabled and not locked) */
     public boolean isActive() {
         return isEnabled()
                 && Boolean.TRUE.equals(accountNonExpired)
@@ -104,9 +96,7 @@ public class User extends BaseEntity {
                 && Boolean.TRUE.equals(credentialsNonExpired);
     }
 
-    /**
-     * Increment login fail count
-     */
+    /** Increment login fail count */
     public void incrementLoginFailCount() {
         if (this.loginFailCount == null) {
             this.loginFailCount = 0;
@@ -114,26 +104,20 @@ public class User extends BaseEntity {
         this.loginFailCount++;
     }
 
-    /**
-     * Reset login fail count
-     */
+    /** Reset login fail count */
     public void resetLoginFailCount() {
         this.loginFailCount = 0;
         this.lockedTime = null;
     }
 
-    /**
-     * Lock user account
-     */
+    /** Lock user account */
     public void lockAccount(LocalDateTime now) {
         this.accountNonLocked = false;
         this.lockedTime = now;
         this.status = 2; // Locked status
     }
 
-    /**
-     * Unlock user account
-     */
+    /** Unlock user account */
     public void unlockAccount() {
         this.accountNonLocked = true;
         this.lockedTime = null;
@@ -141,9 +125,7 @@ public class User extends BaseEntity {
         this.status = 1; // Normal status
     }
 
-    /**
-     * Update last login info
-     */
+    /** Update last login info */
     public void updateLastLogin(String ip, LocalDateTime now) {
         this.lastLoginTime = now;
         this.lastLoginIp = ip;

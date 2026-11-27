@@ -59,25 +59,19 @@ public class UserPermissionService {
         return new ArrayList<>(granted.values());
     }
 
-    /**
-     * Get permission codes for a user
-     */
+    /** Get permission codes for a user */
     public Set<String> getUserPermissionCodes(String userId) {
         return getUserPermissions(userId).stream()
                 .map(Permission::getPermissionCode)
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * Check if user has specific permission
-     */
+    /** Check if user has specific permission */
     public boolean hasPermission(String userId, String permissionCode) {
         return getUserPermissionCodes(userId).contains(permissionCode);
     }
 
-    /**
-     * Check if user has any of the specified permissions
-     */
+    /** Check if user has any of the specified permissions */
     public boolean hasAnyPermission(String userId, String... permissionCodes) {
         Set<String> userPermissions = getUserPermissionCodes(userId);
         for (String code : permissionCodes) {
@@ -88,9 +82,7 @@ public class UserPermissionService {
         return false;
     }
 
-    /**
-     * Check if user has all of the specified permissions
-     */
+    /** Check if user has all of the specified permissions */
     public boolean hasAllPermissions(String userId, String... permissionCodes) {
         Set<String> userPermissions = getUserPermissionCodes(userId);
         for (String code : permissionCodes) {
@@ -101,9 +93,7 @@ public class UserPermissionService {
         return true;
     }
 
-    /**
-     * Get menu permissions for a user
-     */
+    /** Get menu permissions for a user */
     public List<Permission> getUserMenuPermissions(String userId) {
         return getUserPermissions(userId).stream()
                 .filter(Permission::isMenu)

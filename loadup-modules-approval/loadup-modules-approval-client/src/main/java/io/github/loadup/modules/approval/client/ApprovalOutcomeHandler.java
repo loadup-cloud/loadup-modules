@@ -17,9 +17,7 @@ package io.github.loadup.modules.approval.client;
 
 import io.github.loadup.modules.approval.client.Approval.Outcome;
 
-/**
- * Receivers must deduplicate by eventId and return only after durable acceptance.
- */
+/** Receivers must deduplicate by eventId and return only after durable acceptance. */
 public interface ApprovalOutcomeHandler {
     String appCode();
 
