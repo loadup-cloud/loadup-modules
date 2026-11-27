@@ -34,6 +34,11 @@ public interface UserGateway {
     User update(User user);
 
     /**
+     * Applies a reset only while the verified email and current password still match.
+     */
+    boolean resetPasswordWithVerifiedEmail(String id, String email, String expectedHash, String newHash);
+
+    /**
      * Delete user by ID
      */
     void deleteById(String id);

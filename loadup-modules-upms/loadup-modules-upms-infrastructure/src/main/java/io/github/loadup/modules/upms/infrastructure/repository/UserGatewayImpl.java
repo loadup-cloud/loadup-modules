@@ -117,6 +117,21 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
     }
 
     @Override
+    public boolean resetPasswordWithVerifiedEmail(String id, String email, String expectedHash, String newHash) {
+        var parameters = params().addValue("id", id)
+                .addValue("email", email)
+                .addValue("expectedHash", expectedHash)
+                .addValue("newHash", newHash)
+                .addValue("now", LocalDateTime.now(clock));
+        return jdbc.update("""
+                UPDATE upms_user
+                SET password = :newHash, password_update_time = :now, updated_at = :now
+                WHERE id = :id AND email = :email AND email_verified = TRUE AND password = :expectedHash
+                  AND status = 1 AND deleted = FALSE
+                """, parameters) == 1;
+    }
+
+    @Override
     @Transactional
     public void deleteById(String id) {
         var params = params().addValue("id", id).addValue("now", LocalDateTime.now(clock));

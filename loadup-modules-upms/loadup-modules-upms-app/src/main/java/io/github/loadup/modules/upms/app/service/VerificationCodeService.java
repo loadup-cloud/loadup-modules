@@ -23,8 +23,11 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -48,15 +51,7 @@ public class VerificationCodeService {
         String code = generateRandomCode();
         String key = buildKey(target, type);
 
-        VerificationCode verificationCode = new VerificationCode();
-        verificationCode.setCode(code);
-        verificationCode.setTarget(target);
-        verificationCode.setType(type);
-        verificationCode.setAttempts(0);
-        verificationCode.setCreatedAt(LocalDateTime.ofInstant(clock.instant(), clock.getZone()));
-
-        verificationCode.setExpiryTime(
-                LocalDateTime.ofInstant(clock.instant(), clock.getZone()).plusMinutes(CODE_EXPIRY_MINUTES));
+        VerificationCode verificationCode = newCode(target, type, code);
 
         codeStorage.put(key, verificationCode);
 
@@ -65,6 +60,63 @@ public class VerificationCodeService {
                 "Generated verification code for {}",
                 Masking.mask(target, type.equalsIgnoreCase("EMAIL") ? MaskType.EMAIL : MaskType.PHONE));
         return code;
+    }
+
+    Optional<String> issueResetCode(String userId, String target, String type) {
+        var issued = new AtomicReference<String>();
+        codeStorage.compute(resetKey(userId, target, type), (key, previous) -> {
+            if (previous != null
+                    && LocalDateTime.now(clock).isBefore(previous.getCreatedAt().plusMinutes(1))) {
+                return previous;
+            }
+            String code = generateRandomCode();
+            issued.set(code);
+            return newCode(target, type, code);
+        });
+        return Optional.ofNullable(issued.get());
+    }
+
+    boolean consumeResetCode(String userId, String target, String type, String code) {
+        var accepted = new AtomicBoolean();
+        codeStorage.computeIfPresent(resetKey(userId, target, type), (key, current) -> {
+            if (!LocalDateTime.now(clock).isBefore(current.getExpiryTime())) {
+                return null;
+            }
+            if (current.getCode() != null && current.getAttempts() < MAX_ATTEMPTS) {
+                current.setAttempts(current.getAttempts() + 1);
+                if (current.getCode().equals(code)) {
+                    current.setCode(null);
+                    accepted.set(true);
+                }
+            }
+            return current;
+        });
+        return accepted.get();
+    }
+
+    void discardResetCode(String userId, String target, String type, String code) {
+        codeStorage.computeIfPresent(resetKey(userId, target, type), (key, current) -> {
+            if (code.equals(current.getCode())) {
+                current.setCode(null);
+            }
+            return current;
+        });
+    }
+
+    private String resetKey(String userId, String target, String type) {
+        return buildKey(userId + ":" + target, "PASSWORD_RESET:" + type);
+    }
+
+    private VerificationCode newCode(String target, String type, String code) {
+        var now = LocalDateTime.now(clock);
+        var verificationCode = new VerificationCode();
+        verificationCode.setCode(code);
+        verificationCode.setTarget(target);
+        verificationCode.setType(type);
+        verificationCode.setAttempts(0);
+        verificationCode.setCreatedAt(now);
+        verificationCode.setExpiryTime(now.plusMinutes(CODE_EXPIRY_MINUTES));
+        return verificationCode;
     }
 
     /**

@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Import;
 @AutoConfiguration(after = {UpmsAutoConfiguration.class, AuditAutoConfiguration.class})
 @Import({
     AuthenticationController.class,
+    PasswordController.class,
     AccountSecurityController.class,
     UserController.class,
     UserSensitiveController.class,

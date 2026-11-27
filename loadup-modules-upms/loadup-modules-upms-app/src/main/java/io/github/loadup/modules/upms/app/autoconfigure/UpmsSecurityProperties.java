@@ -15,13 +15,23 @@
  */
 package io.github.loadup.modules.upms.app.autoconfigure;
 
+import io.github.loadup.modules.upms.client.validation.PasswordPolicy;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "loadup.modules.upms.security")
 public class UpmsSecurityProperties {
 
+    private PasswordPolicy passwordStrength = PasswordPolicy.NORMAL;
     private LoginConfig login = new LoginConfig();
     private OAuthProvidersConfig oauth = new OAuthProvidersConfig();
+
+    public PasswordPolicy getPasswordStrength() {
+        return passwordStrength;
+    }
+
+    public void setPasswordStrength(PasswordPolicy passwordStrength) {
+        this.passwordStrength = passwordStrength;
+    }
 
     public LoginConfig getLogin() {
         return login;

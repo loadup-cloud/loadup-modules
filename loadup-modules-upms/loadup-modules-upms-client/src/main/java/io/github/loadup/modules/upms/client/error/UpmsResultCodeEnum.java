@@ -84,6 +84,7 @@ public enum UpmsResultCodeEnum implements ResultCode {
     VERIFICATION_CODE_IS_INVALID_OR_EXPIRED(
             "UPMS_VERIFICATION_CODE_IS_INVALID_OR_EXPIRED", "Verification code is invalid or expired"),
     EMAIL_IS_REQUIRED("UPMS_EMAIL_IS_REQUIRED", "Email is required"),
+    PASSWORD_RESET_UNAVAILABLE("UPMS_PASSWORD_RESET_UNAVAILABLE", "Email password reset is unavailable"),
     VERIFICATION_CODE_IS_REQUIRED("UPMS_VERIFICATION_CODE_IS_REQUIRED", "Verification code is required"),
     INVALID_LOGIN_CREDENTIALS("UPMS_INVALID_LOGIN_CREDENTIALS", "Invalid login credentials"),
     ACCOUNT_IS_LOCKED_OR_DISABLED("UPMS_ACCOUNT_IS_LOCKED_OR_DISABLED", "Account is locked or disabled"),
@@ -100,6 +101,9 @@ public enum UpmsResultCodeEnum implements ResultCode {
             "UPMS_AUTHENTICATED_USER_IS_REQUIRED_74D75F", "Authenticated user is required"),
     INVALID_PASSWORD(
             "UPMS_INVALID_PASSWORD", "Password requires at least 8 Unicode characters and at most 72 UTF-8 bytes"),
+    PASSWORD_STRENGTH_REQUIRED(
+            "UPMS_PASSWORD_STRENGTH_REQUIRED",
+            "Strong passwords require at least 12 Unicode characters with uppercase, lowercase, a digit, and a symbol"),
     INVALID_USER_STATUS("UPMS_INVALID_USER_STATUS", "Invalid user status: ");
     private final String code;
     private final String message;

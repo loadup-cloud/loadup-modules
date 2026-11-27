@@ -29,14 +29,15 @@ class PasswordPolicyTest {
     @Test
     void enforcesUnicodeCharacterMinimumAndUtf8ByteMaximum() {
         for (String password : List.of("abcdefgh", "a".repeat(72), "界".repeat(24), "😀".repeat(8))) {
-            assertThat(PasswordPolicy.isValid(password)).isTrue();
+            assertThat(PasswordPolicy.NORMAL.isValid(password)).isTrue();
             assertThat(new PasswordPolicyValidator().isValid(password, null)).isTrue();
         }
         for (String password : List.of("a".repeat(7), "a".repeat(73), "界".repeat(25), "😀".repeat(7), " ".repeat(8))) {
-            assertThat(PasswordPolicy.isValid(password)).isFalse();
-            assertThatThrownBy(() -> PasswordPolicy.requireValid(password)).isInstanceOf(CommonException.class);
+            assertThat(PasswordPolicy.NORMAL.isValid(password)).isFalse();
+            assertThatThrownBy(() -> PasswordPolicy.NORMAL.requireValid(password))
+                    .isInstanceOf(CommonException.class);
         }
-        assertThat(PasswordPolicy.isValid(null)).isFalse();
+        assertThat(PasswordPolicy.NORMAL.isValid(null)).isFalse();
     }
 
     @Test

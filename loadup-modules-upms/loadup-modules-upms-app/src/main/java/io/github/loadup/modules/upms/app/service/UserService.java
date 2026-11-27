@@ -28,9 +28,9 @@ import io.github.loadup.modules.upms.client.command.UserUpdateCommand;
 import io.github.loadup.modules.upms.client.dto.RoleDTO;
 import io.github.loadup.modules.upms.client.dto.UserDetailDTO;
 import io.github.loadup.modules.upms.client.error.UpmsResultCodeEnum;
+import io.github.loadup.modules.upms.client.facade.PasswordPolicyFacade;
 import io.github.loadup.modules.upms.client.facade.UserFacade;
 import io.github.loadup.modules.upms.client.query.UserPageQuery;
-import io.github.loadup.modules.upms.client.validation.PasswordPolicy;
 import io.github.loadup.modules.upms.domain.gateway.DepartmentGateway;
 import io.github.loadup.modules.upms.domain.gateway.RoleGateway;
 import io.github.loadup.modules.upms.domain.gateway.UserGateway;
@@ -56,6 +56,7 @@ public class UserService implements UserFacade {
     private final RoleGateway roleGateway;
     private final DepartmentGateway departmentGateway;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicyFacade passwordPolicies;
 
     public UserService(
             UserGateway userGateway,
@@ -63,13 +64,15 @@ public class UserService implements UserFacade {
             DepartmentGateway departmentGateway,
             PasswordEncoder passwordEncoder,
             UpmsDTOConverter dtoConverter,
-            Clock clock) {
+            Clock clock,
+            PasswordPolicyFacade passwordPolicies) {
         this.clock = clock;
         this.dtoConverter = dtoConverter;
         this.userGateway = userGateway;
         this.roleGateway = roleGateway;
         this.departmentGateway = departmentGateway;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicies = passwordPolicies;
     }
 
     private static void rejectMaskedValues(String... values) {
@@ -88,7 +91,7 @@ public class UserService implements UserFacade {
         if (command == null) {
             throw new CommonException(CommonResultCodeEnum.PARAM_ILLEGAL);
         }
-        PasswordPolicy.requireValid(command.getPassword());
+        passwordPolicies.currentPolicy().requireValid(command.getPassword());
         rejectMaskedValues(command.getRealName(), command.getEmail(), command.getMobile());
         // Validate username uniqueness
         if (userGateway.existsByUsername(command.getUsername())) {
@@ -314,7 +317,7 @@ public class UserService implements UserFacade {
                 || command.getConfirmPassword() == null) {
             throw new CommonException(UpmsResultCodeEnum.INVALID_PASSWORD_CHANGE_REQUEST);
         }
-        PasswordPolicy.requireValid(command.getNewPassword());
+        passwordPolicies.currentPolicy().requireValid(command.getNewPassword());
         User user = userGateway
                 .findById(command.getUserId())
                 .orElseThrow(() -> new CommonException(UpmsResultCodeEnum.USER_NOT_FOUND));

@@ -20,13 +20,16 @@ import io.github.loadup.commons.json.ToStringAsJson;
 import io.github.loadup.modules.upms.client.validation.ValidPassword;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class UserPasswordResetCommand {
 
-    @NotBlank() @Schema(description = "Username")
+    @NotBlank @Size(max = 50) @Schema(description = "Username")
     private String username;
 
-    @NotBlank() @Schema(description = "Verification code")
+    @NotBlank @Pattern(regexp = "[0-9]{6}") @Schema(description = "Six-digit verification code", accessMode = Schema.AccessMode.WRITE_ONLY)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String verificationCode;
 
     @NotBlank() @Schema(

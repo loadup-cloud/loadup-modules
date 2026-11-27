@@ -100,8 +100,13 @@ HTTP envelope。
 
 ## 输入与安全约定
 
-新密码统一为至少 8 个 Unicode 字符、最多 72 个 UTF-8 字节；创建、注册、修改和重置共用 `PasswordPolicy` 与 `@ValidPassword`
-，避免 BCrypt 截断。查询默认 page=1、size=20，最多 100 条；用户排序字段为
+`PasswordPolicy` 定义各档规则和前端读取的约束数据。`PasswordPolicySettings` 订阅 ConfigCenter 配置并提供当前策略。创建、注册、修改和重置在编码或写入前使用当前策略。`@ValidPassword` 在请求绑定时检查 `normal` 的基础约束。
+
+邮箱重置码绑定账号 ID、已验证邮箱和重置用途，有效期 5 分钟。应用在内存中原子地限制重发和验证次数，并在验证成功后作废该码。写入新密码时重新核对账号状态、已验证邮箱和原密码哈希。邮件由宿主提供的 `PasswordResetEmailSender` 发送。
+
+`PermissionService` 使用有效角色权限生成可见菜单树。它补齐启用且可见的无路径祖先分组，并按排序字段输出同级项。分组不会赋予页面权限。
+
+查询默认 page=1、size=20，最多 100 条；用户排序字段为
 createdAt、username、nickname、id，角色按已声明字段白名单排序。验证码不写日志，邮箱和手机号显式脱敏。业务时间和数据库审计字段使用
 Spring 共享的 Clock，默认采用系统本地时区。
 

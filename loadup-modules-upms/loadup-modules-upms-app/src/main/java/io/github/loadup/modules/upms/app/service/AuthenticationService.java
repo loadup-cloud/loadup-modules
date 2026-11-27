@@ -28,8 +28,8 @@ import io.github.loadup.modules.upms.client.dto.AuthenticatedUserDTO;
 import io.github.loadup.modules.upms.client.dto.UserDetailDTO;
 import io.github.loadup.modules.upms.client.error.UpmsResultCodeEnum;
 import io.github.loadup.modules.upms.client.facade.AuthenticationFacade;
+import io.github.loadup.modules.upms.client.facade.PasswordPolicyFacade;
 import io.github.loadup.modules.upms.client.facade.UserQueryFacade;
-import io.github.loadup.modules.upms.client.validation.PasswordPolicy;
 import io.github.loadup.modules.upms.domain.gateway.LoginLogGateway;
 import io.github.loadup.modules.upms.domain.gateway.RoleGateway;
 import io.github.loadup.modules.upms.domain.gateway.UserGateway;
@@ -51,6 +51,7 @@ public class AuthenticationService implements AuthenticationFacade {
     private final RoleGateway roleGateway;
     private final LoginLogGateway loginLogGateway;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicyFacade passwordPolicies;
     private final LoginStrategyManager loginStrategyManager;
     private final UserQueryFacade userQueryService;
 
@@ -62,13 +63,15 @@ public class AuthenticationService implements AuthenticationFacade {
             LoginStrategyManager loginStrategyManager,
             UserQueryFacade userQueryService,
             UpmsDTOConverter dtoConverter,
-            Clock clock) {
+            Clock clock,
+            PasswordPolicyFacade passwordPolicies) {
         this.clock = clock;
         this.dtoConverter = dtoConverter;
         this.userGateway = userGateway;
         this.roleGateway = roleGateway;
         this.loginLogGateway = loginLogGateway;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicies = passwordPolicies;
         this.loginStrategyManager = loginStrategyManager;
         this.userQueryService = userQueryService;
     }
@@ -125,7 +128,7 @@ public class AuthenticationService implements AuthenticationFacade {
         if (command == null) {
             throw new CommonException(CommonResultCodeEnum.PARAM_ILLEGAL);
         }
-        PasswordPolicy.requireValid(command.getPassword());
+        passwordPolicies.currentPolicy().requireValid(command.getPassword());
         // Check if username exists
         if (userGateway.existsByUsername(command.getUsername())) {
             throw new CommonException(UpmsResultCodeEnum.USERNAME_ALREADY_EXISTS);

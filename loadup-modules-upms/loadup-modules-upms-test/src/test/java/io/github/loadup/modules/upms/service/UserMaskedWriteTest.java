@@ -20,7 +20,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.github.loadup.commons.error.CommonException;
+import io.github.loadup.modules.upms.app.autoconfigure.UpmsSecurityProperties;
 import io.github.loadup.modules.upms.app.converter.UpmsDTOConverter;
+import io.github.loadup.modules.upms.app.security.PasswordPolicySettings;
 import io.github.loadup.modules.upms.app.service.UserService;
 import io.github.loadup.modules.upms.client.command.UserCreateCommand;
 import io.github.loadup.modules.upms.client.command.UserUpdateCommand;
@@ -38,8 +40,14 @@ class UserMaskedWriteTest {
         var roles = mock(RoleGateway.class);
         var departments = mock(DepartmentGateway.class);
         var passwords = mock(PasswordEncoder.class);
-        var service =
-                new UserService(users, roles, departments, passwords, mock(UpmsDTOConverter.class), Clock.systemUTC());
+        var service = new UserService(
+                users,
+                roles,
+                departments,
+                passwords,
+                mock(UpmsDTOConverter.class),
+                Clock.systemUTC(),
+                new PasswordPolicySettings(new UpmsSecurityProperties()));
         var create = new UserCreateCommand();
         create.setPassword("Valid12345");
         create.setMobile("138****5678");

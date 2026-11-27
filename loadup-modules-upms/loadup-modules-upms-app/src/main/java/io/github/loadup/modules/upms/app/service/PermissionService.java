@@ -26,6 +26,7 @@ import io.github.loadup.modules.upms.domain.gateway.PermissionGateway;
 import io.github.loadup.modules.upms.domain.model.Permission;
 import io.github.loadup.modules.upms.domain.service.UserPermissionService;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -162,9 +163,30 @@ public class PermissionService implements PermissionFacade {
     }
 
     public List<PermissionDTO> getUserMenuTree(String userId) {
-        List<Permission> menuPermissions = userPermissionService.getUserPermissions(userId).stream()
-                .filter(p -> p.getPermissionType() == 1 && Boolean.TRUE.equals(p.isVisible()))
-                .collect(Collectors.toList());
+        List<Permission> granted = userPermissionService.getUserMenuPermissions(userId);
+        if (granted.isEmpty()) {
+            return List.of();
+        }
+
+        var visible = permissionGateway.findByPermissionType((short) 1).stream()
+                .filter(Permission::isEnabled)
+                .filter(permission -> Boolean.TRUE.equals(permission.getVisible()))
+                .collect(Collectors.toMap(Permission::getId, permission -> permission));
+        Set<String> included = granted.stream().map(Permission::getId).collect(Collectors.toSet());
+        for (Permission permission : granted) {
+            Permission parent = visible.get(permission.getParentId());
+            // An ungranted container can display granted children, but a page requires its own grant.
+            while (parent != null
+                    && (parent.getResourcePath() == null
+                            || parent.getResourcePath().isBlank())
+                    && included.add(parent.getId())) {
+                parent = visible.get(parent.getParentId());
+            }
+        }
+
+        List<Permission> menuPermissions = visible.values().stream()
+                .filter(permission -> included.contains(permission.getId()))
+                .toList();
         return buildPermissionTree(menuPermissions, null);
     }
 
@@ -187,6 +209,9 @@ public class PermissionService implements PermissionFacade {
                 tree.add(dto);
             }
         }
+        tree.sort(Comparator.comparingInt(
+                        (PermissionDTO permission) -> permission.getSortOrder() == null ? 0 : permission.getSortOrder())
+                .thenComparing(PermissionDTO::getPermissionCode));
         return tree;
     }
 

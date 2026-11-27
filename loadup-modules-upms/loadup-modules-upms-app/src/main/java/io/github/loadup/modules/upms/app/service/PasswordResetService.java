@@ -18,85 +18,79 @@ package io.github.loadup.modules.upms.app.service;
 import io.github.loadup.commons.enums.CommonResultCodeEnum;
 import io.github.loadup.commons.error.CommonException;
 import io.github.loadup.commons.log.LogUtil;
-import io.github.loadup.commons.masking.MaskType;
-import io.github.loadup.commons.masking.Masking;
 import io.github.loadup.modules.upms.client.command.UserPasswordResetCommand;
 import io.github.loadup.modules.upms.client.error.UpmsResultCodeEnum;
+import io.github.loadup.modules.upms.client.facade.PasswordPolicyFacade;
 import io.github.loadup.modules.upms.client.facade.PasswordResetFacade;
-import io.github.loadup.modules.upms.client.validation.PasswordPolicy;
+import io.github.loadup.modules.upms.client.spi.PasswordResetEmailSender;
 import io.github.loadup.modules.upms.domain.gateway.UserGateway;
 import io.github.loadup.modules.upms.domain.model.User;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PasswordResetService implements PasswordResetFacade {
+    private static final String EMAIL = "EMAIL";
+    private static final String SMS = "SMS";
     private final Clock clock;
 
     private final UserGateway userGateway;
     private final VerificationCodeService verificationCodeService;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicyFacade passwordPolicies;
+    private final Optional<PasswordResetEmailSender> emailSender;
 
     public PasswordResetService(
             UserGateway userGateway,
             VerificationCodeService verificationCodeService,
             PasswordEncoder passwordEncoder,
-            Clock clock) {
+            Clock clock,
+            PasswordPolicyFacade passwordPolicies,
+            Optional<PasswordResetEmailSender> emailSender) {
         this.clock = clock;
         this.userGateway = userGateway;
         this.verificationCodeService = verificationCodeService;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicies = passwordPolicies;
+        this.emailSender = emailSender;
     }
 
-    /**
-     * Send verification code via email
-     */
+    @Override
     public void sendEmailVerificationCode(String email) {
-        // Validate email exists
+        var sender = emailSender.orElseThrow(() -> new CommonException(UpmsResultCodeEnum.PASSWORD_RESET_UNAVAILABLE));
         userGateway
                 .findByEmail(email)
-                .orElseThrow(() -> new CommonException(UpmsResultCodeEnum.EMAIL_IS_NOT_REGISTERED));
-
-        // Check rate limiting
-        if (!verificationCodeService.canSendCode(email, "EMAIL")) {
-            throw new CommonException(UpmsResultCodeEnum.VERIFICATION_REQUESTS_ARE_RATE_LIMITED);
-        }
-
-        // Generate code
-        verificationCodeService.generateCode(email, "EMAIL");
-
-        // TODO: Send email using Modules Notification
-        LogUtil.info(
-                PasswordResetService.class,
-                "Email verification code generated for {}",
-                Masking.mask(email, MaskType.EMAIL));
+                .filter(User::isEnabled)
+                .filter(user -> Boolean.TRUE.equals(user.getEmailVerified()))
+                .ifPresent(user -> verificationCodeService
+                        .issueResetCode(user.getId(), user.getEmail(), EMAIL)
+                        .ifPresent(code -> sendEmailCode(sender, user, code)));
     }
 
-    /**
-     * Send verification code via SMS
-     */
+    private void sendEmailCode(PasswordResetEmailSender sender, User user, String code) {
+        try {
+            sender.send(user.getEmail(), code);
+        } catch (RuntimeException failure) {
+            verificationCodeService.discardResetCode(user.getId(), user.getEmail(), EMAIL, code);
+            LogUtil.warn(
+                    PasswordResetService.class,
+                    "Password reset email could not be delivered ({})",
+                    failure.getClass().getSimpleName());
+        }
+    }
+
+    @Override
     public void sendSmsVerificationCode(String mobile) {
-        // Validate mobile exists
-        userGateway
+        User user = userGateway
                 .findByMobile(mobile)
                 .orElseThrow(() -> new CommonException(UpmsResultCodeEnum.PHONE_NUMBER_IS_NOT_REGISTERED));
-
-        // Check rate limiting
-        if (!verificationCodeService.canSendCode(mobile, "SMS")) {
+        if (verificationCodeService.issueResetCode(user.getId(), mobile, SMS).isEmpty()) {
             throw new CommonException(UpmsResultCodeEnum.VERIFICATION_REQUESTS_ARE_RATE_LIMITED);
         }
-
-        // Generate code
-        verificationCodeService.generateCode(mobile, "SMS");
-
-        // TODO: Send SMS using Modules Notification
-        LogUtil.info(
-                PasswordResetService.class,
-                "SMS verification code generated for {}",
-                Masking.mask(mobile, MaskType.PHONE));
     }
 
     /**
@@ -107,45 +101,41 @@ public class PasswordResetService implements PasswordResetFacade {
         if (command == null) {
             throw new CommonException(CommonResultCodeEnum.PARAM_ILLEGAL);
         }
-        PasswordPolicy.requireValid(command.getNewPassword());
+        passwordPolicies.currentPolicy().requireValid(command.getNewPassword());
         // Check new password confirmation
         if (!command.getNewPassword().equals(command.getConfirmPassword())) {
             throw new CommonException(UpmsResultCodeEnum.PASSWORD_CONFIRMATION_DOES_NOT_MATCH);
         }
 
-        // Find user
-        User user = userGateway
-                .findByUsername(command.getUsername())
-                .orElseThrow(() -> new CommonException(UpmsResultCodeEnum.USER_NOT_FOUND));
-
-        // Determine verification target (email or phone)
-        String target;
-        String type = command.getVerificationType();
-
-        if ("EMAIL".equalsIgnoreCase(type)) {
-            if (user.getEmail() == null) {
-                throw new CommonException(UpmsResultCodeEnum.EMAIL_IS_NOT_BOUND_TO_THE_USER);
-            }
-            target = user.getEmail();
-        } else if ("SMS".equalsIgnoreCase(type)) {
-            if (user.getMobile() == null) {
-                throw new CommonException(UpmsResultCodeEnum.PHONE_NUMBER_IS_NOT_BOUND_TO_THE_USER);
-            }
-            target = user.getMobile();
-        } else {
+        boolean email = EMAIL.equalsIgnoreCase(command.getVerificationType());
+        if (!email && !SMS.equalsIgnoreCase(command.getVerificationType())) {
             throw new CommonException(UpmsResultCodeEnum.UNSUPPORTED_VERIFICATION_METHOD);
         }
-
-        // Validate verification code
-        if (!verificationCodeService.validateCode(target, type, command.getVerificationCode())) {
-            throw new CommonException(UpmsResultCodeEnum.VERIFICATION_CODE_IS_INVALID_OR_EXPIRED);
+        User user = userGateway
+                .findByUsername(command.getUsername())
+                .filter(User::isEnabled)
+                .orElseThrow(PasswordResetService::invalidCode);
+        String target = email ? user.getEmail() : user.getMobile();
+        if (target == null
+                || (email && !Boolean.TRUE.equals(user.getEmailVerified()))
+                || !verificationCodeService.consumeResetCode(
+                        user.getId(), target, email ? EMAIL : SMS, command.getVerificationCode())) {
+            throw invalidCode();
         }
 
-        // Reset password
-        user.setPassword(passwordEncoder.encode(command.getNewPassword()));
-        user.setPasswordUpdateTime(LocalDateTime.ofInstant(clock.instant(), clock.getZone()));
+        String hash = passwordEncoder.encode(command.getNewPassword());
+        if (email) {
+            if (!userGateway.resetPasswordWithVerifiedEmail(user.getId(), target, user.getPassword(), hash)) {
+                throw invalidCode();
+            }
+        } else {
+            user.setPassword(hash);
+            user.setPasswordUpdateTime(LocalDateTime.now(clock));
+            userGateway.update(user);
+        }
+    }
 
-        userGateway.update(user);
-        LogUtil.info(PasswordResetService.class, "Password reset successful for user: {}", user.getUsername());
+    private static CommonException invalidCode() {
+        return new CommonException(UpmsResultCodeEnum.VERIFICATION_CODE_IS_INVALID_OR_EXPIRED);
     }
 }
