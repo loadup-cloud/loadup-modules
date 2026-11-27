@@ -46,7 +46,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements UserGateway {
     private static final String FROM = " FROM upms_user WHERE deleted = FALSE AND ";
     private static final String COLUMNS =
-            "id, username, password, nickname, real_name, dept_id, email, email_verified, mobile, mobile_verified, avatar, gender, birthday, status, account_non_expired, account_non_locked, credentials_non_expired, last_login_time, last_login_ip, login_fail_count, locked_time, password_update_time, remark, created_by, updated_by, created_at, updated_at, deleted";
+            "id, username, password, nickname, real_name, dept_id, email, email_verified, mobile, mobile_verified,"
+                    + " avatar, gender, birthday, status, account_non_expired, account_non_locked,"
+                    + " credentials_non_expired, last_login_time, last_login_ip, login_fail_count, locked_time,"
+                    + " password_update_time, remark, created_by, updated_by, created_at, updated_at, deleted";
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
     private final UserConverter converter;
@@ -72,17 +75,17 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
         }
         row.setUpdatedAt(now);
         jdbc.update("""
-                INSERT INTO upms_user (id, username, password, nickname, real_name, dept_id, email,
-                    email_verified, mobile, mobile_verified, avatar, gender, birthday, status, account_non_expired,
-                    account_non_locked, credentials_non_expired, last_login_time, last_login_ip, login_fail_count,
-                    locked_time, password_update_time, remark, created_by, updated_by, created_at, updated_at, deleted)
-                VALUES (:id, :username, :password, :nickname, :realName, :deptId, :email,
-                    COALESCE(:emailVerified, FALSE), :mobile, COALESCE(:mobileVerified, FALSE), :avatar,
-                    COALESCE(:gender, 0), :birthday, COALESCE(:status, 1), COALESCE(:accountNonExpired, TRUE),
-                    COALESCE(:accountNonLocked, TRUE), COALESCE(:credentialsNonExpired, TRUE), :lastLoginTime,
-                    :lastLoginIp, COALESCE(:loginFailCount, 0), :lockedTime, :passwordUpdateTime, :remark,
-                    :createdBy, :updatedBy, :createdAt, :updatedAt, FALSE)
-                """, new BeanPropertySqlParameterSource(row));
+            INSERT INTO upms_user (id, username, password, nickname, real_name, dept_id, email,
+                email_verified, mobile, mobile_verified, avatar, gender, birthday, status, account_non_expired,
+                account_non_locked, credentials_non_expired, last_login_time, last_login_ip, login_fail_count,
+                locked_time, password_update_time, remark, created_by, updated_by, created_at, updated_at, deleted)
+            VALUES (:id, :username, :password, :nickname, :realName, :deptId, :email,
+                COALESCE(:emailVerified, FALSE), :mobile, COALESCE(:mobileVerified, FALSE), :avatar,
+                COALESCE(:gender, 0), :birthday, COALESCE(:status, 1), COALESCE(:accountNonExpired, TRUE),
+                COALESCE(:accountNonLocked, TRUE), COALESCE(:credentialsNonExpired, TRUE), :lastLoginTime,
+                :lastLoginIp, COALESCE(:loginFailCount, 0), :lockedTime, :passwordUpdateTime, :remark,
+                :createdBy, :updatedBy, :createdAt, :updatedAt, FALSE)
+            """, new BeanPropertySqlParameterSource(row));
         return converter.toEntity(row);
     }
 
@@ -95,21 +98,21 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
         }
         row.setUpdatedAt(LocalDateTime.now(clock));
         int changed = jdbc.update("""
-                UPDATE upms_user SET username = COALESCE(:username, username), password = COALESCE(:password, password),
-                    nickname = COALESCE(:nickname, nickname), real_name = COALESCE(:realName, real_name),
-                    dept_id = COALESCE(:deptId, dept_id), email = COALESCE(:email, email),
-                    email_verified = COALESCE(:emailVerified, email_verified), mobile = COALESCE(:mobile, mobile),
-                    mobile_verified = COALESCE(:mobileVerified, mobile_verified), avatar = COALESCE(:avatar, avatar),
-                    gender = COALESCE(:gender, gender), birthday = COALESCE(:birthday, birthday), status = COALESCE(:status, status),
-                    account_non_expired = COALESCE(:accountNonExpired, account_non_expired),
-                    account_non_locked = COALESCE(:accountNonLocked, account_non_locked),
-                    credentials_non_expired = COALESCE(:credentialsNonExpired, credentials_non_expired),
-                    last_login_time = COALESCE(:lastLoginTime, last_login_time), last_login_ip = COALESCE(:lastLoginIp, last_login_ip),
-                    login_fail_count = COALESCE(:loginFailCount, login_fail_count), locked_time = COALESCE(:lockedTime, locked_time),
-                    password_update_time = COALESCE(:passwordUpdateTime, password_update_time), remark = COALESCE(:remark, remark),
-                    updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
-                WHERE id = :id AND deleted = FALSE
-                """, new BeanPropertySqlParameterSource(row));
+            UPDATE upms_user SET username = COALESCE(:username, username), password = COALESCE(:password, password),
+                nickname = COALESCE(:nickname, nickname), real_name = COALESCE(:realName, real_name),
+                dept_id = COALESCE(:deptId, dept_id), email = COALESCE(:email, email),
+                email_verified = COALESCE(:emailVerified, email_verified), mobile = COALESCE(:mobile, mobile),
+                mobile_verified = COALESCE(:mobileVerified, mobile_verified), avatar = COALESCE(:avatar, avatar),
+                gender = COALESCE(:gender, gender), birthday = COALESCE(:birthday, birthday), status = COALESCE(:status, status),
+                account_non_expired = COALESCE(:accountNonExpired, account_non_expired),
+                account_non_locked = COALESCE(:accountNonLocked, account_non_locked),
+                credentials_non_expired = COALESCE(:credentialsNonExpired, credentials_non_expired),
+                last_login_time = COALESCE(:lastLoginTime, last_login_time), last_login_ip = COALESCE(:lastLoginIp, last_login_ip),
+                login_fail_count = COALESCE(:loginFailCount, login_fail_count), locked_time = COALESCE(:lockedTime, locked_time),
+                password_update_time = COALESCE(:passwordUpdateTime, password_update_time), remark = COALESCE(:remark, remark),
+                updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
+            WHERE id = :id AND deleted = FALSE
+            """, new BeanPropertySqlParameterSource(row));
         if (changed != 1) {
             throw new IncorrectResultSizeDataAccessException(1, changed);
         }
@@ -124,11 +127,11 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
                 .addValue("newHash", newHash)
                 .addValue("now", LocalDateTime.now(clock));
         return jdbc.update("""
-                UPDATE upms_user
-                SET password = :newHash, password_update_time = :now, updated_at = :now
-                WHERE id = :id AND email = :email AND email_verified = TRUE AND password = :expectedHash
-                  AND status = 1 AND deleted = FALSE
-                """, parameters) == 1;
+            UPDATE upms_user
+            SET password = :newHash, password_update_time = :now, updated_at = :now
+            WHERE id = :id AND email = :email AND email_verified = TRUE AND password = :expectedHash
+              AND status = 1 AND deleted = FALSE
+            """, parameters) == 1;
     }
 
     @Override
@@ -141,7 +144,8 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
                 "UPDATE upms_user_role SET deleted = TRUE, updated_at = :now WHERE user_id = :id AND deleted = FALSE",
                 params);
         jdbc.update(
-                "UPDATE upms_user_oauth_binding SET deleted = TRUE, updated_at = :now WHERE user_id = :id AND deleted = FALSE",
+                "UPDATE upms_user_oauth_binding SET deleted = TRUE, updated_at = :now WHERE user_id = :id AND deleted"
+                        + " = FALSE",
                 params);
         jdbc.update(
                 "UPDATE upms_user SET deleted = TRUE, updated_at = :now WHERE id = :id AND deleted = FALSE", params);
@@ -179,14 +183,13 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
 
     @Override
     public PageResult<User> findAll(PageQuery query, String sortBy, String sortOrder) {
-        QueryColumn column =
-                switch (sortBy) {
-                    case "createdAt" -> Tables.USER.CREATED_AT;
-                    case "username" -> Tables.USER.USERNAME;
-                    case "nickname" -> Tables.USER.NICKNAME;
-                    case "id" -> Tables.USER.ID;
-                    default -> throw new CommonException(UpmsResultCodeEnum.UNSUPPORTED_USER_SORT_FIELD);
-                };
+        QueryColumn column = switch (sortBy) {
+            case "createdAt" -> Tables.USER.CREATED_AT;
+            case "username" -> Tables.USER.USERNAME;
+            case "nickname" -> Tables.USER.NICKNAME;
+            case "id" -> Tables.USER.ID;
+            default -> throw new CommonException(UpmsResultCodeEnum.UNSUPPORTED_USER_SORT_FIELD);
+        };
         var page = page(
                 new Page<>(query.pageNum(), query.pageSize()),
                 QueryWrapper.create().orderBy(column, !"DESC".equalsIgnoreCase(sortOrder)));
@@ -230,7 +233,8 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
     private void lockDepartment(String id) {
         if (id == null
                 || jdbc.queryForList(
-                                "SELECT id FROM upms_department WHERE id = :id AND deleted = FALSE AND status = 1 FOR UPDATE",
+                                "SELECT id FROM upms_department WHERE id = :id AND deleted = FALSE AND status = 1 FOR"
+                                        + " UPDATE",
                                 params().addValue("id", id),
                                 String.class)
                         .isEmpty()) {
@@ -240,14 +244,13 @@ public class UserGatewayImpl extends ServiceImpl<UserMapper, UserDO> implements 
 
     private PageResult<User> page(
             String predicate, MapSqlParameterSource params, PageQuery page, String sortBy, String sortOrder) {
-        String column =
-                switch (sortBy) {
-                    case "createdAt" -> "created_at";
-                    case "username" -> "username";
-                    case "nickname" -> "nickname";
-                    case "id" -> "id";
-                    default -> throw new CommonException(UpmsResultCodeEnum.UNSUPPORTED_USER_SORT_FIELD);
-                };
+        String column = switch (sortBy) {
+            case "createdAt" -> "created_at";
+            case "username" -> "username";
+            case "nickname" -> "nickname";
+            case "id" -> "id";
+            default -> throw new CommonException(UpmsResultCodeEnum.UNSUPPORTED_USER_SORT_FIELD);
+        };
         long total = count(predicate, params);
         params.addValue("limit", page.pageSize()).addValue("offset", ((long) page.pageNum() - 1) * page.pageSize());
         String order = " ORDER BY "

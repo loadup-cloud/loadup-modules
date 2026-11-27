@@ -38,7 +38,8 @@ public class LoginLogGatewayImpl implements LoginLogGateway {
     private static final Short SUCCESS = 1;
     private static final Short FAILURE = 0;
     private static final String COLUMNS =
-            "id, user_id, username, login_time, logout_time, ip_address, login_location, browser, os, login_status, login_message, login_type, provider, created_at, updated_at, deleted";
+            "id, user_id, username, login_time, logout_time, ip_address, login_location, browser, os, login_status,"
+                    + " login_message, login_type, provider, created_at, updated_at, deleted";
     private static final String FROM = " FROM upms_login_log WHERE deleted = FALSE";
 
     private final JdbcClient jdbc;
@@ -84,12 +85,12 @@ public class LoginLogGatewayImpl implements LoginLogGateway {
         }
         row.setUpdatedAt(now);
         jdbc.sql("""
-                INSERT INTO upms_login_log (id, user_id, username, login_time, logout_time, ip_address,
-                    login_location, browser, os, login_status, login_message, login_type, provider, created_at, updated_at, deleted)
-                VALUES (:id, :userId, :username, :loginTime, :logoutTime, :ipAddress,
-                    :loginLocation, :browser, :os, COALESCE(:loginStatus, 1), :loginMessage, :loginType,
-                    :provider, :createdAt, :updatedAt, FALSE)
-                """).paramSource(new BeanPropertySqlParameterSource(row)).update();
+            INSERT INTO upms_login_log (id, user_id, username, login_time, logout_time, ip_address,
+                login_location, browser, os, login_status, login_message, login_type, provider, created_at, updated_at, deleted)
+            VALUES (:id, :userId, :username, :loginTime, :logoutTime, :ipAddress,
+                :loginLocation, :browser, :os, COALESCE(:loginStatus, 1), :loginMessage, :loginType,
+                :provider, :createdAt, :updatedAt, FALSE)
+            """).paramSource(new BeanPropertySqlParameterSource(row)).update();
         return converter.toEntity(row);
     }
 
@@ -132,8 +133,8 @@ public class LoginLogGatewayImpl implements LoginLogGateway {
 
     @Override
     public void deleteBeforeDate(LocalDateTime date) {
-        jdbc.sql(
-                        "UPDATE upms_login_log SET deleted = TRUE, updated_at = :now WHERE deleted = FALSE AND login_time < :date")
+        jdbc.sql("UPDATE upms_login_log SET deleted = TRUE, updated_at = :now WHERE deleted = FALSE AND"
+                        + " login_time < :date")
                 .param("now", LocalDateTime.now(clock))
                 .param("date", date)
                 .update();

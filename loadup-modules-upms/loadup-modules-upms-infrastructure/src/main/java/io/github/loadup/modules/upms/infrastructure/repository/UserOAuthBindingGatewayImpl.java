@@ -72,16 +72,16 @@ public class UserOAuthBindingGatewayImpl extends ServiceImpl<UserOAuthBindingMap
         }
         row.setUpdatedAt(now);
         int affected = jdbc.update("""
-                INSERT INTO upms_user_oauth_binding (id, user_id, provider, open_id, union_id,
-                    nickname, avatar, access_token, refresh_token, expires_at, bound_at, created_at, updated_at, deleted)
-                VALUES (:id, :userId, :provider, :openId, :unionId, :nickname, :avatar,
-                    :accessToken, :refreshToken, :expiresAt, :boundAt, :createdAt, :updatedAt, FALSE)
-                ON CONFLICT (id) DO UPDATE SET user_id = EXCLUDED.user_id, provider = EXCLUDED.provider,
-                    open_id = EXCLUDED.open_id, union_id = EXCLUDED.union_id, nickname = EXCLUDED.nickname,
-                    avatar = EXCLUDED.avatar, access_token = EXCLUDED.access_token, refresh_token = EXCLUDED.refresh_token,
-                    expires_at = EXCLUDED.expires_at, bound_at = EXCLUDED.bound_at, updated_at = EXCLUDED.updated_at
-                WHERE upms_user_oauth_binding.deleted = FALSE
-                """, new BeanPropertySqlParameterSource(row));
+            INSERT INTO upms_user_oauth_binding (id, user_id, provider, open_id, union_id,
+                nickname, avatar, access_token, refresh_token, expires_at, bound_at, created_at, updated_at, deleted)
+            VALUES (:id, :userId, :provider, :openId, :unionId, :nickname, :avatar,
+                :accessToken, :refreshToken, :expiresAt, :boundAt, :createdAt, :updatedAt, FALSE)
+            ON CONFLICT (id) DO UPDATE SET user_id = EXCLUDED.user_id, provider = EXCLUDED.provider,
+                open_id = EXCLUDED.open_id, union_id = EXCLUDED.union_id, nickname = EXCLUDED.nickname,
+                avatar = EXCLUDED.avatar, access_token = EXCLUDED.access_token, refresh_token = EXCLUDED.refresh_token,
+                expires_at = EXCLUDED.expires_at, bound_at = EXCLUDED.bound_at, updated_at = EXCLUDED.updated_at
+            WHERE upms_user_oauth_binding.deleted = FALSE
+            """, new BeanPropertySqlParameterSource(row));
         if (affected != 1) {
             throw new IllegalStateException("OAuth binding was not saved");
         }

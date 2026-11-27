@@ -83,9 +83,9 @@ public class DictionaryGatewayImpl extends ServiceImpl<DictionaryTypeMapper, Dic
         row.setCreatedAt(now);
         row.setUpdatedAt(now);
         jdbc.update("""
-                INSERT INTO dictionary_type (id, type_code, type_name, description, enabled, created_at, updated_at, deleted)
-                VALUES (:id, :code, :name, :description, :enabled, :createdAt, :updatedAt, FALSE)
-                """, new BeanPropertySqlParameterSource(row));
+            INSERT INTO dictionary_type (id, type_code, type_name, description, enabled, created_at, updated_at, deleted)
+            VALUES (:id, :code, :name, :description, :enabled, :createdAt, :updatedAt, FALSE)
+            """, new BeanPropertySqlParameterSource(row));
     }
 
     @Override
@@ -93,8 +93,8 @@ public class DictionaryGatewayImpl extends ServiceImpl<DictionaryTypeMapper, Dic
         var row = converter.toDO(type);
         row.setUpdatedAt(LocalDateTime.now(clock));
         int changed = jdbc.update(
-                "UPDATE dictionary_type SET type_name = :name, description = :description, enabled = :enabled, updated_at = :updatedAt "
-                        + "WHERE id = :id AND deleted = FALSE",
+                "UPDATE dictionary_type SET type_name = :name, description = :description, enabled = :enabled,"
+                        + " updated_at = :updatedAt WHERE id = :id AND deleted = FALSE",
                 new BeanPropertySqlParameterSource(row));
         if (changed != 1) {
             throw new CommonException(DictionaryResultCodeEnum.DICTIONARY_TYPE_NOT_FOUND);
@@ -135,9 +135,9 @@ public class DictionaryGatewayImpl extends ServiceImpl<DictionaryTypeMapper, Dic
         row.setCreatedAt(now);
         row.setUpdatedAt(now);
         jdbc.update("""
-                INSERT INTO dictionary_item (id, type_id, item_value, item_label, description, sort_order, enabled, created_at, updated_at, deleted)
-                VALUES (:id, :typeId, :value, :label, :description, :sortOrder, :enabled, :createdAt, :updatedAt, FALSE)
-                """, new BeanPropertySqlParameterSource(row));
+            INSERT INTO dictionary_item (id, type_id, item_value, item_label, description, sort_order, enabled, created_at, updated_at, deleted)
+            VALUES (:id, :typeId, :value, :label, :description, :sortOrder, :enabled, :createdAt, :updatedAt, FALSE)
+            """, new BeanPropertySqlParameterSource(row));
     }
 
     @Override
@@ -145,8 +145,8 @@ public class DictionaryGatewayImpl extends ServiceImpl<DictionaryTypeMapper, Dic
         var row = converter.toDO(item);
         row.setUpdatedAt(LocalDateTime.now(clock));
         int changed = jdbc.update(
-                "UPDATE dictionary_item SET item_label = :label, description = :description, sort_order = :sortOrder, enabled = :enabled, updated_at = :updatedAt "
-                        + "WHERE id = :id AND deleted = FALSE",
+                "UPDATE dictionary_item SET item_label = :label, description = :description, sort_order = :sortOrder,"
+                        + " enabled = :enabled, updated_at = :updatedAt WHERE id = :id AND deleted = FALSE",
                 new BeanPropertySqlParameterSource(row));
         if (changed != 1) {
             throw new CommonException(DictionaryResultCodeEnum.DICTIONARY_ITEM_NOT_FOUND);

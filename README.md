@@ -24,7 +24,9 @@ Modules BOM 已导入配套的 `loadup-framework-bom`，可同时管理直接使
 
 ## 查看 OpenAPI
 
-宿主引入 `io.github.loadup-cloud:loadup-components-springdoc` 生成已装配 Controller 的文档。交互页面为 `/scalar`，OpenAPI JSON 位于 `/v3/api-docs`。如果自定义 `springdoc.packages-to-scan`，纳入 `io.github.loadup.modules` 或所需 Controller 的包。详见 [SpringDoc 接入](../loadup-framework/loadup-components/web/loadup-components-springdoc/README.md)。
+宿主引入 `io.github.loadup-cloud:loadup-components-springdoc` 生成已装配 Controller 的文档。交互页面为 `/scalar`，OpenAPI
+JSON 位于 `/v3/api-docs`。如果自定义 `springdoc.packages-to-scan`，纳入 `io.github.loadup.modules` 或所需 Controller
+的包。详见 [SpringDoc 接入](../loadup-framework/loadup-components/web/loadup-components-springdoc/README.md)。
 
 ## 构建与格式检查
 

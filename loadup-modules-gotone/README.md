@@ -1,6 +1,7 @@
 # Gotone 多渠道通知
 
-Gotone 按 `serviceCode` 展开 SMS、Email、Push、站内信和 Webhook。一个编码可同时启用多个渠道。SMS 和 Email 自动选择账号，Push 按设备令牌归属投递，Webhook 按服务编码展开已选端点。
+Gotone 按 `serviceCode` 展开 SMS、Email、Push、站内信和 Webhook。一个编码可同时启用多个渠道。SMS 和 Email 自动选择账号，Push
+按设备令牌归属投递，Webhook 按服务编码展开已选端点。
 
 | Maven 坐标后缀                 | 用途                                                          |
 |--------------------------------|---------------------------------------------------------------|
@@ -22,13 +23,13 @@ JSON 变量放在字符串值中。Inbox 跳转地址须为站内路径。
 「系统发送配置」维护独立的供应商账号、优先级、连接超时、凭证引用和短信备案映射。账号运行时从 `kms:<名称>` 或
 `env:GOTONE_SECRET_<名称>` 读取秘密。
 
-| 渠道 | 适配器与配置 |
-|---|---|
-| SMS | `aliyun` 与 `twilio` 沿用原有配置。`tencent` 配置 `secretId`、`sdkAppId`、`region` 和 SecretKey 凭证引用，再按服务编码版本登记备案模板。模板变量按 `1`、`2` 等连续编号映射到业务参数。中国大陆短信需要备案签名，可用账号的 `signature` 或模板映射的签名。 |
-| Email | `smtp` 使用宿主的 `spring-boot-starter-mail`，每个账号独立配置主机、端口、用户名、发件地址和 STARTTLS 或 SMTPS。 |
-| Push | `fcm` 配置 `projectId` 和服务账号 JSON。`jpush` 配置 `appKey` 和 Master Secret，可选 `apnsProduction`（默认 `true`），支持 Android 和 iOS。`xiaomi` 使用中国大陆 Android RegID，配置 `packageName`、App Secret 和可选 `channelId`。`huawei` 使用华为 Push Kit Android 通知接口，配置 `clientId` 和 Client Secret。四种适配器均需填写应用标识 `appId` 和设备 `platform`。 |
-| Inbox | 使用 Inbox 模块在本地入箱。提交时提供收件人用户 ID。 |
-| Webhook | `dingtalk`、`wecom`、`feishu` 使用群机器人文本消息。通过 `settings.destinationRef` 引用完整机器人 URL，钉钉和飞书可通过 `secretRef` 引用加签密钥。通用 `https` 适配器发送 JSON 正文，URL 的域名须在宿主的 `loadup.modules.gotone.webhook.allowed-hosts` 中，带令牌的 URL 使用凭证引用。 |
+| 渠道    | 适配器与配置                                                                                                                                                                                                                                                                                                                                                             |
+|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| SMS     | `aliyun` 与 `twilio` 沿用原有配置。`tencent` 配置 `secretId`、`sdkAppId`、`region` 和 SecretKey 凭证引用，再按服务编码版本登记备案模板。模板变量按 `1`、`2` 等连续编号映射到业务参数。中国大陆短信需要备案签名，可用账号的 `signature` 或模板映射的签名。                                                                                                                |
+| Email   | `smtp` 使用宿主的 `spring-boot-starter-mail`，每个账号独立配置主机、端口、用户名、发件地址和 STARTTLS 或 SMTPS。                                                                                                                                                                                                                                                         |
+| Push    | `fcm` 配置 `projectId` 和服务账号 JSON。`jpush` 配置 `appKey` 和 Master Secret，可选 `apnsProduction`（默认 `true`），支持 Android 和 iOS。`xiaomi` 使用中国大陆 Android RegID，配置 `packageName`、App Secret 和可选 `channelId`。`huawei` 使用华为 Push Kit Android 通知接口，配置 `clientId` 和 Client Secret。四种适配器均需填写应用标识 `appId` 和设备 `platform`。 |
+| Inbox   | 使用 Inbox 模块在本地入箱。提交时提供收件人用户 ID。                                                                                                                                                                                                                                                                                                                     |
+| Webhook | `dingtalk`、`wecom`、`feishu` 使用群机器人文本消息。通过 `settings.destinationRef` 引用完整机器人 URL，钉钉和飞书可通过 `secretRef` 引用加签密钥。通用 `https` 适配器发送 JSON 正文，URL 的域名须在宿主的 `loadup.modules.gotone.webhook.allowed-hosts` 中，带令牌的 URL 使用凭证引用。                                                                                  |
 
 SMS 和 Email 对同一收件人按账号顺序尝试，任一账号受理即停止。明确拒绝后可以尝试下一个账号，超时且无法判定是否受理时记为待核对。
 

@@ -66,14 +66,14 @@ public class PermissionGatewayImpl extends ServiceImpl<PermissionMapper, Permiss
         }
         row.setUpdatedAt(now);
         jdbc.update("""
-                INSERT INTO upms_permission (id, parent_id, permission_name, permission_code,
-                    permission_type, resource_path, http_method, icon, component_path, sort_order, visible,
-                    status, remark, created_by, updated_by, created_at, updated_at, deleted)
-                VALUES (:id, :parentId, :permissionName, :permissionCode, :permissionType,
-                    :resourcePath, :httpMethod, :icon, :componentPath, COALESCE(:sortOrder, 0),
-                    COALESCE(:visible, TRUE), COALESCE(:status, 1), :remark, :createdBy, :updatedBy,
-                    :createdAt, :updatedAt, FALSE)
-                """, new BeanPropertySqlParameterSource(row));
+            INSERT INTO upms_permission (id, parent_id, permission_name, permission_code,
+                permission_type, resource_path, http_method, icon, component_path, sort_order, visible,
+                status, remark, created_by, updated_by, created_at, updated_at, deleted)
+            VALUES (:id, :parentId, :permissionName, :permissionCode, :permissionType,
+                :resourcePath, :httpMethod, :icon, :componentPath, COALESCE(:sortOrder, 0),
+                COALESCE(:visible, TRUE), COALESCE(:status, 1), :remark, :createdBy, :updatedBy,
+                :createdAt, :updatedAt, FALSE)
+            """, new BeanPropertySqlParameterSource(row));
         return converter.toEntity(row);
     }
 
@@ -84,17 +84,17 @@ public class PermissionGatewayImpl extends ServiceImpl<PermissionMapper, Permiss
         lockParent(row.getParentId());
         row.setUpdatedAt(LocalDateTime.now(clock));
         int changed = jdbc.update("""
-                UPDATE upms_permission SET parent_id = COALESCE(:parentId, parent_id),
-                    permission_name = COALESCE(:permissionName, permission_name),
-                    permission_code = COALESCE(:permissionCode, permission_code),
-                    permission_type = COALESCE(:permissionType, permission_type),
-                    resource_path = COALESCE(:resourcePath, resource_path), http_method = COALESCE(:httpMethod, http_method),
-                    icon = COALESCE(:icon, icon), component_path = COALESCE(:componentPath, component_path),
-                    sort_order = COALESCE(:sortOrder, sort_order), visible = COALESCE(:visible, visible),
-                    status = COALESCE(:status, status), remark = COALESCE(:remark, remark),
-                    updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
-                WHERE id = :id AND deleted = FALSE
-                """, new BeanPropertySqlParameterSource(row));
+            UPDATE upms_permission SET parent_id = COALESCE(:parentId, parent_id),
+                permission_name = COALESCE(:permissionName, permission_name),
+                permission_code = COALESCE(:permissionCode, permission_code),
+                permission_type = COALESCE(:permissionType, permission_type),
+                resource_path = COALESCE(:resourcePath, resource_path), http_method = COALESCE(:httpMethod, http_method),
+                icon = COALESCE(:icon, icon), component_path = COALESCE(:componentPath, component_path),
+                sort_order = COALESCE(:sortOrder, sort_order), visible = COALESCE(:visible, visible),
+                status = COALESCE(:status, status), remark = COALESCE(:remark, remark),
+                updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
+            WHERE id = :id AND deleted = FALSE
+            """, new BeanPropertySqlParameterSource(row));
         if (changed != 1) {
             throw new IncorrectResultSizeDataAccessException(1, changed);
         }
@@ -111,7 +111,8 @@ public class PermissionGatewayImpl extends ServiceImpl<PermissionMapper, Permiss
             throw new CommonException(UpmsResultCodeEnum.PERMISSION_CONTAINS_CHILD_PERMISSIONS);
         }
         jdbc.update(
-                "UPDATE upms_role_permission SET deleted = TRUE, updated_at = :now WHERE permission_id = :id AND deleted = FALSE",
+                "UPDATE upms_role_permission SET deleted = TRUE, updated_at = :now WHERE permission_id = :id AND"
+                        + " deleted = FALSE",
                 params);
         jdbc.update(
                 "UPDATE upms_permission SET deleted = TRUE, updated_at = :now WHERE id = :id AND deleted = FALSE",
@@ -132,7 +133,8 @@ public class PermissionGatewayImpl extends ServiceImpl<PermissionMapper, Permiss
     @Override
     public List<Permission> findByRoleId(String roleId) {
         return find(
-                "EXISTS (SELECT 1 FROM upms_role_permission rp WHERE rp.permission_id = p.id AND rp.role_id = :value AND rp.deleted = FALSE)",
+                "EXISTS (SELECT 1 FROM upms_role_permission rp WHERE rp.permission_id = p.id AND rp.role_id = :value"
+                        + " AND rp.deleted = FALSE)",
                 roleId);
     }
 
@@ -192,7 +194,10 @@ public class PermissionGatewayImpl extends ServiceImpl<PermissionMapper, Permiss
     private List<Permission> find(String predicate, Object value) {
         return jdbc
                 .query(
-                        "SELECT p.id, p.parent_id, p.permission_name, p.permission_code, p.permission_type, p.resource_path, p.http_method, p.icon, p.component_path, p.sort_order, p.visible, p.status, p.remark, p.created_by, p.updated_by, p.created_at, p.updated_at, p.deleted FROM upms_permission p WHERE p.deleted = FALSE AND "
+                        "SELECT p.id, p.parent_id, p.permission_name, p.permission_code, p.permission_type,"
+                                + " p.resource_path, p.http_method, p.icon, p.component_path, p.sort_order, p.visible,"
+                                + " p.status, p.remark, p.created_by, p.updated_by, p.created_at, p.updated_at, p.deleted"
+                                + " FROM upms_permission p WHERE p.deleted = FALSE AND "
                                 + predicate,
                         params().addValue("value", value),
                         BeanPropertyRowMapper.newInstance(PermissionDO.class))

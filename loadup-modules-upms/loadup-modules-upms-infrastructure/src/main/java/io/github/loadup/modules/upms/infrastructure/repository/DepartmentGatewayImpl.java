@@ -70,13 +70,13 @@ public class DepartmentGatewayImpl extends ServiceImpl<DepartmentMapper, Departm
         }
         row.setUpdatedAt(now);
         jdbc.update("""
-                INSERT INTO upms_department (id, parent_id, dept_name, dept_code, dept_level,
-                    sort_order, leader_user_id, phone, email, status, remark, created_by, updated_by,
-                    created_at, updated_at, deleted)
-                VALUES (:id, :parentId, :deptName, :deptCode, COALESCE(:deptLevel, 1),
-                    COALESCE(:sortOrder, 0), :leaderUserId, :mobile, :email, COALESCE(:status, 1),
-                    :remark, :createdBy, :updatedBy, :createdAt, :updatedAt, FALSE)
-                """, new BeanPropertySqlParameterSource(row));
+            INSERT INTO upms_department (id, parent_id, dept_name, dept_code, dept_level,
+                sort_order, leader_user_id, phone, email, status, remark, created_by, updated_by,
+                created_at, updated_at, deleted)
+            VALUES (:id, :parentId, :deptName, :deptCode, COALESCE(:deptLevel, 1),
+                COALESCE(:sortOrder, 0), :leaderUserId, :mobile, :email, COALESCE(:status, 1),
+                :remark, :createdBy, :updatedBy, :createdAt, :updatedAt, FALSE)
+            """, new BeanPropertySqlParameterSource(row));
         return converter.toEntity(row);
     }
 
@@ -87,14 +87,14 @@ public class DepartmentGatewayImpl extends ServiceImpl<DepartmentMapper, Departm
         lockParent(row.getParentId());
         row.setUpdatedAt(LocalDateTime.now(clock));
         int changed = jdbc.update("""
-                UPDATE upms_department SET parent_id = COALESCE(:parentId, parent_id),
-                    dept_name = COALESCE(:deptName, dept_name), dept_code = COALESCE(:deptCode, dept_code),
-                    dept_level = COALESCE(:deptLevel, dept_level), sort_order = COALESCE(:sortOrder, sort_order),
-                    leader_user_id = COALESCE(:leaderUserId, leader_user_id), phone = COALESCE(:mobile, phone),
-                    email = COALESCE(:email, email), status = COALESCE(:status, status),
-                    remark = COALESCE(:remark, remark), updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
-                WHERE id = :id AND deleted = FALSE
-                """, new BeanPropertySqlParameterSource(row));
+            UPDATE upms_department SET parent_id = COALESCE(:parentId, parent_id),
+                dept_name = COALESCE(:deptName, dept_name), dept_code = COALESCE(:deptCode, dept_code),
+                dept_level = COALESCE(:deptLevel, dept_level), sort_order = COALESCE(:sortOrder, sort_order),
+                leader_user_id = COALESCE(:leaderUserId, leader_user_id), phone = COALESCE(:mobile, phone),
+                email = COALESCE(:email, email), status = COALESCE(:status, status),
+                remark = COALESCE(:remark, remark), updated_by = COALESCE(:updatedBy, updated_by), updated_at = :updatedAt
+            WHERE id = :id AND deleted = FALSE
+            """, new BeanPropertySqlParameterSource(row));
         if (changed != 1) {
             throw new IncorrectResultSizeDataAccessException(1, changed);
         }
@@ -111,7 +111,8 @@ public class DepartmentGatewayImpl extends ServiceImpl<DepartmentMapper, Departm
             throw new IllegalStateException("Department still has users or child departments");
         }
         jdbc.update(
-                "UPDATE upms_role_department SET deleted = TRUE, updated_at = :now WHERE dept_id = :id AND deleted = FALSE",
+                "UPDATE upms_role_department SET deleted = TRUE, updated_at = :now WHERE dept_id = :id AND deleted ="
+                        + " FALSE",
                 values);
         jdbc.update(
                 "UPDATE upms_department SET deleted = TRUE, updated_at = :now WHERE id = :id AND deleted = FALSE",

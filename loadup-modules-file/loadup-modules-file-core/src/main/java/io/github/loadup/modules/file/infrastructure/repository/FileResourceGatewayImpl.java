@@ -193,9 +193,9 @@ public class FileResourceGatewayImpl extends ServiceImpl<FileResourceInsertMappe
         // Raw JDBC keeps file references in the same local transaction as their owning business rows.
         jdbc.update(
                 """
-                        INSERT INTO file_resource_reference (id, file_id, reference_type, reference_id, created_at, updated_at, deleted)
-                        VALUES (?, ?, ?, ?, ?, ?, FALSE)
-                        """,
+                INSERT INTO file_resource_reference (id, file_id, reference_type, reference_id, created_at, updated_at, deleted)
+                VALUES (?, ?, ?, ?, ?, ?, FALSE)
+                """,
                 ref.id(),
                 parent.id(),
                 ref.referenceType(),
@@ -229,10 +229,10 @@ public class FileResourceGatewayImpl extends ServiceImpl<FileResourceInsertMappe
     public List<FileReference> references(String file) {
         return jdbc.query(
                 """
-                        SELECT id, file_id, reference_type, reference_id, created_at
-                        FROM file_resource_reference WHERE file_id = ? AND deleted = FALSE
-                        ORDER BY created_at, id
-                        """,
+                SELECT id, file_id, reference_type, reference_id, created_at
+                FROM file_resource_reference WHERE file_id = ? AND deleted = FALSE
+                ORDER BY created_at, id
+                """,
                 (rs, index) -> new FileReference(
                         rs.getString("id"),
                         rs.getString("file_id"),

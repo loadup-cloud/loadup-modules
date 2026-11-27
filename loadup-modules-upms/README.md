@@ -90,20 +90,23 @@ recorder。
 
 在 ConfigCenter 发布键 `loadup.modules.upms.security.password-strength`，值填写 `normal` 或 `strong`。
 
-| 选项 | 新密码要求 |
-| --- | --- |
-| `normal`（默认） | 至少 8 个 Unicode 字符，最多 72 个 UTF-8 字节 |
-| `strong` | 至少 12 个 Unicode 字符，须包含大写字母、小写字母、十进制数字和标点或符号，同样最多 72 个 UTF-8 字节 |
+| 选项             | 新密码要求                                                                                           |
+|------------------|------------------------------------------------------------------------------------------------------|
+| `normal`（默认） | 至少 8 个 Unicode 字符，最多 72 个 UTF-8 字节                                                        |
+| `strong`         | 至少 12 个 Unicode 字符，须包含大写字母、小写字母、十进制数字和标点或符号，同样最多 72 个 UTF-8 字节 |
 
-选择 ConfigCenter binder 由宿主负责。未配置 binder、远端键缺失或删除时，使用同名 Spring 配置，默认 `normal`。已发布的合法值会动态生效，非法远端值记录告警并保留当前规则。创建用户、注册、修改和重置密码均使用当前规则。已有密码继续用于登录。
+选择 ConfigCenter binder 由宿主负责。未配置 binder、远端键缺失或删除时，使用同名 Spring 配置，默认 `normal`
+。已发布的合法值会动态生效，非法远端值记录告警并保留当前规则。创建用户、注册、修改和重置密码均使用当前规则。已有密码继续用于登录。
 
 `GET /api/auth/password-policy` 公开当前规则名、最少字符数、UTF-8 字节上限及所需字符类型。Admin 的修改密码与重置密码表单读取此接口。
 
-邮箱重置使用 `POST /api/auth/password-reset/code` 请求验证码，再调用 `POST /api/auth/password-reset` 提交账号、验证码及新密码。宿主应配置 `PasswordResetEmailSender`，验证码只发给账号已验证的邮箱。验证码在签发实例保存，多实例部署需将请求验证码和提交重置路由到同一实例。
+邮箱重置使用 `POST /api/auth/password-reset/code` 请求验证码，再调用 `POST /api/auth/password-reset` 提交账号、验证码及新密码。宿主应配置
+`PasswordResetEmailSender`，验证码只发给账号已验证的邮箱。验证码在签发实例保存，多实例部署需将请求验证码和提交重置路由到同一实例。
 
 ## 角色菜单
 
-登录后以当前账号调用 `POST /api/upms/permission/user-menu`，请求体为 `{}`。返回账号有效角色及继承角色可见的菜单，按层级和排序字段排列。为角色分配二级菜单后，启用且可见的无路径上级分组会自动显示。页面菜单单独授权，分组本身不授予其子菜单。
+登录后以当前账号调用 `POST /api/upms/permission/user-menu`，请求体为 `{}`
+。返回账号有效角色及继承角色可见的菜单，按层级和排序字段排列。为角色分配二级菜单后，启用且可见的无路径上级分组会自动显示。页面菜单单独授权，分组本身不授予其子菜单。
 
 ## 输入与安全约定
 
