@@ -102,12 +102,11 @@ public final class GotoneTemplates {
     public Map<String, String> render(Template template, Map<String, String> parameters) {
         Map<String, String> rendered = new TreeMap<>();
         template.fields().forEach((key, value) -> {
-            Function<String, String> escape =
-                    switch (key) {
-                        case "html" -> HtmlUtils::htmlEscape;
-                        case "payload" -> this::escapeJson;
-                        default -> Function.identity();
-                    };
+            Function<String, String> escape = switch (key) {
+                case "html" -> HtmlUtils::htmlEscape;
+                case "payload" -> this::escapeJson;
+                default -> Function.identity();
+            };
             String result = EXPRESSION.matcher(value).replaceAll(match -> {
                 String parameter = parameters.get(match.group(1));
                 if (parameter == null) {

@@ -215,14 +215,13 @@ public class RoleService implements RoleFacade {
         var pagination = query.pagination();
         int page = pagination.page();
         int size = pagination.size();
-        Comparator<Role> order =
-                switch (query.getSortBy() == null ? "sortOrder" : query.getSortBy()) {
-                    case "roleName" -> Comparator.comparing(Role::getRoleName, Comparator.nullsLast(String::compareTo));
-                    case "roleCode" -> Comparator.comparing(Role::getRoleCode, Comparator.nullsLast(String::compareTo));
-                    case "sortOrder" ->
-                        Comparator.comparing(Role::getSortOrder, Comparator.nullsLast(Comparator.naturalOrder()));
-                    default -> throw new CommonException(UpmsResultCodeEnum.UNSUPPORTED_ROLE_SORT_FIELD);
-                };
+        Comparator<Role> order = switch (query.getSortBy() == null ? "sortOrder" : query.getSortBy()) {
+            case "roleName" -> Comparator.comparing(Role::getRoleName, Comparator.nullsLast(String::compareTo));
+            case "roleCode" -> Comparator.comparing(Role::getRoleCode, Comparator.nullsLast(String::compareTo));
+            case "sortOrder" ->
+                Comparator.comparing(Role::getSortOrder, Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> throw new CommonException(UpmsResultCodeEnum.UNSUPPORTED_ROLE_SORT_FIELD);
+        };
         if ("DESC".equalsIgnoreCase(query.getSortOrder())) {
             order = order.reversed();
         }

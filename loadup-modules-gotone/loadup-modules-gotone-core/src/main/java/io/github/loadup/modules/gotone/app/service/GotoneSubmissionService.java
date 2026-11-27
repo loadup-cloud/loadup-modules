@@ -179,21 +179,20 @@ public final class GotoneSubmissionService implements GotoneFacade {
                                 character -> Character.isWhitespace(character) || Character.isISOControl(character))) {
             throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
         }
-        boolean valid =
-                switch (channel) {
-                    case IN_APP -> value.length() <= 64;
-                    case EMAIL -> value.length() <= 254 && value.matches("[^@,;<>]+@[^@,;<>]+");
-                    case SMS -> value.matches("\\+[1-9][0-9]{2,14}");
-                    case PUSH ->
-                        value.length() <= 4096
-                                && target.platform() != null
-                                && Set.of("ANDROID", "IOS", "WEB").contains(target.platform())
-                                && target.appId() != null
-                                && target.appId().matches("[A-Za-z0-9_.:-]{1,128}")
-                                && (target.accountCode() == null
-                                        || target.accountCode().matches("[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}"));
-                    case WEBHOOK -> false;
-                };
+        boolean valid = switch (channel) {
+            case IN_APP -> value.length() <= 64;
+            case EMAIL -> value.length() <= 254 && value.matches("[^@,;<>]+@[^@,;<>]+");
+            case SMS -> value.matches("\\+[1-9][0-9]{2,14}");
+            case PUSH ->
+                value.length() <= 4096
+                        && target.platform() != null
+                        && Set.of("ANDROID", "IOS", "WEB").contains(target.platform())
+                        && target.appId() != null
+                        && target.appId().matches("[A-Za-z0-9_.:-]{1,128}")
+                        && (target.accountCode() == null
+                                || target.accountCode().matches("[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}"));
+            case WEBHOOK -> false;
+        };
         if (!valid) {
             throw new CommonException(INVALID_CHANNEL_RECIPIENTS);
         }
